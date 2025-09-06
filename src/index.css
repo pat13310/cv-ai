@@ -1,3 +1,9 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@media (max-width: 1155px) {
+  .center-below-1156px {
+    align-self: center !important;
+  }
+}

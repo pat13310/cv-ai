@@ -209,7 +209,7 @@ export const Templates: React.FC = () => {
                 .contact { font-size: 14px; color: #666; }
                 .section { margin-bottom: 25px; }
                 .section-title { font-size: 18px; font-weight: bold; color: #6366f1; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px; margin-bottom: 15px; }
-                .job-title { font-weight: bold; color: #374151; }
+                .job-title { font-wegight: bold; color: #374151; }
                 .company { color: #6366f1; font-style: italic; }
                 .date { color: #6b7280; font-size: 14px; }
                 .skills { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -642,21 +642,21 @@ Français (Natif) • Anglais (Courant) • [Autre langue]
               </div>
               
               {/* Mock Document Preview */}
-              <div className="absolute inset-6 bg-white/80 rounded-lg p-4 shadow-lg">
-                <div className="space-y-2">
-                  <div className="h-3 bg-gray-300 rounded w-3/4" />
-                  <div className="h-2 bg-gray-200 rounded w-1/2" />
-                  <div className="h-1 bg-gray-200 rounded w-full mt-3" />
-                  <div className="h-1 bg-gray-200 rounded w-4/5" />
-                  <div className="h-1 bg-gray-200 rounded w-3/5" />
-                  <div className="grid grid-cols-2 gap-2 mt-4">
-                    <div className="space-y-1">
-                      <div className="h-1 bg-gray-200 rounded" />
-                      <div className="h-1 bg-gray-200 rounded w-3/4" />
+              <div className="absolute inset-4 bg-white/80 rounded-lg p-4 shadow-lg">
+                <div className="space-y-3">
+                  <div className="h-4 bg-gray-300 rounded w-3/4" />
+                  <div className="h-3 bg-gray-200 rounded w-1/2" />
+                  <div className="h-2 bg-gray-200 rounded w-full mt-4" />
+                  <div className="h-2 bg-gray-200 rounded w-4/5" />
+                  <div className="h-2 bg-gray-200 rounded w-3/5" />
+                  <div className="grid grid-cols-2 gap-3 mt-6">
+                    <div className="space-y-2">
+                      <div className="h-2 bg-gray-200 rounded" />
+                      <div className="h-2 bg-gray-200 rounded w-3/4" />
                     </div>
-                    <div className="space-y-1">
-                      <div className="h-1 bg-gray-200 rounded" />
-                      <div className="h-1 bg-gray-200 rounded w-2/3" />
+                    <div className="space-y-2">
+                      <div className="h-2 bg-gray-200 rounded" />
+                      <div className="h-2 bg-gray-200 rounded w-2/3" />
                     </div>
                   </div>
                 </div>

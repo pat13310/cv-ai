@@ -18,7 +18,7 @@ const AppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showSettings, setShowSettings] = useState(false);
   const [showChat, setShowChat] = useState(false);
-  const [voiceEnabled, setVoiceEnabled] = useState(true); // This would come from settings
+  const [voiceEnabled] = useState(true); // This would come from settings
 
   if (isLoading) {
     return (
@@ -105,8 +105,10 @@ const AppContent: React.FC = () => {
         />
         {!showSettings && !showChat && <Navigation activeTab={activeTab} onTabChange={handleTabChange} />}
         
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="flex justify-center px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-8xl w-full">
           {renderActiveTab()}
+        </div>
         </main>
       </div>
     </div>
