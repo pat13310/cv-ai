@@ -30,6 +30,7 @@ export const CVCreator: React.FC = () => {
   const [customFont, setCustomFont] = useState<string>('Calibri');
   const [customColor, setCustomColor] = useState<string>('2E3A59');
   const [titleColor, setTitleColor] = useState<string>('2E3A59');
+  const [error, setError] = useState<string | null>(null);
   const [editableContent, setEditableContent] = useState<Record<string, string>>({
     name: '[VOTRE NOM]',
     contact: '[Votre Email] • [Votre Téléphone] • [LinkedIn]',
@@ -58,11 +59,14 @@ export const CVCreator: React.FC = () => {
   ]);
 
   const [editingField, setEditingField] = useState<string | null>(null);
-  const { generateCVContent, isLoading } = useOpenAI();
+    const { editCVField, isLoading, error: openAIError } = useOpenAI();
 
-  const generateWithAI = async (field: string) => {
+  const generateWithAI = async (field: string, currentContent?: string) => {
     // Ne pas générer avec l'IA si le champ est déjà en cours d'édition
     if (editingField === field) return;
+    
+    // Réinitialiser l'erreur au début de la fonction
+    setError(null);
 
     try {
       // Déterminer le prompt en fonction du champ
@@ -78,7 +82,7 @@ export const CVCreator: React.FC = () => {
           prompt = "Génère un titre de section pour le profil professionnel dans un CV. Réponds uniquement avec le titre, sans texte supplémentaire.";
           break;
         case 'profileContent':
-          prompt = "Génère un résumé professionnel concis et percutant pour un CV. Réponds uniquement avec le résumé, sans texte supplémentaire.";
+          prompt = "Génère un résumé professionnel très concis en un seul paragraphe de maximum 2 phrases pour un CV. Le résumé doit être percutant et synthétique. Réponds uniquement avec le texte du résumé, sans balises HTML, sans <p>, sans texte supplémentaire.";
           break;
         case 'experienceTitle':
           prompt = "Génère un titre de section pour l'expérience professionnelle dans un CV. Réponds uniquement avec le titre, sans texte supplémentaire.";
@@ -115,16 +119,60 @@ export const CVCreator: React.FC = () => {
           }
       }
 
-      // Appeler l'API OpenAI
-      const aiResponse = await generateCVContent({ prompt });
-
-      if (aiResponse) {
-        // Mettre à jour le contenu éditable avec la réponse de l'IA
-        setEditableContent(prev => ({ ...prev, [field]: aiResponse }));
+      // Si du contenu actuel est fourni, combiner avec le prompt
+      if (currentContent && currentContent.trim()) {
+        prompt = `${prompt} Voici le contenu actuel à améliorer ou modifier : "${currentContent}"`;
       }
+
+      // Appeler l'API OpenAI
+            const aiResponse = await editCVField({ prompt });
+      
+            if (aiResponse) {
+              // Gérer les différents types de champs
+              if (field === 'experienceContent' && currentContent) {
+                // Trouver l'expérience correspondante et la mettre à jour
+                const expToUpdate = experiences.find(exp => exp.content === currentContent);
+                if (expToUpdate) {
+                  setExperiences(prev => prev.map(exp =>
+                    exp.id === expToUpdate.id ? { ...exp, content: aiResponse } : exp
+                  ));
+                }
+              } else if (field === 'experienceDetails' && currentContent) {
+                // Trouver l'expérience correspondante et mettre à jour les détails
+                const expToUpdate = experiences.find(exp => exp.details === currentContent);
+                if (expToUpdate) {
+                  setExperiences(prev => prev.map(exp =>
+                    exp.id === expToUpdate.id ? { ...exp, details: aiResponse } : exp
+                  ));
+                }
+              } else if (field === 'skillContent' && currentContent) {
+                // Trouver la compétence correspondante et la mettre à jour
+                const skillToUpdate = skills.find(skill => skill.content === currentContent);
+                if (skillToUpdate) {
+                  setSkills(prev => prev.map(skill =>
+                    skill.id === skillToUpdate.id ? { ...skill, content: aiResponse } : skill
+                  ));
+                }
+              } else if (field.startsWith('languageLevel-') && currentContent) {
+                // Extraire l'ID de la langue et mettre à jour le niveau
+                const langId = parseInt(field.split('-')[1]);
+                setLanguages(prev => prev.map(lang =>
+                  lang.id === langId ? { ...lang, level: aiResponse } : lang
+                ));
+              } else {
+                // Mettre à jour le contenu éditable avec la réponse de l'IA
+                setEditableContent(prev => ({ ...prev, [field]: aiResponse }));
+              }
+            } else {
+              // En cas d'erreur, définir un message d'erreur
+              setError('Erreur lors de la génération avec IA. Veuillez vérifier votre clé API OpenAI dans les paramètres.');
+            }
     } catch (error) {
       console.error('Erreur lors de la génération avec IA:', error);
-      // En cas d'erreur, on pourrait afficher un message à l'utilisateur
+      // En cas d'erreur, on affiche un message à l'utilisateur
+      setError('Erreur lors de la génération avec IA: ' + (error instanceof Error ? error.message : 'Erreur inconnue'));
+      // Réinitialiser le message d'erreur après 5 secondes
+      setTimeout(() => setError(null), 5000);
     }
   };
 
@@ -136,7 +184,7 @@ export const CVCreator: React.FC = () => {
       description: "CV clair et sobre, idéal pour les profils tech.",
       category: "Moderne",
       atsScore: 90,
-      preview: "bg-gradient-to-br from-blue-100 to-indigo-100",
+      preview: "bg-gradient-to-br from-violet-100 to-indigo-100",
       image: "/images/minimalist.jpg",
       theme: { primaryColor: "2E3A59", font: "Calibri" },
     },
@@ -273,16 +321,55 @@ export const CVCreator: React.FC = () => {
     setLanguages(prev => prev.filter(lang => lang.id !== id));
   };
 
+  // Composant d'animation de chargement avec trois points
+  const LoadingDots = () => (
+    <div className="flex space-x-1">
+      {[0, 1, 2].map((i) => (
+        <div
+          key={i}
+          className="w-2 h-2 bg-violet-600 rounded-full animate-bounce"
+          style={{ animationDelay: `${i * 0.2}s` }}
+        />
+      ))}
+    </div>
+  );
+
+  // Composant de bouton IA
+  interface AIButtonProps {
+    isLoading: boolean;
+    onClick: () => void;
+    disabled?: boolean;
+    title: string;
+    className?: string;
+  }
+
+  const AIButton: React.FC<AIButtonProps> = ({
+    isLoading,
+    onClick,
+    disabled = false,
+    title,
+    className = ""
+  }) => (
+    <button
+      onClick={onClick}
+      disabled={disabled || isLoading}
+      className={`p-1 text-violet-600 hover:text-violet-800 disabled:opacity-50 ${className}`}
+      title={title}
+    >
+      {isLoading ? <LoadingDots /> : <Sparkles className="w-4 h-4" />}
+    </button>
+  );
+
   return (
     <div className='w-full'>
-      <h1 className="text-2xl font-bold mb-4">Créateur de CV</h1>
+      <h1 className="text-3xl font-bold bg-gradient-to-r from-violet-600 to-pink-600 bg-clip-text text-transparent mb-4 text-center">Créateur de CV</h1>
 
       <div className="p-4 flex flex-col lg:flex-row gap-6">
 
         <div className="w-full lg:w-1/2">
           {/* Aperçu dynamique en temps réel */}
           <div className="w-full" style={{ aspectRatio: '1 / 1.414' }}>
-            <div className="border border-gray-300 rounded-lg p-4 bg-gray-50 h-full overflow-auto shadow-sm" style={{
+            <div className="border border-violet-500 rounded-lg p-4 bg-gray-50 h-full overflow-auto shadow-md" style={{
               fontFamily: customFont,
               boxSizing: 'border-box'
             }}>
@@ -307,10 +394,17 @@ export const CVCreator: React.FC = () => {
                     </select>
                   </div>
                 </div>
-              </div>
-
-
-              {/* Nom */}
+                              </div>
+                
+                              {/* Affichage des erreurs */}
+                                            {(error || openAIError) && (
+                                              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mt-4" role="alert">
+                                                <strong className="font-bold">Erreur : </strong>
+                                                <span className="block sm:inline">{error || openAIError}</span>
+                                              </div>
+                                            )}
+                
+                              {/* Nom */}
               <div className="mt-4 text-center">
                 {editingField === 'name' ? (
                   <input
@@ -319,26 +413,23 @@ export const CVCreator: React.FC = () => {
                     onChange={(e) => setEditableContent(prev => ({ ...prev, name: e.target.value }))}
                     onBlur={() => setEditingField(null)}
                     onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-                    className="text-lg font-bold w-full text-center border-b border-gray-400 focus:outline-none focus:border-blue-500"
+                    className="text-lg font-bold w-full text-center border-b border-gray-400 focus:outline-none focus:border-violet-500"
                     autoFocus
                   />
                 ) : (
                   <div className="flex items-center justify-center gap-2">
                     <h3
-                      className="text-lg font-bold cursor-pointer hover:bg-gray-100 p-1 rounded"
+                      className="text-lg font-bold cursor-pointer hover:bg-gray-100 p-1 rounded transition-all duration-200 hover:scale-105"
                       onClick={() => setEditingField('name')}
                       style={{ color: `#${titleColor}` }}
                     >
                       {editableContent.name}
                     </h3>
-                    <button
-                      onClick={() => generateWithAI('name')}
-                      disabled={isLoading}
-                      className="p-1 text-violet-600 hover:text-violet-800 disabled:opacity-50"
+                    <AIButton
+                      isLoading={isLoading}
+                      onClick={() => generateWithAI('name', editableContent.name)}
                       title="Modifier avec IA"
-                    >
-                      <Sparkles className="w-4 h-4" />
-                    </button>
+                    />
                   </div>
                 )}
               </div>
@@ -352,26 +443,23 @@ export const CVCreator: React.FC = () => {
                     onChange={(e) => setEditableContent(prev => ({ ...prev, contact: e.target.value }))}
                     onBlur={() => setEditingField(null)}
                     onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-                    className="text-sm w-full text-center border-b border-gray-400 focus:outline-none focus:border-blue-500"
+                    className="text-sm w-full text-center border-b border-gray-400 focus:outline-none focus:border-violet-500"
                     autoFocus
                   />
                 ) : (
                   <div className="flex items-center justify-center gap-2">
                     <p
-                      className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded"
+                      className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded transition-all duration-200 hover:scale-105"
                       onClick={() => setEditingField('contact')}
                       style={{ color: `#${customColor}` }}
                     >
                       {editableContent.contact}
                     </p>
-                    <button
-                      onClick={() => generateWithAI('contact')}
-                      disabled={isLoading}
-                      className="p-1 text-violet-600 hover:text-violet-800 disabled:opacity-50"
+                    <AIButton
+                      isLoading={isLoading}
+                      onClick={() => generateWithAI('contact', editableContent.contact)}
                       title="Modifier avec IA"
-                    >
-                      <Sparkles className="w-4 h-4" />
-                    </button>
+                    />
                   </div>
                 )}
               </div>
@@ -385,26 +473,23 @@ export const CVCreator: React.FC = () => {
                     onChange={(e) => setEditableContent(prev => ({ ...prev, profileTitle: e.target.value }))}
                     onBlur={() => setEditingField(null)}
                     onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-                    className="text-md font-semibold w-full border-b border-gray-400 focus:outline-none focus:border-blue-500"
+                    className="text-md font-semibold w-full border-b border-gray-400 focus:outline-none focus:border-violet-500"
                     autoFocus
                   />
                 ) : (
                   <div className="flex items-center gap-2">
                     <h4
-                      className="text-md font-semibold cursor-pointer hover:bg-gray-100 p-1 rounded"
+                      className="text-md font-semibold cursor-pointer hover:bg-gray-100 p-1 rounded transition-all duration-200 hover:scale-105"
                       onClick={() => setEditingField('profileTitle')}
                       style={{ color: `#${titleColor}` }}
                     >
                       {editableContent.profileTitle}
                     </h4>
-                    <button
-                      onClick={() => generateWithAI('profileTitle')}
-                      disabled={isLoading}
-                      className="p-1 text-violet-600 hover:text-violet-800 disabled:opacity-50"
+                    <AIButton
+                      isLoading={isLoading}
+                      onClick={() => generateWithAI('profileTitle', editableContent.profileTitle)}
                       title="Modifier avec IA"
-                    >
-                      <Sparkles className="w-4 h-4" />
-                    </button>
+                    />
                   </div>
                 )}
 
@@ -413,27 +498,25 @@ export const CVCreator: React.FC = () => {
                     value={editableContent.profileContent}
                     onChange={(e) => setEditableContent(prev => ({ ...prev, profileContent: e.target.value }))}
                     onBlur={() => setEditingField(null)}
-                    className="text-sm w-full border border-gray-400 focus:outline-none focus:border-blue-500 p-1 rounded"
+                    className="text-sm w-full border border-gray-400 focus:outline-none focus:border-violet-500 p-1 rounded"
                     autoFocus
                     rows={3}
                   />
                 ) : (
                   <div className="flex items-start gap-2">
                     <p
-                      className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1"
+                      className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 transition-all duration-200 hover:scale-105 line-clamp-3"
                       onClick={() => setEditingField('profileContent')}
                       style={{ color: `#${customColor}` }}
                     >
                       {editableContent.profileContent}
                     </p>
-                    <button
-                      onClick={() => generateWithAI('profileContent')}
-                      disabled={isLoading}
-                      className="p-1 text-violet-600 hover:text-violet-800 disabled:opacity-50 mt-1"
+                    <AIButton
+                      isLoading={isLoading}
+                      onClick={() => generateWithAI('profileContent', editableContent.profileContent)}
                       title="Modifier avec IA"
-                    >
-                      <Sparkles className="w-4 h-4" />
-                    </button>
+                      className="mt-1"
+                    />
                   </div>
                 )}
               </div>
@@ -447,30 +530,27 @@ export const CVCreator: React.FC = () => {
                     onChange={(e) => setEditableContent(prev => ({ ...prev, experienceTitle: e.target.value }))}
                     onBlur={() => setEditingField(null)}
                     onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-                    className="text-md font-semibold w-full border-b border-gray-400 focus:outline-none focus:border-blue-500"
+                    className="text-md font-semibold w-full border-b border-gray-400 focus:outline-none focus:border-violet-500"
                     autoFocus
                   />
                 ) : (
                   <div className="flex items-center gap-2">
                     <h4
-                      className="text-md font-semibold cursor-pointer hover:bg-gray-100 p-1 rounded whitespace-nowrap"
+                      className="text-md font-semibold cursor-pointer hover:bg-gray-100 p-1 rounded whitespace-nowrap transition-all duration-200 hover:scale-105"
                       onClick={() => setEditingField('experienceTitle')}
                       style={{ color: `#${titleColor}` }}
                     >
                       {editableContent.experienceTitle}
                     </h4>
                     <div className="flex gap-1 ml-auto">
-                      <button
-                        onClick={() => generateWithAI('experienceTitle')}
-                        disabled={isLoading}
-                        className="p-1 text-violet-600 hover:text-violet-800 disabled:opacity-50"
+                      <AIButton
+                        isLoading={isLoading}
+                        onClick={() => generateWithAI('experienceTitle', editableContent.experienceTitle)}
                         title="Modifier avec IA"
-                      >
-                        <Sparkles className="w-4 h-4" />
-                      </button>
+                      />
                       <button
                         onClick={addExperience}
-                        className="p-1 text-blue-600 hover:text-blue-800"
+                        className="p-1 text-violet-600 hover:text-violet-800 transition-all duration-200 hover:scale-110"
                         title="Ajouter une expérience"
                       >
                         <Plus className="w-4 h-4" />
@@ -482,14 +562,11 @@ export const CVCreator: React.FC = () => {
                 {experiences.map(exp => (
                   <div key={exp.id} className="relative group">
                     <div className="absolute right-0 top-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => generateWithAI('experienceContent')}
-                        disabled={isLoading}
-                        className="p-1 text-violet-600 hover:text-violet-800 disabled:opacity-50"
+                      <AIButton
+                        isLoading={isLoading}
+                        onClick={() => generateWithAI('experienceContent', exp.content)}
                         title="Modifier avec IA"
-                      >
-                        <Sparkles className="w-4 h-4" />
-                      </button>
+                      />
                       <button
                         onClick={() => removeExperience(exp.id)}
                         className="p-1 text-red-600 hover:text-red-800"
@@ -506,13 +583,13 @@ export const CVCreator: React.FC = () => {
                         onChange={(e) => setExperiences(prev => prev.map(item => item.id === exp.id ? { ...item, content: e.target.value } : item))}
                         onBlur={() => setEditingField(null)}
                         onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-                        className="text-sm w-full border-b border-gray-400 focus:outline-none focus:border-blue-500 mt-2"
+                        className="text-sm w-full border-b border-gray-400 focus:outline-none focus:border-violet-500 mt-2"
                         autoFocus
                       />
                     ) : (
                       <div className="flex items-center gap-2 mt-2">
                         <p
-                          className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 font-bold"
+                          className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 font-bold transition-all duration-200 hover:scale-105"
                           onClick={() => setEditingField(`experienceContent-${exp.id}`)}
                           style={{ color: `#${customColor}` }}
                         >
@@ -526,27 +603,25 @@ export const CVCreator: React.FC = () => {
                         value={exp.details}
                         onChange={(e) => setExperiences(prev => prev.map(item => item.id === exp.id ? { ...item, details: e.target.value } : item))}
                         onBlur={() => setEditingField(null)}
-                        className="text-sm w-full border border-gray-400 focus:outline-none focus:border-blue-500 p-1 rounded mt-1"
+                        className="text-sm w-full border border-gray-400 focus:outline-none focus:border-violet-500 p-1 rounded mt-1"
                         autoFocus
                         rows={2}
                       />
                     ) : (
                       <div className="flex items-start gap-2 mt-1">
                         <p
-                          className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1"
+                          className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 transition-all duration-200 hover:scale-105"
                           onClick={() => setEditingField(`experienceDetails-${exp.id}`)}
                           style={{ color: `#${customColor}` }}
                         >
                           {exp.details}
                         </p>
-                        <button
-                          onClick={() => generateWithAI('experienceDetails')}
-                          disabled={isLoading}
-                          className="p-1 text-violet-600 hover:text-violet-800 disabled:opacity-50 mt-1"
+                        <AIButton
+                          isLoading={isLoading}
+                          onClick={() => generateWithAI('experienceDetails', exp.details)}
                           title="Modifier avec IA"
-                        >
-                          <Sparkles className="w-4 h-4" />
-                        </button>
+                          className="mt-1"
+                        />
                       </div>
                     )}
                   </div>
@@ -562,30 +637,27 @@ export const CVCreator: React.FC = () => {
                     onChange={(e) => setEditableContent(prev => ({ ...prev, skillsTitle: e.target.value }))}
                     onBlur={() => setEditingField(null)}
                     onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-                    className="text-md font-semibold w-full border-b border-gray-400 focus:outline-none focus:border-blue-500"
+                    className="text-md font-semibold w-full border-b border-gray-400 focus:outline-none focus:border-violet-500"
                     autoFocus
                   />
                 ) : (
                   <div className="flex items-center gap-2">
                     <h4
-                      className="text-md font-semibold cursor-pointer hover:bg-gray-100 p-1 rounded"
+                      className="text-md font-semibold cursor-pointer hover:bg-gray-100 p-1 rounded transition-all duration-200 hover:scale-105"
                       onClick={() => setEditingField('skillsTitle')}
                       style={{ color: `#${titleColor}` }}
                     >
                       {editableContent.skillsTitle}
                     </h4>
                     <div className="flex gap-1 ml-auto">
-                      <button
-                        onClick={() => generateWithAI('skillsTitle')}
-                        disabled={isLoading}
-                        className="p-1 text-violet-600 hover:text-violet-800 disabled:opacity-50"
+                      <AIButton
+                        isLoading={isLoading}
+                        onClick={() => generateWithAI('skillsTitle', editableContent.skillsTitle)}
                         title="Modifier avec IA"
-                      >
-                        <Sparkles className="w-4 h-4" />
-                      </button>
+                      />
                       <button
                         onClick={addSkill}
-                        className="p-1 text-blue-600 hover:text-blue-800"
+                        className="p-1 text-violet-600 hover:text-violet-800 transition-all duration-200 hover:scale-110"
                         title="Ajouter une compétence"
                       >
                         <Plus className="w-4 h-4" />
@@ -597,14 +669,11 @@ export const CVCreator: React.FC = () => {
                 {skills.map(skill => (
                   <div key={skill.id} className="relative group flex items-start gap-2 mt-1">
                     <div className="absolute right-0 top-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => generateWithAI('skillContent')}
-                        disabled={isLoading}
-                        className="p-1 text-violet-600 hover:text-violet-800 disabled:opacity-50"
+                      <AIButton
+                        isLoading={isLoading}
+                        onClick={() => generateWithAI('skillContent', skill.content)}
                         title="Modifier avec IA"
-                      >
-                        <Sparkles className="w-4 h-4" />
-                      </button>
+                      />
                       <button
                         onClick={() => removeSkill(skill.id)}
                         className="p-1 text-red-600 hover:text-red-800"
@@ -621,12 +690,12 @@ export const CVCreator: React.FC = () => {
                         onChange={(e) => setSkills(prev => prev.map(item => item.id === skill.id ? { ...item, content: e.target.value } : item))}
                         onBlur={() => setEditingField(null)}
                         onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-                        className="text-sm w-full border-b border-gray-400 focus:outline-none focus:border-blue-500"
+                        className="text-sm w-full border-b border-gray-400 focus:outline-none focus:border-violet-500"
                         autoFocus
                       />
                     ) : (
                       <p
-                        className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1"
+                        className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 transition-all duration-200 hover:scale-105"
                         onClick={() => setEditingField(`skillContent-${skill.id}`)}
                         style={{ color: `#${customColor}` }}
                       >
@@ -646,7 +715,7 @@ export const CVCreator: React.FC = () => {
                     onChange={(e) => setEditableContent(prev => ({ ...prev, languagesTitle: e.target.value }))}
                     onBlur={() => setEditingField(null)}
                     onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-                    className="text-md font-semibold w-full border-b border-gray-400 focus:outline-none focus:border-blue-500"
+                    className="text-md font-semibold w-full border-b border-gray-400 focus:outline-none focus:border-violet-500"
                     autoFocus
                   />
                 ) : (
@@ -659,17 +728,14 @@ export const CVCreator: React.FC = () => {
                       {editableContent.languagesTitle}
                     </h4>
                     <div className="flex gap-1 ml-auto">
-                      <button
-                        onClick={() => generateWithAI('languagesTitle')}
-                        disabled={isLoading}
-                        className="p-1 text-violet-600 hover:text-violet-800 disabled:opacity-50"
+                      <AIButton
+                        isLoading={isLoading}
+                        onClick={() => generateWithAI('languagesTitle', editableContent.languagesTitle)}
                         title="Modifier avec IA"
-                      >
-                        <Sparkles className="w-4 h-4" />
-                      </button>
+                      />
                       <button
                         onClick={addLanguage}
-                        className="p-1 text-blue-600 hover:text-blue-800"
+                        className="p-1 text-violet-600 hover:text-violet-800"
                         title="Ajouter une langue"
                       >
                         <Plus className="w-4 h-4" />
@@ -683,14 +749,11 @@ export const CVCreator: React.FC = () => {
                   {languages.map(lang => (
                     <div key={lang.id} className="relative group flex items-center gap-2 mt-1">
                       <div className="absolute right-0 top-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => generateWithAI(`languageLevel-${lang.id}`)}
-                          disabled={isLoading}
-                          className="p-1 text-violet-600 hover:text-violet-800 disabled:opacity-50"
+                        <AIButton
+                          isLoading={isLoading}
+                          onClick={() => generateWithAI(`languageLevel-${lang.id}`, lang.level)}
                           title="Générer le niveau avec IA"
-                        >
-                          <Sparkles className="w-4 h-4" />
-                        </button>
+                        />
                         <button
                           onClick={() => removeLanguage(lang.id)}
                           className="p-1 text-red-600 hover:text-red-800"
@@ -707,12 +770,12 @@ export const CVCreator: React.FC = () => {
                           onChange={(e) => setLanguages(prev => prev.map(item => item.id === lang.id ? { ...item, name: e.target.value } : item))}
                           onBlur={() => setEditingField(null)}
                           onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-                          className="text-sm w-1/2 border-b border-gray-400 focus:outline-none focus:border-blue-500"
+                          className="text-sm w-1/2 border-b border-gray-400 focus:outline-none focus:border-violet-500"
                           autoFocus
                         />
                       ) : (
                         <p
-                          className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1"
+                          className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 transition-all duration-200 hover:scale-105"
                           onClick={() => setEditingField(`languageName-${lang.id}`)}
                           style={{ color: `#${customColor}` }}
                         >
@@ -727,12 +790,12 @@ export const CVCreator: React.FC = () => {
                           onChange={(e) => setLanguages(prev => prev.map(item => item.id === lang.id ? { ...item, level: e.target.value } : item))}
                           onBlur={() => setEditingField(null)}
                           onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-                          className="text-sm w-1/2 border-b border-gray-400 focus:outline-none focus:border-blue-500"
+                          className="text-sm w-1/2 border-b border-gray-400 focus:outline-none focus:border-violet-500"
                           autoFocus
                         />
                       ) : (
                         <p
-                          className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1"
+                          className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 transition-all duration-200 hover:scale-105"
                           onClick={() => setEditingField(`languageLevel-${lang.id}`)}
                           style={{ color: `#${customColor}` }}
                         >
@@ -747,7 +810,7 @@ export const CVCreator: React.FC = () => {
           </div>
         </div>
 
-        <div className="w-full lg:w-1/2 bg-gray-50 p-0 rounded-xl">
+        <div className="w-full lg:w-1/2 bg-gray-50 p-0 rounded-xl border border-violet-300 shadow-md">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {templates.map(template => (
               <div
@@ -756,9 +819,9 @@ export const CVCreator: React.FC = () => {
                 className={`
       m-2 rounded-xl border shadow-md transition-all duration-300 ease-in-out relative flex flex-col h-full min-h-[200px] overflow-hidden
       ${selectedTemplate === template.id
-                    ? 'border-blue-500 bg-pink-500'
+                    ? 'border-violet-500 bg-pink-500'
                     : 'border-gray-200 bg-white'}
-      hover:cursor-pointer hover:border-violet-600 hover:shadow-lg hover:scale-[1.01]
+      hover:cursor-pointer hover:border-violet-600 hover:shadow-lg hover:scale-[1.02] hover:-translate-y-1
     `}
                 style={{
                   backgroundImage: `url(${template.image})`,

@@ -83,7 +83,7 @@ export const Settings: React.FC<SettingsProps> = ({ onBack }) => {
     }
   };
 
-  const testApiKey = async (apiKey: string) => {
+  const testApiKey = async (apiKey: string): Promise<boolean> => {
     try {
       const response = await fetch('https://api.openai.com/v1/models', {
         headers: {
@@ -93,11 +93,14 @@ export const Settings: React.FC<SettingsProps> = ({ onBack }) => {
       
       if (response.ok) {
         alert('✅ Clé API OpenAI valide et connectée !');
+        return true;
       } else {
         alert('❌ Clé API invalide. Vérifiez votre clé.');
+        return false;
       }
     } catch {
       alert('❌ Erreur de connexion à OpenAI. Vérifiez votre clé et votre connexion internet.');
+      return false;
     }
   };
 
@@ -255,10 +258,14 @@ export const Settings: React.FC<SettingsProps> = ({ onBack }) => {
                     className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all duration-200"
                   />
                   <button 
-                    onClick={() => {
+                    onClick={async () => {
                       if (settings.ai.apiKey) {
                         // Test the API key
-                        testApiKey(settings.ai.apiKey);
+                        const isValid = await testApiKey(settings.ai.apiKey);
+                        if (isValid) {
+                          // Save settings to localStorage
+                          localStorage.setItem('cvAssistantSettings', JSON.stringify(settings));
+                        }
                       }
                     }}
                     className="bg-gradient-to-r from-violet-600 to-pink-600 text-white px-6 py-3 rounded-xl font-medium hover:from-violet-700 hover:to-pink-700 transition-all duration-200 hover:scale-105"

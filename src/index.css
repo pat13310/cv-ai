@@ -7,3 +7,41 @@
     align-self: center !important;
   }
 }
+
+.line-clamp-3 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+/* Styles personnalisés pour les combos/select */
+select {
+  @apply border border-gray-300 rounded-md px-3 py-2 bg-white text-gray-900 transition-all duration-200;
+}
+
+select:focus {
+  @apply outline-none border-violet-500 ring-2 ring-violet-200 bg-white;
+}
+
+select option {
+  @apply bg-white text-gray-900 py-2 px-3;
+}
+
+select option:checked {
+  @apply bg-violet-600 text-white;
+}
+
+/* Support pour les navigateurs WebKit (Chrome, Safari) */
+select option:checked {
+  background: #7C3AED !important;
+  color: white !important;
+}
+
+/* Amélioration pour Firefox */
+@-moz-document url-prefix() {
+  select option:checked {
+    background-color: #7C3AED !important;
+    color: white !important;
+  }
+}
