@@ -104,7 +104,7 @@ export const CVUpload: React.FC<CVUploadProps> = ({ onFileUpload }) => {
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h2 className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-pink-600 bg-clip-text text-transparent mb-2">
+        <h2 className="heading-gradient">
           Analysez votre CV
         </h2>
         <p className="text-gray-600">

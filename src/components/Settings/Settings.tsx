@@ -5,42 +5,91 @@ interface SettingsProps {
   onBack: () => void;
 }
 
+type SettingsType = {
+  ai: {
+    model: string;
+    temperature: number;
+    maxTokens: number;
+    language: string;
+    analysisDepth: string;
+    autoOptimization: boolean;
+    keywordSuggestions: boolean;
+    industrySpecific: boolean;
+    apiKey: string;
+    voiceRecognition: boolean;
+    voiceSynthesis: boolean;
+  };
+  notifications: {
+    analysisComplete: boolean;
+    cvGenerated: boolean;
+    weeklyReport: boolean;
+    marketingEmails: boolean;
+  };
+  privacy: {
+    dataRetention: string;
+    shareAnalytics: boolean;
+    cookieConsent: boolean;
+  };
+  appearance: {
+    theme: string;
+    language: string;
+    animations: boolean;
+    compactMode: boolean;
+  };
+};
+
 export const Settings: React.FC<SettingsProps> = ({ onBack }) => {
   const [activeSection, setActiveSection] = useState('ai');
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
-  const [settings, setSettings] = useState({
-    ai: {
-      model: 'gpt-4',
-      temperature: 0.7,
-      maxTokens: 2000,
-      language: 'fr',
-      analysisDepth: 'detailed',
-      autoOptimization: true,
-      keywordSuggestions: true,
-      industrySpecific: true,
-      apiKey: '',
-      voiceRecognition: true,
-      voiceSynthesis: true
-    },
-    notifications: {
-      analysisComplete: true,
-      cvGenerated: true,
-      weeklyReport: false,
-      marketingEmails: false
-    },
-    privacy: {
-      dataRetention: '12months',
-      shareAnalytics: false,
-      cookieConsent: true
-    },
-    appearance: {
-      theme: 'gradient',
-      language: 'fr',
-      animations: true,
-      compactMode: false
+  
+  // Charger les paramètres depuis localStorage ou utiliser les valeurs par défaut
+  const getInitialSettings = () => {
+    const savedSettings = localStorage.getItem('cvAssistantSettings');
+    if (savedSettings) {
+      try {
+        return JSON.parse(savedSettings);
+      } catch {
+        // Si erreur de parsing, utiliser les valeurs par défaut
+      }
     }
-  });
+    
+    // Valeurs par défaut
+    return {
+      ai: {
+        model: 'gpt-4',
+        temperature: 0.7,
+        maxTokens: 2000,
+        language: 'fr',
+        analysisDepth: 'detailed',
+        autoOptimization: true,
+        keywordSuggestions: true,
+        industrySpecific: true,
+        apiKey: '',
+        voiceRecognition: true,
+        voiceSynthesis: true
+      },
+      notifications: {
+        analysisComplete: true,
+        cvGenerated: true,
+        weeklyReport: false,
+        marketingEmails: false
+      },
+      privacy: {
+        dataRetention: '12months',
+        shareAnalytics: false,
+        cookieConsent: true
+      },
+      appearance: {
+        theme: 'gradient',
+        language: 'fr',
+        animations: true,
+        compactMode: false
+      }
+    };
+  };
+
+  const [settings, setSettings] = useState<SettingsType>(getInitialSettings());
 
   const sections = [
     { id: 'ai', label: 'Intelligence Artificielle', icon: Bot },
@@ -51,10 +100,10 @@ export const Settings: React.FC<SettingsProps> = ({ onBack }) => {
   ];
 
   const updateSetting = (section: string, key: string, value: string | boolean | number) => {
-    setSettings(prev => ({
+    setSettings((prev: SettingsType) => ({
       ...prev,
       [section]: {
-        ...prev[section as keyof typeof prev],
+        ...prev[section as keyof SettingsType],
         [key]: value
       }
     }));
@@ -606,7 +655,7 @@ export const Settings: React.FC<SettingsProps> = ({ onBack }) => {
 
       {/* Title */}
       <div className="text-center">
-        <h2 className="text-3xl font-bold bg-gradient-to-r from-violet-600 to-pink-600 bg-clip-text text-transparent mb-4">
+        <h2 className="heading-gradient">
           Paramètres
         </h2>
         <p className="text-gray-600 max-w-2xl mx-auto">

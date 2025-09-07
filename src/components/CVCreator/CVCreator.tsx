@@ -363,7 +363,7 @@ export const CVCreator: React.FC = () => {
 
   return (
     <div className='w-full'>
-      <h1 className="text-3xl font-bold bg-gradient-to-r from-violet-600 to-pink-600 bg-clip-text text-transparent mb-4 text-center">Créateur de CV</h1>
+      <h1 className="heading-gradient text-center">Créateur de CV</h1>
 
       <div className="p-4 flex flex-col lg:flex-row gap-6">
 
