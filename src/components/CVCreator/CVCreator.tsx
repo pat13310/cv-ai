@@ -3,6 +3,7 @@ import { Document, Packer, Paragraph, AlignmentType } from 'docx';
 import { saveAs } from 'file-saver';
 import { useOpenAI } from '../../hooks/useOpenAI';
 import { Sparkles, Plus, Minus } from 'lucide-react';
+import { StyleControls } from './StyleControls';
 
 interface Template {
   id: string;
@@ -59,12 +60,12 @@ export const CVCreator: React.FC = () => {
   ]);
 
   const [editingField, setEditingField] = useState<string | null>(null);
-    const { editCVField, isLoading, error: openAIError } = useOpenAI();
+  const { editCVField, isLoading, error: openAIError } = useOpenAI();
 
   const generateWithAI = async (field: string, currentContent?: string) => {
     // Ne pas générer avec l'IA si le champ est déjà en cours d'édition
     if (editingField === field) return;
-    
+
     // Réinitialiser l'erreur au début de la fonction
     setError(null);
 
@@ -125,48 +126,48 @@ export const CVCreator: React.FC = () => {
       }
 
       // Appeler l'API OpenAI
-            const aiResponse = await editCVField({ prompt });
-      
-            if (aiResponse) {
-              // Gérer les différents types de champs
-              if (field === 'experienceContent' && currentContent) {
-                // Trouver l'expérience correspondante et la mettre à jour
-                const expToUpdate = experiences.find(exp => exp.content === currentContent);
-                if (expToUpdate) {
-                  setExperiences(prev => prev.map(exp =>
-                    exp.id === expToUpdate.id ? { ...exp, content: aiResponse } : exp
-                  ));
-                }
-              } else if (field === 'experienceDetails' && currentContent) {
-                // Trouver l'expérience correspondante et mettre à jour les détails
-                const expToUpdate = experiences.find(exp => exp.details === currentContent);
-                if (expToUpdate) {
-                  setExperiences(prev => prev.map(exp =>
-                    exp.id === expToUpdate.id ? { ...exp, details: aiResponse } : exp
-                  ));
-                }
-              } else if (field === 'skillContent' && currentContent) {
-                // Trouver la compétence correspondante et la mettre à jour
-                const skillToUpdate = skills.find(skill => skill.content === currentContent);
-                if (skillToUpdate) {
-                  setSkills(prev => prev.map(skill =>
-                    skill.id === skillToUpdate.id ? { ...skill, content: aiResponse } : skill
-                  ));
-                }
-              } else if (field.startsWith('languageLevel-') && currentContent) {
-                // Extraire l'ID de la langue et mettre à jour le niveau
-                const langId = parseInt(field.split('-')[1]);
-                setLanguages(prev => prev.map(lang =>
-                  lang.id === langId ? { ...lang, level: aiResponse } : lang
-                ));
-              } else {
-                // Mettre à jour le contenu éditable avec la réponse de l'IA
-                setEditableContent(prev => ({ ...prev, [field]: aiResponse }));
-              }
-            } else {
-              // En cas d'erreur, définir un message d'erreur
-              setError('Erreur lors de la génération avec IA. Veuillez vérifier votre clé API OpenAI dans les paramètres.');
-            }
+      const aiResponse = await editCVField({ prompt });
+
+      if (aiResponse) {
+        // Gérer les différents types de champs
+        if (field === 'experienceContent' && currentContent) {
+          // Trouver l'expérience correspondante et la mettre à jour
+          const expToUpdate = experiences.find(exp => exp.content === currentContent);
+          if (expToUpdate) {
+            setExperiences(prev => prev.map(exp =>
+              exp.id === expToUpdate.id ? { ...exp, content: aiResponse } : exp
+            ));
+          }
+        } else if (field === 'experienceDetails' && currentContent) {
+          // Trouver l'expérience correspondante et mettre à jour les détails
+          const expToUpdate = experiences.find(exp => exp.details === currentContent);
+          if (expToUpdate) {
+            setExperiences(prev => prev.map(exp =>
+              exp.id === expToUpdate.id ? { ...exp, details: aiResponse } : exp
+            ));
+          }
+        } else if (field === 'skillContent' && currentContent) {
+          // Trouver la compétence correspondante et la mettre à jour
+          const skillToUpdate = skills.find(skill => skill.content === currentContent);
+          if (skillToUpdate) {
+            setSkills(prev => prev.map(skill =>
+              skill.id === skillToUpdate.id ? { ...skill, content: aiResponse } : skill
+            ));
+          }
+        } else if (field.startsWith('languageLevel-') && currentContent) {
+          // Extraire l'ID de la langue et mettre à jour le niveau
+          const langId = parseInt(field.split('-')[1]);
+          setLanguages(prev => prev.map(lang =>
+            lang.id === langId ? { ...lang, level: aiResponse } : lang
+          ));
+        } else {
+          // Mettre à jour le contenu éditable avec la réponse de l'IA
+          setEditableContent(prev => ({ ...prev, [field]: aiResponse }));
+        }
+      } else {
+        // En cas d'erreur, définir un message d'erreur
+        setError('Erreur lors de la génération avec IA. Veuillez vérifier votre clé API OpenAI dans les paramètres.');
+      }
     } catch (error) {
       console.error('Erreur lors de la génération avec IA:', error);
       // En cas d'erreur, on affiche un message à l'utilisateur
@@ -373,38 +374,26 @@ export const CVCreator: React.FC = () => {
               fontFamily: customFont,
               boxSizing: 'border-box'
             }}>
-              <div className="bg-white rounded-lg shadow-sm p-4 mb-4 -mt-2 -ml-2 -mr-2">
-                <div className="flex gap-6 items-center">
-                  <div>
-                    <label className="block text-sm font-medium">Police</label>
-                    <select value={customFont} onChange={(e) => setCustomFont(e.target.value)} className="border rounded p-2">
-                      {availableFonts.map(font => <option key={font} value={font}>{font}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium">Couleur principale</label>
-                    <select value={customColor} onChange={(e) => setCustomColor(e.target.value)} className="border rounded p-2">
-                      {availableColors.map(color => <option key={color.value} value={color.value}>{color.name}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium">Couleur des titres</label>
-                    <select value={titleColor} onChange={(e) => setTitleColor(e.target.value)} className="border rounded p-2">
-                      {availableColors.map(color => <option key={color.value} value={color.value}>{color.name}</option>)}
-                    </select>
-                  </div>
+              <StyleControls
+                customFont={customFont}
+                setCustomFont={setCustomFont}
+                customColor={customColor}
+                setCustomColor={setCustomColor}
+                titleColor={titleColor}
+                setTitleColor={setTitleColor}
+                availableFonts={availableFonts}
+                availableColors={availableColors}
+              />
+
+              {/* Affichage des erreurs */}
+              {(error || openAIError) && (
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mt-4" role="alert">
+                  <strong className="font-bold">Erreur : </strong>
+                  <span className="block sm:inline">{error || openAIError}</span>
                 </div>
-                              </div>
-                
-                              {/* Affichage des erreurs */}
-                                            {(error || openAIError) && (
-                                              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mt-4" role="alert">
-                                                <strong className="font-bold">Erreur : </strong>
-                                                <span className="block sm:inline">{error || openAIError}</span>
-                                              </div>
-                                            )}
-                
-                              {/* Nom */}
+              )}
+
+              {/* Nom */}
               <div className="mt-4 text-center">
                 {editingField === 'name' ? (
                   <input

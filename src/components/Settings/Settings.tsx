@@ -554,7 +554,7 @@ export const Settings: React.FC<SettingsProps> = ({ onBack }) => {
       <div className="flex items-center justify-between">
         <button
           onClick={onBack}
-          className="flex items-center space-x-2 text-violet-600 hover:text-violet-700 font-medium transition-colors"
+          className="flex items-center space-x-2 text-violet-600 hover:text-violet-700 font-medium transition-all duration-200 hover:bg-violet-50 hover:border-violet-200 border border-transparent rounded-lg px-3 py-2 hover:shadow-sm"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Retour</span>
