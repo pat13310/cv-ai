@@ -1,16 +1,43 @@
 import React from 'react';
 import { FileText, TrendingUp, Users, CheckCircle } from 'lucide-react';
-import { useAuth } from '../Auth/AuthProvider';
 import { useSupabase } from '../../hooks/useSupabase';
+import { useProfile } from '../../hooks/useProfile';
 import { MetricCard } from './MetricCard';
 import { RecentActivity } from './RecentActivity';
+
 interface DashboardProps {
   onNavigate?: (tab: string) => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
-  const { user } = useAuth();
   const { activities, loading } = useSupabase();
+  const { profile, getFullName } = useProfile();
+  
+  // Obtenir le nom d'utilisateur depuis le profil ou fallback
+  const getUserName = () => {
+    if (profile) {
+      const fullName = getFullName();
+      if (fullName.trim()) {
+        return fullName;
+      }
+    }
+    
+    try {
+      // Essayer de récupérer depuis localStorage (mode mock)
+      const savedUser = localStorage.getItem('cvAssistantUser');
+      if (savedUser) {
+        const userData = JSON.parse(savedUser);
+        return userData.name || 'Utilisateur';
+      }
+    } catch {
+      console.log('Pas d\'utilisateur en localStorage');
+    }
+    
+    // Valeur par défaut
+    return 'Utilisateur';
+  };
+  
+  const userName = getUserName();
 
   // Calculer les métriques depuis les données Supabase
   const calculateMetrics = () => {
@@ -139,7 +166,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
         
         <div className="relative z-10">
-          <h1 className="text-3xl font-bold mb-2">Bienvenue {user?.name} ! 👋</h1>
+          <h1 className="text-3xl font-bold mb-2">Bienvenue {userName} ! 👋</h1>
           <p className="text-white/90 text-sm mb-6">
             Optimisez vos CV avec notre IA avancée et maximisez vos chances de succès.
           </p>

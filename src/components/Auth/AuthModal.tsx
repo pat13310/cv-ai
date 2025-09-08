@@ -4,8 +4,8 @@ import { X, Mail, Lock, User, Eye, EyeOff, Sparkles, Shield, CheckCircle } from 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onLogin: (email: string, password: string) => void;
-  onRegister: (email: string, password: string, name: string) => void;
+  onLogin: (email: string, password: string) => Promise<void>;
+  onRegister: (email: string, password: string, name: string) => Promise<void>;
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin, onRegister }) => {
@@ -57,20 +57,28 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin, 
     if (!validateForm()) return;
 
     setIsLoading(true);
+    setErrors({}); // Clear previous errors
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
       if (mode === 'login') {
-        onLogin(formData.email, formData.password);
+        await onLogin(formData.email, formData.password);
       } else {
-        onRegister(formData.email, formData.password, formData.name);
+        await onRegister(formData.email, formData.password, formData.name);
       }
       
+      // Only close modal if no error was thrown
       onClose();
     } catch (error) {
-      setErrors({ general: 'Une erreur est survenue. Veuillez réessayer.' });
+      console.error('Auth error in modal:', error);
+      
+      // Extract user-friendly error message
+      let errorMessage = 'Une erreur est survenue. Veuillez réessayer.';
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      setErrors({ general: errorMessage });
     } finally {
       setIsLoading(false);
     }
@@ -84,8 +92,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin, 
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md relative overflow-hidden">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md relative overflow-hidden my-8 max-h-[90vh] overflow-y-auto">
         {/* Header with gradient */}
         <div className="bg-gradient-to-r from-violet-600 via-rose-400 to-purple-600 p-6 text-white relative">
           <div className="absolute inset-0 bg-black/10" />

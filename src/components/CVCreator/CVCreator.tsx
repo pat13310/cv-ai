@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Document, Packer, Paragraph, AlignmentType } from 'docx';
 import { saveAs } from 'file-saver';
 import { useOpenAI } from '../../hooks/useOpenAI';
-import { Sparkles, Plus, Minus } from 'lucide-react';
-import { StyleControls } from './StyleControls';
+import { useSupabase } from '../../hooks/useSupabase';
+import { CVPreview } from './CVPreview';
+import type { CVExperience, CVSkill, CVLanguage, CVContent } from './CVPreview';
 
 interface Template {
   id: string;
@@ -18,10 +19,10 @@ interface Template {
 
 const availableFonts = ['Calibri', 'Georgia', 'Helvetica', 'Consolas', 'Times New Roman', 'Arial'];
 const availableColors = [
-  { name: 'Bleu marine', value: '2E3A59' },
+  { name: 'Noir', value: '000000' },
+  { name: 'Bleu marine', value: '2E3A90' },
   { name: 'Bleu vif', value: '2563EB' },
   { name: 'Gris foncé', value: '111827' },
-  { name: 'Noir', value: '0F172A' },
   { name: 'Vert foncé', value: '064E3B' },
   { name: 'Violet', value: '7C3AED' }
 ];
@@ -29,10 +30,10 @@ const availableColors = [
 export const CVCreator: React.FC = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [customFont, setCustomFont] = useState<string>('Calibri');
-  const [customColor, setCustomColor] = useState<string>('2E3A59');
-  const [titleColor, setTitleColor] = useState<string>('2E3A59');
+  const [customColor, setCustomColor] = useState<string>('000000');
+  const [titleColor, setTitleColor] = useState<string>('000000');
   const [error, setError] = useState<string | null>(null);
-  const [editableContent, setEditableContent] = useState<Record<string, string>>({
+  const [editableContent, setEditableContent] = useState<CVContent>({
     name: '[VOTRE NOM]',
     contact: '[Votre Email] • [Votre Téléphone] • [LinkedIn]',
     profileTitle: 'PROFIL PROFESSIONNEL',
@@ -44,23 +45,146 @@ export const CVCreator: React.FC = () => {
     languagesTitle: 'LANGUES'
   });
 
-  const [experiences, setExperiences] = useState<Array<{ id: number; content: string; details: string }>>([
+  // Hook pour récupérer les données du profil utilisateur
+  const { profile, profileLoading } = useSupabase();
+
+  const [experiences, setExperiences] = useState<CVExperience[]>([
     { id: 1, content: '[Poste] - [Entreprise] (Dates)', details: '• Réalisation clé ou projet important.' }
   ]);
 
-  const [skills, setSkills] = useState<Array<{ id: number; content: string }>>([
+  const [skills, setSkills] = useState<CVSkill[]>([
     { id: 1, content: 'Compétence 1' },
     { id: 2, content: 'Compétence 2' },
     { id: 3, content: 'Compétence 3' }
   ]);
 
-  const [languages, setLanguages] = useState<Array<{ id: number; name: string; level: string }>>([
+  const [languages, setLanguages] = useState<CVLanguage[]>([
     { id: 1, name: 'Français', level: 'Natif' },
     { id: 2, name: 'Anglais', level: 'Courant' }
   ]);
 
   const [editingField, setEditingField] = useState<string | null>(null);
   const { editCVField, isLoading, error: openAIError } = useOpenAI();
+
+  // Effet pour pré-remplir le CV avec les données du profil utilisateur
+  useEffect(() => {
+    console.log('CVCreator useEffect - Profile:', profile);
+    console.log('CVCreator useEffect - ProfileLoading:', profileLoading);
+    
+    // Essayer de récupérer les données depuis localStorage si pas de profil Supabase
+    let profileData = profile;
+    
+    if (!profile && !profileLoading) {
+      console.log('CVCreator - Pas de profil Supabase, tentative de récupération depuis localStorage');
+      try {
+        const savedSettings = localStorage.getItem('cvAssistantSettings');
+        if (savedSettings) {
+          const settings = JSON.parse(savedSettings);
+          console.log('CVCreator - Settings complets:', settings);
+          if (settings.profile) {
+            console.log('CVCreator - Données trouvées dans localStorage:', settings.profile);
+            console.log('CVCreator - firstName:', settings.profile.firstName);
+            console.log('CVCreator - lastName:', settings.profile.lastName);
+            console.log('CVCreator - profession:', settings.profile.profession);
+            console.log('CVCreator - company:', settings.profile.company);
+            
+            // Convertir le format localStorage vers le format Supabase
+            profileData = {
+              id: 'localStorage-profile',
+              first_name: settings.profile.firstName || '',
+              last_name: settings.profile.lastName || '',
+              email: settings.profile.email || '',
+              phone: settings.profile.phone || '',
+              address: settings.profile.address || '',
+              postal_code: settings.profile.postalCode || '',
+              city: settings.profile.city || '',
+              country: settings.profile.country || '',
+              date_of_birth: settings.profile.dateOfBirth || '',
+              nationality: settings.profile.nationality || '',
+              linkedin: settings.profile.linkedIn || '',
+              website: settings.profile.website || '',
+              profession: settings.profile.profession || '',
+              company: settings.profile.company || '',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            };
+            console.log('CVCreator - ProfileData converti:', profileData);
+          }
+        }
+      } catch (error) {
+        console.error('CVCreator - Erreur lors de la lecture du localStorage:', error);
+      }
+    }
+    
+    if (profileData) {
+      console.log('CVCreator - Pré-remplissage avec les données du profil:', profileData);
+      
+      // Construire le nom complet
+      const fullName = `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim();
+      console.log('CVCreator - Nom complet:', fullName);
+      
+      // Construire la ligne de contact
+      const contactParts = [];
+      if (profileData.email) contactParts.push(profileData.email);
+      if (profileData.phone) contactParts.push(profileData.phone);
+      if (profileData.linkedin) contactParts.push(profileData.linkedin);
+      const contactLine = contactParts.length > 0 ? contactParts.join(' • ') : '[Votre Email] • [Votre Téléphone] • [LinkedIn]';
+      console.log('CVCreator - Ligne de contact:', contactLine);
+      
+      // Construire le contenu du profil professionnel
+      let profileContent = 'Résumé de votre profil et de vos objectifs.';
+      if (profileData.profession && profileData.company) {
+        profileContent = `${profileData.profession} chez ${profileData.company}. Professionnel expérimenté avec une expertise dans mon domaine d'activité.`;
+      } else if (profileData.profession) {
+        profileContent = `${profileData.profession} expérimenté avec une solide expertise dans mon domaine d'activité.`;
+      }
+      console.log('CVCreator - Contenu profil:', profileContent);
+
+      // Construire le contenu de formation
+      let educationContent = '[Diplôme] - [École] - [Année]';
+      if (profileData.profession) {
+        educationContent = `Formation en ${profileData.profession} - [École] - [Année]`;
+      }
+
+      // Créer le nouveau contenu sans dépendre de l'état actuel editableContent
+      // pour éviter la dépendance circulaire
+      const defaultContent = {
+        name: '[VOTRE NOM]',
+        contact: '[Votre Email] • [Votre Téléphone] • [LinkedIn]',
+        profileTitle: 'PROFIL PROFESSIONNEL',
+        profileContent: 'Résumé de votre profil et de vos objectifs.',
+        experienceTitle: 'EXPÉRIENCE PROFESSIONNELLE',
+        educationTitle: 'FORMATION',
+        educationContent: '[Diplôme] - [École] - [Année]',
+        skillsTitle: 'COMPÉTENCES TECHNIQUES',
+        languagesTitle: 'LANGUES'
+      };
+
+      const newContent = {
+        ...defaultContent,
+        name: fullName || defaultContent.name,
+        contact: contactLine,
+        profileContent: profileContent,
+        educationContent: educationContent
+      };
+      
+      console.log('CVCreator - Nouveau contenu:', newContent);
+      setEditableContent(newContent);
+
+      // Mettre à jour l'expérience professionnelle si on a des infos
+      if (profileData.profession && profileData.company) {
+        const newExperience = [{
+          id: 1,
+          content: `${profileData.profession} - ${profileData.company} (Dates)`,
+          details: '• Réalisation clé ou projet important dans ce poste.'
+        }];
+        console.log('CVCreator - Nouvelle expérience:', newExperience);
+        setExperiences(newExperience);
+      }
+    } else {
+      console.log('CVCreator - Aucune donnée de profil disponible');
+    }
+  }, [profile, profileLoading]);
 
   const generateWithAI = async (field: string, currentContent?: string) => {
     // Ne pas générer avec l'IA si le champ est déjà en cours d'édition
@@ -322,45 +446,6 @@ export const CVCreator: React.FC = () => {
     setLanguages(prev => prev.filter(lang => lang.id !== id));
   };
 
-  // Composant d'animation de chargement avec trois points
-  const LoadingDots = () => (
-    <div className="flex space-x-1">
-      {[0, 1, 2].map((i) => (
-        <div
-          key={i}
-          className="w-2 h-2 bg-violet-600 rounded-full animate-bounce"
-          style={{ animationDelay: `${i * 0.2}s` }}
-        />
-      ))}
-    </div>
-  );
-
-  // Composant de bouton IA
-  interface AIButtonProps {
-    isLoading: boolean;
-    onClick: () => void;
-    disabled?: boolean;
-    title: string;
-    className?: string;
-  }
-
-  const AIButton: React.FC<AIButtonProps> = ({
-    isLoading,
-    onClick,
-    disabled = false,
-    title,
-    className = ""
-  }) => (
-    <button
-      onClick={onClick}
-      disabled={disabled || isLoading}
-      className={`p-1 text-violet-600 hover:text-violet-800 disabled:opacity-50 ${className}`}
-      title={title}
-    >
-      {isLoading ? <LoadingDots /> : <Sparkles className="w-4 h-4" />}
-    </button>
-  );
-
   return (
     <div className='w-full'>
       <h1 className="heading-gradient text-center">Créateur de CV</h1>
@@ -369,434 +454,36 @@ export const CVCreator: React.FC = () => {
 
         <div className="w-full lg:w-1/2">
           {/* Aperçu dynamique en temps réel */}
-          <div className="w-full" style={{ aspectRatio: '1 / 1.414' }}>
-            <div className="border border-violet-500 rounded-lg p-4 bg-gray-50 h-full overflow-auto shadow-md" style={{
-              fontFamily: customFont,
-              boxSizing: 'border-box'
-            }}>
-              <StyleControls
-                customFont={customFont}
-                setCustomFont={setCustomFont}
-                customColor={customColor}
-                setCustomColor={setCustomColor}
-                titleColor={titleColor}
-                setTitleColor={setTitleColor}
-                availableFonts={availableFonts}
-                availableColors={availableColors}
-              />
-
-              {/* Affichage des erreurs */}
-              {(error || openAIError) && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mt-4" role="alert">
-                  <strong className="font-bold">Erreur : </strong>
-                  <span className="block sm:inline">{error || openAIError}</span>
-                </div>
-              )}
-
-              {/* Nom */}
-              <div className="mt-4 text-center">
-                {editingField === 'name' ? (
-                  <input
-                    type="text"
-                    value={editableContent.name}
-                    onChange={(e) => setEditableContent(prev => ({ ...prev, name: e.target.value }))}
-                    onBlur={() => setEditingField(null)}
-                    onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-                    className="text-lg font-bold w-full text-center border-b border-gray-400 focus:outline-none focus:border-violet-500"
-                    autoFocus
-                  />
-                ) : (
-                  <div className="flex items-center justify-center gap-2">
-                    <h3
-                      className="text-lg font-bold cursor-pointer hover:bg-gray-100 p-1 rounded transition-all duration-200 hover:scale-105"
-                      onClick={() => setEditingField('name')}
-                      style={{ color: `#${titleColor}` }}
-                    >
-                      {editableContent.name}
-                    </h3>
-                    <AIButton
-                      isLoading={isLoading}
-                      onClick={() => generateWithAI('name', editableContent.name)}
-                      title="Modifier avec IA"
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Contact */}
-              <div className="text-center">
-                {editingField === 'contact' ? (
-                  <input
-                    type="text"
-                    value={editableContent.contact}
-                    onChange={(e) => setEditableContent(prev => ({ ...prev, contact: e.target.value }))}
-                    onBlur={() => setEditingField(null)}
-                    onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-                    className="text-sm w-full text-center border-b border-gray-400 focus:outline-none focus:border-violet-500"
-                    autoFocus
-                  />
-                ) : (
-                  <div className="flex items-center justify-center gap-2">
-                    <p
-                      className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded transition-all duration-200 hover:scale-105"
-                      onClick={() => setEditingField('contact')}
-                      style={{ color: `#${customColor}` }}
-                    >
-                      {editableContent.contact}
-                    </p>
-                    <AIButton
-                      isLoading={isLoading}
-                      onClick={() => generateWithAI('contact', editableContent.contact)}
-                      title="Modifier avec IA"
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Profil professionnel */}
-              <div className="mt-4">
-                {editingField === 'profileTitle' ? (
-                  <input
-                    type="text"
-                    value={editableContent.profileTitle}
-                    onChange={(e) => setEditableContent(prev => ({ ...prev, profileTitle: e.target.value }))}
-                    onBlur={() => setEditingField(null)}
-                    onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-                    className="text-md font-semibold w-full border-b border-gray-400 focus:outline-none focus:border-violet-500"
-                    autoFocus
-                  />
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <h4
-                      className="text-md font-semibold cursor-pointer hover:bg-gray-100 p-1 rounded transition-all duration-200 hover:scale-105"
-                      onClick={() => setEditingField('profileTitle')}
-                      style={{ color: `#${titleColor}` }}
-                    >
-                      {editableContent.profileTitle}
-                    </h4>
-                    <AIButton
-                      isLoading={isLoading}
-                      onClick={() => generateWithAI('profileTitle', editableContent.profileTitle)}
-                      title="Modifier avec IA"
-                    />
-                  </div>
-                )}
-
-                {editingField === 'profileContent' ? (
-                  <textarea
-                    value={editableContent.profileContent}
-                    onChange={(e) => setEditableContent(prev => ({ ...prev, profileContent: e.target.value }))}
-                    onBlur={() => setEditingField(null)}
-                    className="text-sm w-full border border-gray-400 focus:outline-none focus:border-violet-500 p-1 rounded"
-                    autoFocus
-                    rows={3}
-                  />
-                ) : (
-                  <div className="flex items-start gap-2">
-                    <p
-                      className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 transition-all duration-200 hover:scale-105 line-clamp-3"
-                      onClick={() => setEditingField('profileContent')}
-                      style={{ color: `#${customColor}` }}
-                    >
-                      {editableContent.profileContent}
-                    </p>
-                    <AIButton
-                      isLoading={isLoading}
-                      onClick={() => generateWithAI('profileContent', editableContent.profileContent)}
-                      title="Modifier avec IA"
-                      className="mt-1"
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Expérience professionnelle */}
-              <div className="mt-4">
-                {editingField === 'experienceTitle' ? (
-                  <input
-                    type="text"
-                    value={editableContent.experienceTitle}
-                    onChange={(e) => setEditableContent(prev => ({ ...prev, experienceTitle: e.target.value }))}
-                    onBlur={() => setEditingField(null)}
-                    onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-                    className="text-md font-semibold w-full border-b border-gray-400 focus:outline-none focus:border-violet-500"
-                    autoFocus
-                  />
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <h4
-                      className="text-md font-semibold cursor-pointer hover:bg-gray-100 p-1 rounded whitespace-nowrap transition-all duration-200 hover:scale-105"
-                      onClick={() => setEditingField('experienceTitle')}
-                      style={{ color: `#${titleColor}` }}
-                    >
-                      {editableContent.experienceTitle}
-                    </h4>
-                    <div className="flex gap-1 ml-auto">
-                      <AIButton
-                        isLoading={isLoading}
-                        onClick={() => generateWithAI('experienceTitle', editableContent.experienceTitle)}
-                        title="Modifier avec IA"
-                      />
-                      <button
-                        onClick={addExperience}
-                        className="p-1 text-violet-600 hover:text-violet-800 transition-all duration-200 hover:scale-110"
-                        title="Ajouter une expérience"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {experiences.map(exp => (
-                  <div key={exp.id} className="relative group">
-                    <div className="absolute right-0 top-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <AIButton
-                        isLoading={isLoading}
-                        onClick={() => generateWithAI('experienceContent', exp.content)}
-                        title="Modifier avec IA"
-                      />
-                      <button
-                        onClick={() => removeExperience(exp.id)}
-                        className="p-1 text-red-600 hover:text-red-800"
-                        title="Supprimer l'expérience"
-                      >
-                        <Minus className="w-4 h-4" />
-                      </button>
-                    </div>
-
-                    {editingField === `experienceContent-${exp.id}` ? (
-                      <input
-                        type="text"
-                        value={exp.content}
-                        onChange={(e) => setExperiences(prev => prev.map(item => item.id === exp.id ? { ...item, content: e.target.value } : item))}
-                        onBlur={() => setEditingField(null)}
-                        onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-                        className="text-sm w-full border-b border-gray-400 focus:outline-none focus:border-violet-500 mt-2"
-                        autoFocus
-                      />
-                    ) : (
-                      <div className="flex items-center gap-2 mt-2">
-                        <p
-                          className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 font-bold transition-all duration-200 hover:scale-105"
-                          onClick={() => setEditingField(`experienceContent-${exp.id}`)}
-                          style={{ color: `#${customColor}` }}
-                        >
-                          {exp.content}
-                        </p>
-                      </div>
-                    )}
-
-                    {editingField === `experienceDetails-${exp.id}` ? (
-                      <textarea
-                        value={exp.details}
-                        onChange={(e) => setExperiences(prev => prev.map(item => item.id === exp.id ? { ...item, details: e.target.value } : item))}
-                        onBlur={() => setEditingField(null)}
-                        className="text-sm w-full border border-gray-400 focus:outline-none focus:border-violet-500 p-1 rounded mt-1"
-                        autoFocus
-                        rows={2}
-                      />
-                    ) : (
-                      <div className="flex items-start gap-2 mt-1">
-                        <p
-                          className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 transition-all duration-200 hover:scale-105"
-                          onClick={() => setEditingField(`experienceDetails-${exp.id}`)}
-                          style={{ color: `#${customColor}` }}
-                        >
-                          {exp.details}
-                        </p>
-                        <AIButton
-                          isLoading={isLoading}
-                          onClick={() => generateWithAI('experienceDetails', exp.details)}
-                          title="Modifier avec IA"
-                          className="mt-1"
-                        />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              {/* Compétences */}
-              <div className="mt-4">
-                {editingField === 'skillsTitle' ? (
-                  <input
-                    type="text"
-                    value={editableContent.skillsTitle}
-                    onChange={(e) => setEditableContent(prev => ({ ...prev, skillsTitle: e.target.value }))}
-                    onBlur={() => setEditingField(null)}
-                    onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-                    className="text-md font-semibold w-full border-b border-gray-400 focus:outline-none focus:border-violet-500"
-                    autoFocus
-                  />
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <h4
-                      className="text-md font-semibold cursor-pointer hover:bg-gray-100 p-1 rounded transition-all duration-200 hover:scale-105"
-                      onClick={() => setEditingField('skillsTitle')}
-                      style={{ color: `#${titleColor}` }}
-                    >
-                      {editableContent.skillsTitle}
-                    </h4>
-                    <div className="flex gap-1 ml-auto">
-                      <AIButton
-                        isLoading={isLoading}
-                        onClick={() => generateWithAI('skillsTitle', editableContent.skillsTitle)}
-                        title="Modifier avec IA"
-                      />
-                      <button
-                        onClick={addSkill}
-                        className="p-1 text-violet-600 hover:text-violet-800 transition-all duration-200 hover:scale-110"
-                        title="Ajouter une compétence"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {skills.map(skill => (
-                  <div key={skill.id} className="relative group flex items-start gap-2 mt-1">
-                    <div className="absolute right-0 top-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <AIButton
-                        isLoading={isLoading}
-                        onClick={() => generateWithAI('skillContent', skill.content)}
-                        title="Modifier avec IA"
-                      />
-                      <button
-                        onClick={() => removeSkill(skill.id)}
-                        className="p-1 text-red-600 hover:text-red-800"
-                        title="Supprimer la compétence"
-                      >
-                        <Minus className="w-4 h-4" />
-                      </button>
-                    </div>
-
-                    {editingField === `skillContent-${skill.id}` ? (
-                      <input
-                        type="text"
-                        value={skill.content}
-                        onChange={(e) => setSkills(prev => prev.map(item => item.id === skill.id ? { ...item, content: e.target.value } : item))}
-                        onBlur={() => setEditingField(null)}
-                        onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-                        className="text-sm w-full border-b border-gray-400 focus:outline-none focus:border-violet-500"
-                        autoFocus
-                      />
-                    ) : (
-                      <p
-                        className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 transition-all duration-200 hover:scale-105"
-                        onClick={() => setEditingField(`skillContent-${skill.id}`)}
-                        style={{ color: `#${customColor}` }}
-                      >
-                        {skill.content}
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              {/* Langues */}
-              <div className="mt-4">
-                {editingField === 'languagesTitle' ? (
-                  <input
-                    type="text"
-                    value={editableContent.languagesTitle}
-                    onChange={(e) => setEditableContent(prev => ({ ...prev, languagesTitle: e.target.value }))}
-                    onBlur={() => setEditingField(null)}
-                    onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-                    className="text-md font-semibold w-full border-b border-gray-400 focus:outline-none focus:border-violet-500"
-                    autoFocus
-                  />
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <h4
-                      className="text-md font-semibold cursor-pointer hover:bg-gray-100 p-1 rounded"
-                      onClick={() => setEditingField('languagesTitle')}
-                      style={{ color: `#${titleColor}` }}
-                    >
-                      {editableContent.languagesTitle}
-                    </h4>
-                    <div className="flex gap-1 ml-auto">
-                      <AIButton
-                        isLoading={isLoading}
-                        onClick={() => generateWithAI('languagesTitle', editableContent.languagesTitle)}
-                        title="Modifier avec IA"
-                      />
-                      <button
-                        onClick={addLanguage}
-                        className="p-1 text-violet-600 hover:text-violet-800"
-                        title="Ajouter une langue"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Liste des langues */}
-                <div className="mt-2">
-                  {languages.map(lang => (
-                    <div key={lang.id} className="relative group flex items-center gap-2 mt-1">
-                      <div className="absolute right-0 top-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <AIButton
-                          isLoading={isLoading}
-                          onClick={() => generateWithAI(`languageLevel-${lang.id}`, lang.level)}
-                          title="Générer le niveau avec IA"
-                        />
-                        <button
-                          onClick={() => removeLanguage(lang.id)}
-                          className="p-1 text-red-600 hover:text-red-800"
-                          title="Supprimer la langue"
-                        >
-                          <Minus className="w-4 h-4" />
-                        </button>
-                      </div>
-
-                      {editingField === `languageName-${lang.id}` ? (
-                        <input
-                          type="text"
-                          value={lang.name}
-                          onChange={(e) => setLanguages(prev => prev.map(item => item.id === lang.id ? { ...item, name: e.target.value } : item))}
-                          onBlur={() => setEditingField(null)}
-                          onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-                          className="text-sm w-1/2 border-b border-gray-400 focus:outline-none focus:border-violet-500"
-                          autoFocus
-                        />
-                      ) : (
-                        <p
-                          className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 transition-all duration-200 hover:scale-105"
-                          onClick={() => setEditingField(`languageName-${lang.id}`)}
-                          style={{ color: `#${customColor}` }}
-                        >
-                          {lang.name}
-                        </p>
-                      )}
-
-                      {editingField === `languageLevel-${lang.id}` ? (
-                        <input
-                          type="text"
-                          value={lang.level}
-                          onChange={(e) => setLanguages(prev => prev.map(item => item.id === lang.id ? { ...item, level: e.target.value } : item))}
-                          onBlur={() => setEditingField(null)}
-                          onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-                          className="text-sm w-1/2 border-b border-gray-400 focus:outline-none focus:border-violet-500"
-                          autoFocus
-                        />
-                      ) : (
-                        <p
-                          className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 transition-all duration-200 hover:scale-105"
-                          onClick={() => setEditingField(`languageLevel-${lang.id}`)}
-                          style={{ color: `#${customColor}` }}
-                        >
-                          ({lang.level})
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
+          <CVPreview
+            editableContent={editableContent}
+            setEditableContent={setEditableContent}
+            experiences={experiences}
+            setExperiences={setExperiences}
+            skills={skills}
+            setSkills={setSkills}
+            languages={languages}
+            setLanguages={setLanguages}
+            editingField={editingField}
+            setEditingField={setEditingField}
+            customFont={customFont}
+            setCustomFont={setCustomFont}
+            customColor={customColor}
+            setCustomColor={setCustomColor}
+            titleColor={titleColor}
+            setTitleColor={setTitleColor}
+            availableFonts={availableFonts}
+            availableColors={availableColors}
+            addExperience={addExperience}
+            removeExperience={removeExperience}
+            addSkill={addSkill}
+            removeSkill={removeSkill}
+            addLanguage={addLanguage}
+            removeLanguage={removeLanguage}
+            generateWithAI={generateWithAI}
+            isLoading={isLoading}
+            error={error}
+            openAIError={openAIError}
+          />
         </div>
 
         <div className="w-full lg:w-1/2 bg-gray-50 p-0 rounded-xl border border-violet-300 shadow-md">

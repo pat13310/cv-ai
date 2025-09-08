@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Download, Eye, Star, FileText, Award, TrendingUp, Users, Search, Sparkles } from 'lucide-react';
+import { useSupabase } from '../../hooks/useSupabase';
 
 interface Template {
   id: string;
@@ -20,8 +21,27 @@ export const Templates: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('Tous');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('popular');
+  
+  const { templates, loading, error } = useSupabase();
 
-  const templates: Template[] = React.useMemo(() => [
+  // Adapter les données Supabase au format attendu par le composant
+  const adaptedTemplates = React.useMemo(() => templates.map(template => ({
+    id: template.id,
+    name: template.name,
+    category: template.category,
+    description: template.description,
+    preview: template.preview_color,
+    atsScore: template.ats_score,
+    downloads: template.downloads,
+    rating: template.rating,
+    tags: template.tags,
+    wordFile: `${template.name.toLowerCase().replace(/\s+/g, '_')}.docx`,
+    isPremium: template.is_premium,
+    industry: template.industry
+  })), [templates]);
+
+  // Fallback vers des données statiques si pas de templates Supabase
+  const fallbackTemplates = React.useMemo(() => [
     {
       id: '1',
       name: 'CV Tech Senior Pro',
@@ -136,15 +156,18 @@ export const Templates: React.FC = () => {
     }
   ], []);
 
-  // Générer les catégories dynamiquement depuis les templates Supabase
-  const categories = React.useMemo(() => {
-    if (!templates || templates.length === 0) return ['Tous'];
-    
-    const uniqueCategories = Array.from(new Set(templates.map(template => template.category)));
-    return ['Tous', ...uniqueCategories.sort()];
-  }, [templates]);
+  // Utiliser les templates Supabase ou fallback
+  const displayTemplates = adaptedTemplates.length > 0 ? adaptedTemplates : fallbackTemplates;
 
-  const filteredTemplates = templates
+  // Générer les catégories dynamiquement depuis les templates
+  const categories = React.useMemo(() => {
+    if (!displayTemplates || displayTemplates.length === 0) return ['Tous'];
+    
+    const uniqueCategories = Array.from(new Set(displayTemplates.map(template => template.category)));
+    return ['Tous', ...uniqueCategories.sort()];
+  }, [displayTemplates]);
+
+  const filteredTemplates = displayTemplates
     .filter(template => {
       const matchesCategory = selectedCategory === 'Tous' || template.category === selectedCategory;
       const matchesSearch = template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -168,7 +191,46 @@ export const Templates: React.FC = () => {
       }
     });
 
-  const handleDownloadFormat = (template: Template, format: 'word' | 'html' | 'txt' | 'pdf') => {
+ // Afficher un état de chargement
+ if (loading) {
+   return (
+     <div className="space-y-8">
+       <div className="text-center">
+         <h2 className="heading-gradient">Templates CV Word</h2>
+         <p className="text-gray-600 max-w-2xl mx-auto">Chargement des templates...</p>
+       </div>
+       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+         {[1, 2, 3, 4, 5, 6].map((i) => (
+           <div key={i} className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/30 overflow-hidden animate-pulse">
+             <div className="h-48 bg-gray-200" />
+             <div className="p-6 space-y-4">
+               <div className="h-4 bg-gray-200 rounded w-3/4" />
+               <div className="h-3 bg-gray-200 rounded w-full" />
+               <div className="h-3 bg-gray-200 rounded w-1/2" />
+             </div>
+           </div>
+         ))}
+       </div>
+     </div>
+   );
+ }
+
+ // Afficher une erreur si nécessaire
+ if (error && adaptedTemplates.length === 0) {
+   return (
+     <div className="space-y-8">
+       <div className="text-center">
+         <h2 className="heading-gradient">Templates CV Word</h2>
+         <div className="bg-red-50 border border-red-200 rounded-xl p-6 max-w-2xl mx-auto">
+           <p className="text-red-600">Erreur lors du chargement des templates: {error}</p>
+           <p className="text-sm text-red-500 mt-2">Utilisation des templates par défaut.</p>
+         </div>
+       </div>
+     </div>
+   );
+ }
+
+ const handleDownloadFormat = (template: Template, format: 'word' | 'html' | 'txt' | 'pdf') => {
     try {
       let content = '';
       let filename = '';

@@ -1,5 +1,10 @@
-import React, { useState } from 'react';
-import { ArrowLeft, Bot, Shield, Bell, User, Palette, Key, Save, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Bot, Shield, Bell, User, Palette, Key, RefreshCw, Database } from 'lucide-react';
+import { useSupabase } from '../../hooks/useSupabase';
+import { useProfile } from '../../hooks/useProfile';
+import { ProfileForm } from '../Profile/ProfileForm';
+import { ProfileTest } from '../Profile/ProfileTest';
+import { SupabaseConfigModal } from '../Auth/SupabaseConfigModal';
 
 interface SettingsProps {
   onBack: () => void;
@@ -36,12 +41,35 @@ type SettingsType = {
     animations: boolean;
     compactMode: boolean;
   };
+  profile: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    address: string;
+    postalCode: string;
+    city: string;
+    country: string;
+    dateOfBirth: string;
+    nationality: string;
+    linkedIn: string;
+    website: string;
+    profession: string;
+    company: string;
+  };
 };
 
 export const Settings: React.FC<SettingsProps> = ({ onBack }) => {
   const [activeSection, setActiveSection] = useState('ai');
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [showConfigModal, setShowConfigModal] = useState(false);
+  const { profile, profileLoading } = useSupabase();
+  const {
+    getFullName,
+    getInitials,
+    isProfileComplete,
+    getCompletionPercentage
+  } = useProfile();
   
   // Charger les paramètres depuis localStorage ou utiliser les valeurs par défaut
   const getInitialSettings = () => {
@@ -85,11 +113,52 @@ export const Settings: React.FC<SettingsProps> = ({ onBack }) => {
         language: 'fr',
         animations: true,
         compactMode: false
+      },
+      profile: {
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        address: '',
+        postalCode: '',
+        city: '',
+        country: 'France',
+        dateOfBirth: '',
+        nationality: 'Française',
+        linkedIn: '',
+        website: '',
+        profession: '',
+        company: ''
       }
     };
   };
 
   const [settings, setSettings] = useState<SettingsType>(getInitialSettings());
+
+  // Charger les données du profil depuis Supabase
+  useEffect(() => {
+    if (profile && !profileLoading) {
+      setSettings(prev => ({
+        ...prev,
+        profile: {
+          firstName: profile.first_name || '',
+          lastName: profile.last_name || '',
+          email: profile.email || '',
+          phone: profile.phone || '',
+          address: profile.address || '',
+          postalCode: profile.postal_code || '',
+          city: profile.city || '',
+          country: profile.country || 'France',
+          dateOfBirth: profile.date_of_birth || '',
+          nationality: profile.nationality || 'Française',
+          linkedIn: profile.linkedin || '',
+          website: profile.website || '',
+          profession: profile.profession || '',
+          company: profile.company || ''
+        }
+      }));
+    }
+  }, [profile, profileLoading]);
 
   const sections = [
     { id: 'ai', label: 'Intelligence Artificielle', icon: Bot },
@@ -97,6 +166,7 @@ export const Settings: React.FC<SettingsProps> = ({ onBack }) => {
     { id: 'privacy', label: 'Confidentialité', icon: Shield },
     { id: 'appearance', label: 'Apparence', icon: Palette },
     { id: 'account', label: 'Compte', icon: User },
+    { id: 'test', label: 'Tests d\'Intégration', icon: RefreshCw },
   ];
 
   const updateSetting = (section: string, key: string, value: string | boolean | number) => {
@@ -107,29 +177,6 @@ export const Settings: React.FC<SettingsProps> = ({ onBack }) => {
         [key]: value
       }
     }));
-    // Reset save status when settings change
-    setSaveStatus('idle');
-  };
-
-  const handleSave = async () => {
-    setIsSaving(true);
-    setSaveStatus('idle');
-    
-    try {
-      // Simulate API call to save settings
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // In a real app, you would save to backend/localStorage
-      localStorage.setItem('cvAssistantSettings', JSON.stringify(settings));
-      
-      setSaveStatus('success');
-      setTimeout(() => setSaveStatus('idle'), 3000);
-    } catch {
-      setSaveStatus('error');
-      setTimeout(() => setSaveStatus('idle'), 3000);
-    } finally {
-      setIsSaving(false);
-    }
   };
 
   const testApiKey = async (apiKey: string): Promise<boolean> => {
@@ -184,11 +231,26 @@ export const Settings: React.FC<SettingsProps> = ({ onBack }) => {
         language: 'fr',
         animations: true,
         compactMode: false
+      },
+      profile: {
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        address: '',
+        postalCode: '',
+        city: '',
+        country: 'France',
+        dateOfBirth: '',
+        nationality: 'Française',
+        linkedIn: '',
+        website: '',
+        profession: '',
+        company: ''
       }
     };
     
     setSettings(defaultSettings);
-    setSaveStatus('idle');
   };
 
   const renderAISettings = () => (
@@ -205,7 +267,7 @@ export const Settings: React.FC<SettingsProps> = ({ onBack }) => {
             <select
               value={settings.ai.model}
               onChange={(e) => updateSetting('ai', 'model', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all duration-200"
+              className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 focus:outline-none transition-all duration-200"
             >
               <optgroup label="OpenAI">
                 <option value="gpt-4">GPT-4 (Recommandé)</option>
@@ -235,7 +297,7 @@ export const Settings: React.FC<SettingsProps> = ({ onBack }) => {
             <select
               value={settings.ai.language}
               onChange={(e) => updateSetting('ai', 'language', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all duration-200"
+              className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 focus:outline-none transition-all duration-200"
             >
               <option value="fr">Français</option>
               <option value="en">English</option>
@@ -267,7 +329,7 @@ export const Settings: React.FC<SettingsProps> = ({ onBack }) => {
             <select
               value={settings.ai.analysisDepth}
               onChange={(e) => updateSetting('ai', 'analysisDepth', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all duration-200"
+              className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 focus:outline-none transition-all duration-200"
             >
               <option value="quick">Rapide</option>
               <option value="standard">Standard</option>
@@ -304,7 +366,7 @@ export const Settings: React.FC<SettingsProps> = ({ onBack }) => {
                       settings.ai.model.includes('gemini') ? 'AIza...' :
                       settings.ai.model.includes('mistral') ? 'api_key...' : 'Clé API...'
                     }
-                    className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all duration-200"
+                    className="flex-1 px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 focus:outline-none transition-all duration-200"
                   />
                   <button 
                     onClick={async () => {
@@ -317,7 +379,7 @@ export const Settings: React.FC<SettingsProps> = ({ onBack }) => {
                         }
                       }
                     }}
-                    className="bg-gradient-to-r from-violet-600 to-pink-600 text-white px-6 py-3 rounded-xl font-medium hover:from-violet-700 hover:to-pink-700 transition-all duration-200 hover:scale-105"
+                    className="bg-gradient-to-r from-violet-600 to-pink-600 text-white px-6 py-2 rounded-xl font-medium hover:from-violet-700 hover:to-pink-700 transition-all duration-200 hover:scale-105"
                   >
                     Connecter
                   </button>
@@ -422,7 +484,7 @@ export const Settings: React.FC<SettingsProps> = ({ onBack }) => {
           <select
             value={settings.privacy.dataRetention}
             onChange={(e) => updateSetting('privacy', 'dataRetention', e.target.value)}
-            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all duration-200"
+            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 focus:outline-none transition-all duration-200"
           >
             <option value="3months">3 mois</option>
             <option value="6months">6 mois</option>
@@ -463,7 +525,7 @@ export const Settings: React.FC<SettingsProps> = ({ onBack }) => {
           <select
             value={settings.appearance.theme}
             onChange={(e) => updateSetting('appearance', 'theme', e.target.value)}
-            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all duration-200"
+            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 focus:outline-none transition-all duration-200"
           >
             <option value="gradient">Dégradé (Défaut)</option>
             <option value="light">Clair</option>
@@ -476,7 +538,7 @@ export const Settings: React.FC<SettingsProps> = ({ onBack }) => {
           <select
             value={settings.appearance.language}
             onChange={(e) => updateSetting('appearance', 'language', e.target.value)}
-            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all duration-200"
+            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 focus:outline-none transition-all duration-200"
           >
             <option value="fr">Français</option>
             <option value="en">English</option>
@@ -511,33 +573,67 @@ export const Settings: React.FC<SettingsProps> = ({ onBack }) => {
   );
 
   const renderAccountSettings = () => (
-    <div className="space-y-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center space-x-2">
-        <User className="w-5 h-5 text-violet-600" />
-        <span>Informations du compte</span>
-      </h3>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Nom complet</label>
-          <input
-            type="text"
-            defaultValue="Marie Dubois"
-            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all duration-200"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-          <input
-            type="email"
-            defaultValue="marie.dubois@email.com"
-            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all duration-200"
-          />
-        </div>
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-gray-900 flex items-center space-x-2">
+          <User className="w-5 h-5 text-violet-600" />
+          <span>Profil utilisateur</span>
+        </h3>
+        
+        {profile && (
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-gradient-to-r from-violet-600 to-pink-600 rounded-full flex items-center justify-center text-white font-semibold">
+              {getInitials()}
+            </div>
+            <div>
+              <div className="font-medium text-gray-900">{getFullName()}</div>
+              <div className="text-sm text-gray-500">
+                Profil complété à {getCompletionPercentage()}%
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="bg-gradient-to-br from-violet-50 to-pink-50 rounded-2xl p-6 border border-violet-200/30">
+      {/* Statut du profil */}
+      {profile && (
+        <div className={`p-4 rounded-xl border ${
+          isProfileComplete()
+            ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+            : 'bg-amber-50 border-amber-200 text-amber-800'
+        }`}>
+          <div className="flex items-center space-x-2">
+            {isProfileComplete() ? (
+              <>
+                <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                <span className="font-medium">Profil complet</span>
+              </>
+            ) : (
+              <>
+                <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+                <span className="font-medium">Profil incomplet</span>
+              </>
+            )}
+          </div>
+          <p className="text-sm mt-1">
+            {isProfileComplete()
+              ? 'Votre profil contient toutes les informations essentielles.'
+              : 'Complétez votre profil pour une meilleure expérience.'
+            }
+          </p>
+        </div>
+      )}
+
+      {/* Formulaire de profil */}
+      <ProfileForm
+        onSave={(savedProfile) => {
+          console.log('Profil sauvegardé:', savedProfile);
+        }}
+        showActions={true}
+      />
+
+      {/* Configuration API Avancée */}
+      <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-2xl p-6 border border-gray-200/30">
         <h4 className="font-semibold text-gray-900 mb-3 flex items-center space-x-2">
           <Key className="w-5 h-5 text-violet-600" />
           <span>Configuration API Avancée</span>
@@ -552,7 +648,7 @@ export const Settings: React.FC<SettingsProps> = ({ onBack }) => {
               <input
                 type="url"
                 placeholder="https://api.custom-endpoint.com"
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all duration-200"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 focus:outline-none transition-all duration-200"
               />
             </div>
             <div>
@@ -562,23 +658,89 @@ export const Settings: React.FC<SettingsProps> = ({ onBack }) => {
                 defaultValue="30"
                 min="10"
                 max="120"
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all duration-200"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 focus:outline-none transition-all duration-200"
               />
             </div>
           </div>
         </div>
       </div>
 
-      <div className="flex space-x-4">
-        <button className="bg-red-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-red-700 transition-all duration-200">
-          Supprimer le compte
-        </button>
+      {/* Actions du compte */}
+      <div className="flex flex-wrap gap-4">
         <button className="bg-gray-200 text-gray-700 px-6 py-3 rounded-xl font-medium hover:bg-gray-300 transition-all duration-200">
           Exporter les données
+        </button>
+        <button className="bg-red-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-red-700 transition-all duration-200">
+          Supprimer le compte
         </button>
       </div>
     </div>
   );
+
+  const renderTestSection = () => {
+    // Vérifier si Supabase est configuré
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    const isSupabaseConfigured = !!(supabaseUrl && supabaseKey);
+
+    return (
+      <div className="space-y-8">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center space-x-2">
+          <RefreshCw className="w-5 h-5 text-violet-600" />
+          <span>Tests d'Intégration</span>
+        </h3>
+        
+        {/* Configuration Supabase */}
+        <div className={`p-6 rounded-2xl border ${
+          isSupabaseConfigured
+            ? 'bg-emerald-50 border-emerald-200'
+            : 'bg-amber-50 border-amber-200'
+        }`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <Database className={`w-6 h-6 ${
+                isSupabaseConfigured ? 'text-emerald-600' : 'text-amber-600'
+              }`} />
+              <div>
+                <h4 className={`font-semibold ${
+                  isSupabaseConfigured ? 'text-emerald-900' : 'text-amber-900'
+                } mb-1`}>
+                  {isSupabaseConfigured ? 'Supabase Configuré' : 'Supabase Non Configuré'}
+                </h4>
+                <p className={`text-sm ${
+                  isSupabaseConfigured ? 'text-emerald-800' : 'text-amber-800'
+                }`}>
+                  {isSupabaseConfigured
+                    ? 'Base de données connectée et opérationnelle'
+                    : 'Application en mode démo - données non persistantes'
+                  }
+                </p>
+              </div>
+            </div>
+            
+            {!isSupabaseConfigured && (
+              <button
+                onClick={() => setShowConfigModal(true)}
+                className="bg-gradient-to-r from-violet-600 to-pink-600 text-white px-4 py-2 rounded-xl font-medium hover:from-violet-700 hover:to-pink-700 transition-all duration-200 hover:scale-105"
+              >
+                Configurer Supabase
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6">
+          <h4 className="font-semibold text-blue-900 mb-2">À propos des tests</h4>
+          <p className="text-blue-800 text-sm">
+            Cette section permet de tester l'intégration complète des profils avec Supabase.
+            Utilisez ces tests pour vérifier que tout fonctionne correctement après la configuration.
+          </p>
+        </div>
+
+        <ProfileTest />
+      </div>
+    );
+  };
 
   const renderActiveSection = () => {
     switch (activeSection) {
@@ -592,6 +754,8 @@ export const Settings: React.FC<SettingsProps> = ({ onBack }) => {
         return renderAppearanceSettings();
       case 'account':
         return renderAccountSettings();
+      case 'test':
+        return renderTestSection();
       default:
         return renderAISettings();
     }
@@ -599,6 +763,29 @@ export const Settings: React.FC<SettingsProps> = ({ onBack }) => {
 
   return (
     <div className="space-y-8">
+      {/* Notification d'erreur d'authentification */}
+      {authError && (
+        <div className="fixed top-4 right-4 z-50 max-w-md bg-gradient-to-r from-red-500 to-pink-500 text-white p-4 rounded-xl shadow-lg border border-red-200">
+          <div className="flex items-start space-x-3">
+            <div className="flex-shrink-0">
+              <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+                🔐
+              </div>
+            </div>
+            <div className="flex-1">
+              <h4 className="font-semibold mb-1">Authentification requise</h4>
+              <p className="text-sm opacity-90 whitespace-pre-line">{authError.replace('🔐 ', '')}</p>
+              <button
+                onClick={() => setAuthError(null)}
+                className="mt-2 text-xs bg-white/20 hover:bg-white/30 px-2 py-1 rounded transition-colors"
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <button
@@ -610,40 +797,7 @@ export const Settings: React.FC<SettingsProps> = ({ onBack }) => {
         </button>
         
         <div className="flex items-center space-x-3">
-          <button 
-            onClick={handleSave}
-            disabled={isSaving}
-            className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 hover:scale-105 flex items-center space-x-2 ${
-              saveStatus === 'success' 
-                ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white'
-                : saveStatus === 'error'
-                ? 'bg-gradient-to-r from-red-600 to-pink-600 text-white'
-                : 'bg-gradient-to-r from-violet-600 to-pink-600 text-white hover:from-violet-700 hover:to-pink-700'
-            } ${isSaving ? 'opacity-75 cursor-not-allowed' : ''}`}
-          >
-            {isSaving ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                <span>Sauvegarde...</span>
-              </>
-            ) : saveStatus === 'success' ? (
-              <>
-                <Save className="w-4 h-4" />
-                <span>Sauvegardé ✓</span>
-              </>
-            ) : saveStatus === 'error' ? (
-              <>
-                <Save className="w-4 h-4" />
-                <span>Erreur</span>
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4" />
-                <span>Sauvegarder</span>
-              </>
-            )}
-          </button>
-          <button 
+          <button
             onClick={handleReset}
             className="bg-gray-200 text-gray-700 px-4 py-3 rounded-xl font-medium hover:bg-gray-300 transition-all duration-200 flex items-center space-x-2"
           >
@@ -698,6 +852,13 @@ export const Settings: React.FC<SettingsProps> = ({ onBack }) => {
           </div>
         </div>
       </div>
+
+      {/* Modale de configuration Supabase */}
+      <SupabaseConfigModal
+        isOpen={showConfigModal}
+        onClose={() => setShowConfigModal(false)}
+        onContinueDemo={() => setShowConfigModal(false)}
+      />
     </div>
   );
 };

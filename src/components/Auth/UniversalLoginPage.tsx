@@ -1,31 +1,116 @@
 import React, { useState } from 'react';
 import { Sparkles, Brain, Target, Award, TrendingUp, Users, CheckCircle } from 'lucide-react';
 import { AuthModal } from './AuthModal';
-import { useAuth } from './AuthProvider';
+import { useAuth as useSupabaseAuth } from '../../hooks/useAuth';
+import { useAuth as useMockAuth } from './AuthProvider';
+import { SupabaseAuthProvider } from './SupabaseAuthProvider';
+import { AuthProvider } from './AuthProvider';
 
-interface LoginPageProps {
+interface UniversalLoginPageProps {
   onDemoMode?: () => void;
 }
 
-export const LoginPage: React.FC<LoginPageProps> = ({ onDemoMode }) => {
+// Composant pour Supabase
+const SupabaseLoginPage: React.FC<UniversalLoginPageProps> = ({ onDemoMode }) => {
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const { login, register } = useAuth();
+  const { signIn, signUp } = useSupabaseAuth();
+
+  const handleLogin = async (email: string, password: string) => {
+    try {
+      const result = await signIn(email, password);
+      if (result.error) {
+        console.error('Login error details:', result.error);
+        throw result.error;
+      }
+      setShowAuthModal(false);
+    } catch (error) {
+      console.error('Login error:', error);
+      // Re-lancer l'erreur pour que AuthModal puisse l'afficher
+      throw error;
+    }
+  };
+
+  const handleRegister = async (email: string, password: string, name: string) => {
+    try {
+      const result = await signUp(email, password, {
+        first_name: name.split(' ')[0] || '',
+        last_name: name.split(' ').slice(1).join(' ') || ''
+      });
+      if (result.error) {
+        console.error('Registration error details:', result.error);
+        throw result.error;
+      }
+      setShowAuthModal(false);
+    } catch (error) {
+      console.error('Registration error:', error);
+      // Re-lancer l'erreur pour que AuthModal puisse l'afficher
+      throw error;
+    }
+  };
+
+  return <LoginPageContent
+    onDemoMode={onDemoMode}
+    showAuthModal={showAuthModal}
+    setShowAuthModal={setShowAuthModal}
+    handleLogin={handleLogin}
+    handleRegister={handleRegister}
+    isSupabaseMode={true}
+  />;
+};
+
+// Composant pour Mock
+const MockLoginPage: React.FC<UniversalLoginPageProps> = ({ onDemoMode }) => {
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const { login, register } = useMockAuth();
 
   const handleLogin = async (email: string, password: string) => {
     try {
       await login(email, password);
+      setShowAuthModal(false);
     } catch (error) {
       console.error('Login error:', error);
+      throw error;
     }
   };
 
   const handleRegister = async (email: string, password: string, name: string) => {
     try {
       await register(email, password, name);
+      setShowAuthModal(false);
     } catch (error) {
       console.error('Registration error:', error);
+      throw error;
     }
   };
+
+  return <LoginPageContent
+    onDemoMode={onDemoMode}
+    showAuthModal={showAuthModal}
+    setShowAuthModal={setShowAuthModal}
+    handleLogin={handleLogin}
+    handleRegister={handleRegister}
+    isSupabaseMode={false}
+  />;
+};
+
+// Composant de contenu partagé
+interface LoginPageContentProps {
+  onDemoMode?: () => void;
+  showAuthModal: boolean;
+  setShowAuthModal: (show: boolean) => void;
+  handleLogin: (email: string, password: string) => Promise<void>;
+  handleRegister: (email: string, password: string, name: string) => Promise<void>;
+  isSupabaseMode: boolean;
+}
+
+const LoginPageContent: React.FC<LoginPageContentProps> = ({
+  onDemoMode,
+  showAuthModal,
+  setShowAuthModal,
+  handleLogin,
+  handleRegister,
+  isSupabaseMode
+}) => {
 
   const features = [
     {
@@ -83,6 +168,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onDemoMode }) => {
                   <h1 className="text-xl font-bold bg-gradient-to-r from-violet-600 to-pink-400 bg-clip-text text-transparent drop-shadow-lg">
                     CV ATS Assistant
                   </h1>
+                  {/* Indicateur du mode d'authentification */}
+                  <div className="text-xs text-gray-500">
+                    {isSupabaseMode ? '🔐 Supabase Auth' : '🧪 Mode Demo'}
+                  </div>
                 </div>
               </div>
               
@@ -102,7 +191,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onDemoMode }) => {
             <div className="text-center mb-16">
               <div className="inline-flex items-center space-x-2 bg-white/70 backdrop-blur-sm rounded-full px-4 py-2 mb-6 border border-gray-200/30">
                 <Sparkles className="w-4 h-4 text-violet-600" />
-                <span className="text-sm font-medium text-gray-700">Powered by OpenAI</span>
+                <span className="text-sm font-medium text-gray-700">
+                  Powered by OpenAI {isSupabaseMode ? '+ Supabase' : '+ Demo Mode'}
+                </span>
               </div>
               
               <h1 className="text-5xl md:text-6xl font-bold mb-6">
@@ -122,14 +213,33 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onDemoMode }) => {
                   onClick={() => setShowAuthModal(true)}
                   className="bg-gradient-to-r from-violet-600 via-rose-400 to-purple-600 text-white px-8 py-4 rounded-xl text-lg font-semibold hover:from-violet-700 hover:via-rose-500 hover:to-purple-700 transition-all duration-200 hover:scale-105 shadow-lg"
                 >
-                  Commencer gratuitement
+                  {isSupabaseMode ? 'Créer un compte' : 'Commencer gratuitement'}
                 </button>
-                <button
-                  onClick={onDemoMode}
-                  className="bg-white/70 backdrop-blur-sm border border-gray-200/30 text-gray-700 px-8 py-4 rounded-xl text-lg font-semibold hover:bg-white/90 transition-all duration-200 hover:scale-105"
-                >
-                  Voir la démo
-                </button>
+                {onDemoMode && (
+                  <button
+                    onClick={onDemoMode}
+                    className="bg-white/70 backdrop-blur-sm border border-gray-200/30 text-gray-700 px-8 py-4 rounded-xl text-lg font-semibold hover:bg-white/90 transition-all duration-200 hover:scale-105"
+                  >
+                    Voir la démo
+                  </button>
+                )}
+              </div>
+
+              {/* Message d'information sur le mode */}
+              <div className="mt-8 p-4 bg-white/50 backdrop-blur-sm rounded-xl border border-gray-200/30 max-w-2xl mx-auto">
+                <div className="text-sm text-gray-600">
+                  {isSupabaseMode ? (
+                    <>
+                      <strong className="text-emerald-600">✅ Mode Production :</strong> Authentification sécurisée avec Supabase.
+                      Vos données sont sauvegardées et synchronisées.
+                    </>
+                  ) : (
+                    <>
+                      <strong className="text-amber-600">🧪 Mode Démo :</strong> Supabase non configuré.
+                      Fonctionnement en mode local sans sauvegarde permanente.
+                    </>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -213,7 +323,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onDemoMode }) => {
                   onClick={() => setShowAuthModal(true)}
                   className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-8 py-4 rounded-xl text-lg font-semibold transition-all duration-200 hover:scale-105"
                 >
-                  Créer mon compte gratuitement
+                  {isSupabaseMode ? 'Créer mon compte' : 'Essayer maintenant'}
                 </button>
               </div>
             </div>
@@ -247,4 +357,26 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onDemoMode }) => {
       />
     </div>
   );
+};
+
+// Composant wrapper qui gère la configuration
+export const UniversalLoginPage: React.FC<UniversalLoginPageProps> = (props) => {
+  // Vérifier la configuration Supabase
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  const isSupabaseConfigured = !!(supabaseUrl && supabaseKey);
+
+  if (isSupabaseConfigured) {
+    return (
+      <SupabaseAuthProvider>
+        <SupabaseLoginPage {...props} />
+      </SupabaseAuthProvider>
+    );
+  } else {
+    return (
+      <AuthProvider>
+        <MockLoginPage {...props} />
+      </AuthProvider>
+    );
+  }
 };

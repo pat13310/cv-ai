@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Brain, Target, TrendingUp, Award, User, Briefcase, GraduationCap, Star, ArrowRight, CheckCircle, Clock, Lightbulb, MessageSquare, Calendar, Download, X } from 'lucide-react';
-import { useAuth } from '../Auth/AuthProvider';
+import { Brain, Target, TrendingUp, Award, User, Star, ArrowRight, CheckCircle, Clock, Lightbulb, MessageSquare, Calendar, Download, X } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
 
 interface CoachingProps {
   onNavigate?: (tab: string) => void;
@@ -27,9 +27,8 @@ interface UserProfile {
 }
 
 export const Coaching: React.FC<CoachingProps> = ({ onNavigate }) => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [activeCategory, setActiveCategory] = useState('all');
-  const [selectedSession, setSelectedSession] = useState<CoachingSession | null>(null);
   const [showPlanningGuide, setShowPlanningGuide] = useState(false);
 
   // Profil utilisateur simulé basé sur les données d'analyse précédentes
@@ -140,7 +139,7 @@ export const Coaching: React.FC<CoachingProps> = ({ onNavigate }) => {
     <div className="space-y-8">
       {/* Header */}
       <div className="text-center">
-        <h2 className="text-3xl font-bold bg-gradient-to-r from-violet-600 to-pink-600 bg-clip-text text-transparent mb-4">
+        <h2 className="heading-gradient">
           Coaching IA Personnalisé
         </h2>
         <p className="text-gray-600 max-w-2xl mx-auto">
@@ -160,7 +159,7 @@ export const Coaching: React.FC<CoachingProps> = ({ onNavigate }) => {
                 <User className="w-8 h-8" />
               </div>
               <div>
-                <h3 className="text-2xl font-bold">Bonjour {user?.name} ! 👋</h3>
+                <h3 className="text-2xl font-bold">Bonjour {profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || user?.email?.split('@')[0] || 'Utilisateur' : user?.email?.split('@')[0] || 'Utilisateur'} ! 👋</h3>
                 <p className="text-white/90">Profil {userProfile.level} en {userProfile.industry}</p>
               </div>
             </div>
@@ -229,8 +228,8 @@ export const Coaching: React.FC<CoachingProps> = ({ onNavigate }) => {
                 <p className="text-sm text-gray-600 mb-4">{weakness}</p>
                 
                 {relatedSession && (
-                  <button 
-                    onClick={() => setSelectedSession(relatedSession)}
+                  <button
+                    onClick={() => console.log('Session sélectionnée:', relatedSession)}
                     className="w-full bg-gradient-to-r from-violet-600 to-pink-600 text-white py-2 rounded-lg text-sm font-medium hover:from-violet-700 hover:to-pink-700 transition-all duration-200 hover:scale-105"
                   >
                     Session recommandée
@@ -326,7 +325,7 @@ export const Coaching: React.FC<CoachingProps> = ({ onNavigate }) => {
 
               {/* Action Button */}
               <button
-                onClick={() => setSelectedSession(session)}
+                onClick={() => console.log('Session démarrée:', session)}
                 className="w-full bg-gradient-to-r from-violet-600 to-pink-600 text-white py-3 rounded-xl font-medium hover:from-violet-700 hover:to-pink-700 transition-all duration-200 hover:scale-105 flex items-center justify-center space-x-2"
               >
                 {session.completed ? (
@@ -512,7 +511,7 @@ export const Coaching: React.FC<CoachingProps> = ({ onNavigate }) => {
                 
                 <div className="hidden lg:block">
                   <div className="grid grid-cols-7 gap-2 mb-4">
-                    {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((day, index) => (
+                    {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((day) => (
                       <div key={day} className="text-center font-semibold text-gray-700 py-3 bg-gradient-to-br from-violet-100 to-pink-100 rounded-lg">
                         {day}
                       </div>
@@ -539,59 +538,32 @@ export const Coaching: React.FC<CoachingProps> = ({ onNavigate }) => {
 
                 {/* Mobile/Tablet View */}
                 <div className="lg:hidden space-y-4">
-                  {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((day, index) => (
-                    <div key={day} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-                      <div className="font-bold text-gray-800 mb-3 text-center bg-gradient-to-r from-violet-100 to-pink-100 rounded-lg py-2">
-                        {day}
-                      </div>
-                      {[
-                        { session: 'Mots-clés ATS', time: '8h-8h30', color: 'bg-blue-100 text-blue-800 border-l-4 border-blue-500' },
-                        { session: 'Repos', time: '', color: 'bg-gray-100 text-gray-500' },
-                        { session: 'Quantifier résultats', time: '19h-19h30', color: 'bg-violet-100 text-violet-800 border-l-4 border-violet-500' },
-                        { session: 'Repos', time: '', color: 'bg-gray-100 text-gray-500' },
-                        { session: 'Leadership', time: '8h-8h45', color: 'bg-emerald-100 text-emerald-800 border-l-4 border-emerald-500' },
-                        { session: 'Personal Branding', time: '10h-10h40', color: 'bg-pink-100 text-pink-800 border-l-4 border-pink-500' },
-                        { session: 'Révision', time: '14h-14h30', color: 'bg-amber-100 text-amber-800 border-l-4 border-amber-500' }
-                      ][index] && (
-                        <div className={`p-3 rounded-lg text-center ${[
-                          { session: 'Mots-clés ATS', time: '8h-8h30', color: 'bg-blue-100 text-blue-800 border-l-4 border-blue-500' },
-                          { session: 'Repos', time: '', color: 'bg-gray-100 text-gray-500' },
-                          { session: 'Quantifier résultats', time: '19h-19h30', color: 'bg-violet-100 text-violet-800 border-l-4 border-violet-500' },
-                          { session: 'Repos', time: '', color: 'bg-gray-100 text-gray-500' },
-                          { session: 'Leadership', time: '8h-8h45', color: 'bg-emerald-100 text-emerald-800 border-l-4 border-emerald-500' },
-                          { session: 'Personal Branding', time: '10h-10h40', color: 'bg-pink-100 text-pink-800 border-l-4 border-pink-500' },
-                          { session: 'Révision', time: '14h-14h30', color: 'bg-amber-100 text-amber-800 border-l-4 border-amber-500' }
-                        ][index].color}`}>
-                          <div className="font-semibold text-sm mb-1">{[
-                            { session: 'Mots-clés ATS', time: '8h-8h30', color: 'bg-blue-100 text-blue-800 border-l-4 border-blue-500' },
-                            { session: 'Repos', time: '', color: 'bg-gray-100 text-gray-500' },
-                            { session: 'Quantifier résultats', time: '19h-19h30', color: 'bg-violet-100 text-violet-800 border-l-4 border-violet-500' },
-                            { session: 'Repos', time: '', color: 'bg-gray-100 text-gray-500' },
-                            { session: 'Leadership', time: '8h-8h45', color: 'bg-emerald-100 text-emerald-800 border-l-4 border-emerald-500' },
-                            { session: 'Personal Branding', time: '10h-10h40', color: 'bg-pink-100 text-pink-800 border-l-4 border-pink-500' },
-                            { session: 'Révision', time: '14h-14h30', color: 'bg-amber-100 text-amber-800 border-l-4 border-amber-500' }
-                          ][index].session}</div>
-                          {[
-                            { session: 'Mots-clés ATS', time: '8h-8h30', color: 'bg-blue-100 text-blue-800 border-l-4 border-blue-500' },
-                            { session: 'Repos', time: '', color: 'bg-gray-100 text-gray-500' },
-                            { session: 'Quantifier résultats', time: '19h-19h30', color: 'bg-violet-100 text-violet-800 border-l-4 border-violet-500' },
-                            { session: 'Repos', time: '', color: 'bg-gray-100 text-gray-500' },
-                            { session: 'Leadership', time: '8h-8h45', color: 'bg-emerald-100 text-emerald-800 border-l-4 border-emerald-500' },
-                            { session: 'Personal Branding', time: '10h-10h40', color: 'bg-pink-100 text-pink-800 border-l-4 border-pink-500' },
-                            { session: 'Révision', time: '14h-14h30', color: 'bg-amber-100 text-amber-800 border-l-4 border-amber-500' }
-                          ][index].time && <div className="text-xs opacity-75">{[
-                            { session: 'Mots-clés ATS', time: '8h-8h30', color: 'bg-blue-100 text-blue-800 border-l-4 border-blue-500' },
-                            { session: 'Repos', time: '', color: 'bg-gray-100 text-gray-500' },
-                            { session: 'Quantifier résultats', time: '19h-19h30', color: 'bg-violet-100 text-violet-800 border-l-4 border-violet-500' },
-                            { session: 'Repos', time: '', color: 'bg-gray-100 text-gray-500' },
-                            { session: 'Leadership', time: '8h-8h45', color: 'bg-emerald-100 text-emerald-800 border-l-4 border-emerald-500' },
-                            { session: 'Personal Branding', time: '10h-10h40', color: 'bg-pink-100 text-pink-800 border-l-4 border-pink-500' },
-                            { session: 'Révision', time: '14h-14h30', color: 'bg-amber-100 text-amber-800 border-l-4 border-amber-500' }
-                          ][index].time}</div>}
+                  {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((day, index) => {
+                    const sessions = [
+                      { session: 'Mots-clés ATS', time: '8h-8h30', color: 'bg-blue-100 text-blue-800 border-l-4 border-blue-500' },
+                      { session: 'Repos', time: '', color: 'bg-gray-100 text-gray-500' },
+                      { session: 'Quantifier résultats', time: '19h-19h30', color: 'bg-violet-100 text-violet-800 border-l-4 border-violet-500' },
+                      { session: 'Repos', time: '', color: 'bg-gray-100 text-gray-500' },
+                      { session: 'Leadership', time: '8h-8h45', color: 'bg-emerald-100 text-emerald-800 border-l-4 border-emerald-500' },
+                      { session: 'Personal Branding', time: '10h-10h40', color: 'bg-pink-100 text-pink-800 border-l-4 border-pink-500' },
+                      { session: 'Révision', time: '14h-14h30', color: 'bg-amber-100 text-amber-800 border-l-4 border-amber-500' }
+                    ];
+                    const sessionData = sessions[index];
+                    
+                    return (
+                      <div key={day} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+                        <div className="font-bold text-gray-800 mb-3 text-center bg-gradient-to-r from-violet-100 to-pink-100 rounded-lg py-2">
+                          {day}
                         </div>
-                      )}
-                    </div>
-                  ))}
+                        {sessionData && (
+                          <div className={`p-3 rounded-lg text-center ${sessionData.color}`}>
+                            <div className="font-semibold text-sm mb-1">{sessionData.session}</div>
+                            {sessionData.time && <div className="text-xs opacity-75">{sessionData.time}</div>}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 

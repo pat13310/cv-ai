@@ -29,7 +29,7 @@ export const DetailedAnalysis: React.FC<DetailedAnalysisProps> = ({ results }) =
     <div className="space-y-8">
       {/* Header */}
       <div className="text-center">
-        <h2 className="text-3xl font-bold bg-gradient-to-r from-violet-600 to-pink-600 bg-clip-text text-transparent mb-4">
+        <h2 className="heading-gradient">
           Analyse Détaillée IA
         </h2>
         <p className="text-gray-600 max-w-2xl mx-auto">

@@ -34,14 +34,20 @@ export const CVOptimization: React.FC<CVOptimizationProps> = ({
 
   useEffect(() => {
     generateOptimizationSuggestions();
-  }, []);
+  }, [analysisResults]);
 
   const generateOptimizationSuggestions = () => {
     setIsGenerating(true);
     
-    // Simulation des suggestions d'optimisation basées sur l'analyse
+    // Génération de suggestions d'optimisation basées sur l'analyse
+    // TODO: Remplacer par un appel API réel vers le service d'optimisation IA
     setTimeout(() => {
-      const mockSuggestions: OptimizationSuggestion[] = [
+      // Utilisation des résultats d'analyse pour générer des suggestions personnalisées
+      const baseScore = analysisResults.overallScore || 0;
+      const weaknesses = analysisResults.weaknesses || [];
+      const improvements = analysisResults.improvements || [];
+      
+      const generatedSuggestions: OptimizationSuggestion[] = [
         {
           id: '1',
           section: 'Profil professionnel',
@@ -93,8 +99,81 @@ export const CVOptimization: React.FC<CVOptimizationProps> = ({
           applied: false
         }
       ];
+
+      // Ajouter des suggestions basées sur les faiblesses détectées dans l'analyse
+      if (weaknesses.length > 0) {
+        weaknesses.forEach((weakness, index) => {
+          generatedSuggestions.push({
+            id: `weakness-${index + 6}`,
+            section: 'Points faibles identifiés',
+            type: 'replace',
+            priority: 'high',
+            original: `Faiblesse détectée: ${weakness}`,
+            improved: `Amélioration suggérée pour: ${weakness}`,
+            explanation: `Correction recommandée basée sur l'analyse IA: ${weakness}`,
+            applied: false
+          });
+        });
+      }
+
+      // Ajouter des suggestions basées sur les améliorations recommandées
+      if (improvements.length > 0) {
+        improvements.forEach((improvement, index) => {
+          generatedSuggestions.push({
+            id: `improvement-${index + 10}`,
+            section: improvement.title || 'Amélioration générale',
+            type: 'add',
+            priority: improvement.priority || 'medium',
+            original: '',
+            improved: improvement.description || '',
+            explanation: `Amélioration recommandée: ${improvement.title}`,
+            applied: false
+          });
+        });
+      }
+
+      // Ajouter des suggestions basées sur les recommandations générales
+      if (analysisResults.recommendations && analysisResults.recommendations.length > 0) {
+        analysisResults.recommendations.forEach((recommendation, index) => {
+          generatedSuggestions.push({
+            id: `recommendation-${index + 20}`,
+            section: 'Recommandations générales',
+            type: 'add',
+            priority: 'medium',
+            original: '',
+            improved: recommendation,
+            explanation: 'Recommandation basée sur l\'analyse complète du CV',
+            applied: false
+          });
+        });
+      }
+
+      // Ajouter des suggestions basées sur les mots-clés manquants
+      if (analysisResults.keywords?.missing && analysisResults.keywords.missing.length > 0) {
+        const keywordSuggestion = {
+          id: 'keywords-missing',
+          section: 'Mots-clés manquants',
+          type: 'add' as const,
+          priority: 'high' as const,
+          original: '',
+          improved: `Mots-clés à ajouter: ${analysisResults.keywords.missing.join(', ')}`,
+          explanation: 'Ajout de mots-clés importants pour améliorer la compatibilité ATS',
+          applied: false
+        };
+        generatedSuggestions.push(keywordSuggestion);
+      }
+
+      // Utiliser le score de base pour ajuster les priorités si nécessaire
+      if (baseScore < 50) {
+        // Si le score est faible, augmenter la priorité des suggestions critiques
+        generatedSuggestions.forEach(suggestion => {
+          if (suggestion.priority === 'medium' && (suggestion.section.includes('Profil') || suggestion.section.includes('Expérience'))) {
+            suggestion.priority = 'high';
+          }
+        });
+      }
       
-      setSuggestions(mockSuggestions);
+      setSuggestions(generatedSuggestions);
       setIsGenerating(false);
     }, 2000);
   };
@@ -216,7 +295,7 @@ export const CVOptimization: React.FC<CVOptimizationProps> = ({
       // Clean up common Word artifacts
       .replace(/\[VOTRE PRÉNOM\] \[NOM\]/g, '<strong>[Votre Nom]</strong>')
       .replace(/\[votre\.email@email\.com\]/g, '[votre.email@email.com]')
-      .replace(/\[Nom de l\'Entreprise\]/g, '[Nom de l\'Entreprise]')
+      .replace(/\[Nom de l'Entreprise\]/g, '[Nom de l\'Entreprise]')
       .replace(/\[Date début\]/g, '[Date début]')
       .replace(/\[Date fin\]/g, '[Date fin]')
       
