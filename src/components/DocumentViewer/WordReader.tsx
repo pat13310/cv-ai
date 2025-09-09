@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { FileText, AlertCircle, RefreshCw } from 'lucide-react';
 import mammoth from 'mammoth';
 
@@ -12,40 +12,7 @@ export const WordReader: React.FC<WordReaderProps> = ({ file, onTextExtracted })
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const processFile = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        if (file.type === 'text/plain') {
-          // Pour les fichiers texte simples
-          const fileReader = new FileReader();
-          fileReader.onload = (e) => {
-            const result = e.target?.result as string;
-            setContent(result);
-            onTextExtracted?.(result);
-            setIsLoading(false);
-          };
-          fileReader.onerror = () => {
-            setError('Erreur lors de la lecture du fichier');
-            setIsLoading(false);
-          };
-          fileReader.readAsText(file);
-        } else {
-          // Pour les fichiers Word (.doc/.docx)
-          await extractWordContent(file);
-        }
-      } catch {
-        setError('Erreur lors du traitement du fichier');
-        setIsLoading(false);
-      }
-    };
-
-    processFile();
-  }, [file, onTextExtracted]);
-
-  const extractWordContent = async (wordFile: File) => {
+  const extractWordContent = useCallback(async (wordFile: File) => {
     try {
       if (wordFile.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
         // Pour les fichiers .docx, utiliser mammoth
@@ -118,7 +85,40 @@ Le contenu sera correctement analysé lors de l'analyse IA.`;
       setError('Erreur lors de l\'extraction du contenu Word');
       setIsLoading(false);
     }
-  };
+  }, [onTextExtracted]);
+
+  useEffect(() => {
+    const processFile = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        if (file.type === 'text/plain') {
+          // Pour les fichiers texte simples
+          const fileReader = new FileReader();
+          fileReader.onload = (e) => {
+            const result = e.target?.result as string;
+            setContent(result);
+            onTextExtracted?.(result);
+            setIsLoading(false);
+          };
+          fileReader.onerror = () => {
+            setError('Erreur lors de la lecture du fichier');
+            setIsLoading(false);
+          };
+          fileReader.readAsText(file);
+        } else {
+          // Pour les fichiers Word (.doc/.docx)
+          await extractWordContent(file);
+        }
+      } catch {
+        setError('Erreur lors du traitement du fichier');
+        setIsLoading(false);
+      }
+    };
+
+    processFile();
+  }, [file, onTextExtracted, extractWordContent]);
 
   if (isLoading) {
     return (
