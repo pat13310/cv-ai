@@ -5,7 +5,8 @@ import { DetailedAnalysis } from './DetailedAnalysis';
 import { CVOptimization } from '../CVOptimization/CVOptimization';
 import { useOpenAI, CVAnalysisResponse } from '../../hooks/useOpenAI';
 import { useSupabase } from '../../hooks/useSupabase';
-import { Loader2, Sparkles, ArrowLeft } from 'lucide-react';
+import {  ArrowLeft } from 'lucide-react';
+import GradientSpinLoader from '../loader/GradientSpinLoader';
 
 export const CVAnalysis: React.FC = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -110,11 +111,11 @@ export const CVAnalysis: React.FC = () => {
   if (isAnalyzing) {
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-8">
-        <div className="relative">
-          <div className="w-24 h-24 bg-gradient-to-br from-violet-500 via-pink-500 to-blue-500 rounded-full flex items-center justify-center animate-pulse">
+        <div className="relative flex items-center justify-center">
+          {/* }<div className="w-24 h-24 bg-gradient-to-br from-violet-500 via-pink-500 to-blue-500 rounded-full flex items-center justify-center animate-pulse">
             <Sparkles className="w-12 h-12 text-white" />
-          </div>
-          <Loader2 className="w-8 h-8 text-violet-600 animate-spin absolute -top-2 -right-2" />
+          </div>*/}
+          <GradientSpinLoader size={100} thickness={0.05} className="absolute" />
         </div>
         
         <div className="text-center max-w-md">
@@ -122,7 +123,7 @@ export const CVAnalysis: React.FC = () => {
             Analyse IA en cours
           </h3>
           <p className="text-gray-600 mb-6">
-            Notre intelligence artificielle OpenAI analyse votre CV et génère des recommandations personnalisées pour optimiser votre compatibilité ATS
+            Notre intelligence artificielle analyse votre CV et génère des recommandations personnalisées pour optimiser votre compatibilité ATS
           </p>
           
           <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 border border-gray-200/30">
@@ -160,7 +161,7 @@ export const CVAnalysis: React.FC = () => {
       <div className="space-y-6">
         <button
           onClick={() => setShowDetailedAnalysis(false)}
-          className="flex items-center space-x-2 text-violet-600 hover:text-violet-700 font-medium transition-colors"
+          className="rounded-lg border p-2 flex items-center space-x-2 text-violet-500 hover:text-violet-800 hover:border-violet-300 font-medium transition-colors "
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Retour aux résultats</span>
@@ -176,10 +177,10 @@ export const CVAnalysis: React.FC = () => {
         <div className="flex items-center justify-between">
           <button
             onClick={handleNewAnalysis}
-            className="flex items-center space-x-2 text-violet-600 hover:text-violet-700 font-medium transition-colors"
+            className="border px-2 py-2 rounded-lg flex items-center space-x-2 text-violet-600 hover:text-violet-700 font-medium transition-colors hover:border-violet-300"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Nouvelle analyse</span>
+            <span className=''>Nouvelle analyse</span>
           </button>
           
           <button

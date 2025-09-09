@@ -33,7 +33,7 @@ export const DetailedAnalysis: React.FC<DetailedAnalysisProps> = ({ results }) =
           Analyse Détaillée IA
         </h2>
         <p className="text-gray-600 max-w-2xl mx-auto">
-          Analyse approfondie powered by OpenAI avec insights avancés et recommandations personnalisées
+          Analyse approfondie powered by IA avec insights avancés et recommandations personnalisées
         </p>
       </div>
 

@@ -80,7 +80,7 @@ export const CVUpload: React.FC<CVUploadProps> = ({ onFileUpload }) => {
         <div className="flex items-center justify-between">
           <button
             onClick={handleNewUpload}
-            className="flex items-center space-x-2 text-violet-600 hover:text-violet-700 font-medium transition-colors"
+            className="rounded-lg p-2 border flex items-center space-x-2 text-violet-500 hover:text-violet-700 hover:border-violet-300 font-medium transition-colors"
           >
             <Upload className="w-4 h-4" />
             <span>Télécharger un autre fichier</span>
@@ -88,9 +88,10 @@ export const CVUpload: React.FC<CVUploadProps> = ({ onFileUpload }) => {
           
           <button
             onClick={handleAnalyzeFile}
-            className="bg-gradient-to-r from-violet-600 to-pink-600 text-white px-6 py-3 rounded-xl font-medium hover:from-violet-700 hover:to-pink-700 transition-all duration-200 hover:scale-105"
+            className="bg-gradient-to-r from-violet-600 to-pink-600 text-white px-6 py-3 rounded-xl font-medium hover:from-violet-700 hover:to-pink-700 transition-all duration-200 hover:scale-105 flex items-center space-x-2"
           >
-            Analyser ce CV
+            <FileText className="w-5 h-5" />
+            <span>Analyser le CV</span>
           </button>
         </div>
         

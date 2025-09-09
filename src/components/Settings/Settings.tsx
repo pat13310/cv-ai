@@ -8,6 +8,7 @@ import { SupabaseConfigModal } from '../Auth/SupabaseConfigModal';
 
 interface SettingsProps {
   onBack: () => void;
+  onApiKeyStatusChange?: (status: 'valid' | 'invalid' | 'missing') => void;
 }
 
 type SettingsType = {
@@ -21,6 +22,7 @@ type SettingsType = {
     keywordSuggestions: boolean;
     industrySpecific: boolean;
     apiKey: string;
+    keyStatus?: 'valid' | 'invalid';
     voiceRecognition: boolean;
     voiceSynthesis: boolean;
   };
@@ -59,7 +61,7 @@ type SettingsType = {
   };
 };
 
-export const Settings: React.FC<SettingsProps> = ({ onBack }) => {
+export const Settings: React.FC<SettingsProps> = ({ onBack, onApiKeyStatusChange }) => {
   const [activeSection, setActiveSection] = useState('ai');
   const [authError, setAuthError] = useState<string | null>(null);
   const [showConfigModal, setShowConfigModal] = useState(false);
@@ -179,7 +181,7 @@ export const Settings: React.FC<SettingsProps> = ({ onBack }) => {
     }));
   };
 
-  const testApiKey = async (apiKey: string): Promise<boolean> => {
+  const testApiKey = async (apiKey: string): Promise<'valid' | 'invalid'> => {
     try {
       const response = await fetch('https://api.openai.com/v1/models', {
         headers: {
@@ -189,14 +191,14 @@ export const Settings: React.FC<SettingsProps> = ({ onBack }) => {
       
       if (response.ok) {
         alert('✅ Clé API OpenAI valide et connectée !');
-        return true;
+        return 'valid';
       } else {
         alert('❌ Clé API invalide. Vérifiez votre clé.');
-        return false;
+        return 'invalid';
       }
     } catch {
       alert('❌ Erreur de connexion à OpenAI. Vérifiez votre clé et votre connexion internet.');
-      return false;
+      return 'invalid';
     }
   };
 
@@ -359,7 +361,17 @@ export const Settings: React.FC<SettingsProps> = ({ onBack }) => {
                   <input
                     type="password"
                     value={settings.ai.apiKey}
-                    onChange={(e) => updateSetting('ai', 'apiKey', e.target.value)}
+                    onChange={(e) => {
+                      updateSetting('ai', 'apiKey', e.target.value);
+                      // Update status based on key length
+                      if (onApiKeyStatusChange) {
+                        if (e.target.value.length === 0) {
+                          onApiKeyStatusChange('missing');
+                        } else {
+                          onApiKeyStatusChange('invalid');
+                        }
+                      }
+                    }}
                     placeholder={
                       settings.ai.model.includes('gpt') ? 'sk-...' :
                       settings.ai.model.includes('claude') ? 'sk-ant-...' :
@@ -368,14 +380,30 @@ export const Settings: React.FC<SettingsProps> = ({ onBack }) => {
                     }
                     className="flex-1 px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 focus:outline-none transition-all duration-200"
                   />
-                  <button 
+                  <button
                     onClick={async () => {
                       if (settings.ai.apiKey) {
                         // Test the API key
-                        const isValid = await testApiKey(settings.ai.apiKey);
-                        if (isValid) {
-                          // Save settings to localStorage
-                          localStorage.setItem('cvAssistantSettings', JSON.stringify(settings));
+                        const keyStatus = await testApiKey(settings.ai.apiKey);
+                        // Save settings to localStorage with the validation result
+                        const updatedSettings = {
+                          ...settings,
+                          ai: {
+                            ...settings.ai,
+                            keyStatus: keyStatus
+                          }
+                        };
+                        localStorage.setItem('cvAssistantSettings', JSON.stringify(updatedSettings));
+                        setSettings(updatedSettings);
+                        
+                        // Notify parent component of the status change
+                        if (onApiKeyStatusChange) {
+                          onApiKeyStatusChange(keyStatus);
+                        }
+                      } else {
+                        // If no API key, set status to missing
+                        if (onApiKeyStatusChange) {
+                          onApiKeyStatusChange('missing');
                         }
                       }
                     }}

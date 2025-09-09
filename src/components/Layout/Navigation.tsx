@@ -16,7 +16,6 @@ const navItems = [
   { id: 'library', label: 'Bibliothèque', icon: FolderOpen },
   { id: 'models', label: 'Modèles', icon: BookOpen },
 ];
-
 export const Navigation: React.FC<NavigationProps> = ({ activeTab, onTabChange }) => {
   return (
     <nav className="bg-white/60 backdrop-blur-md border-b border-gray-200/30">

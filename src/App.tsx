@@ -23,6 +23,43 @@ const SupabaseAppContent: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [voiceEnabled] = useState(true);
+  const [apiKeyStatus, setApiKeyStatus] = useState<'valid' | 'invalid' | 'missing'>('missing');
+
+  // Fonction pour vérifier le statut de la clé API
+  const checkApiKeyStatus = () => {
+    const savedSettings = localStorage.getItem('cvAssistantSettings');
+    if (savedSettings) {
+      try {
+        const settings = JSON.parse(savedSettings);
+        const apiKey = settings.ai?.apiKey;
+        const keyStatus = settings.ai?.keyStatus;
+        
+        if (!apiKey || apiKey.length === 0) {
+          setApiKeyStatus('missing');
+        } else if (keyStatus === 'valid') {
+          setApiKeyStatus('valid');
+        } else {
+          // Si clé présente mais pas validée, considérer comme invalide
+          setApiKeyStatus('invalid');
+        }
+      } catch {
+        setApiKeyStatus('missing');
+      }
+    } else {
+      setApiKeyStatus('missing');
+    }
+  };
+
+  // Vérifier le statut de la clé API au chargement et quand on revient des settings
+  React.useEffect(() => {
+    checkApiKeyStatus();
+  }, []);
+
+  React.useEffect(() => {
+    if (!showSettings) {
+      checkApiKeyStatus();
+    }
+  }, [showSettings]);
 
   if (isLoading) {
     return (
@@ -58,7 +95,7 @@ const SupabaseAppContent: React.FC = () => {
       case 'models':
         return <Models />;
       case 'settings':
-        return <Settings onBack={handleBackToDashboard} />;
+        return <Settings onBack={handleBackToDashboard} onApiKeyStatusChange={setApiKeyStatus} />;
       case 'chat':
         return <AIChat onBack={handleBackToDashboard} voiceEnabled={voiceEnabled} onSettingsClick={handleSettingsClick} fromCoaching={true} />;
       default:
@@ -115,6 +152,7 @@ const SupabaseAppContent: React.FC = () => {
           user={headerUser!}
           onSettingsClick={handleSettingsClick}
           onLogout={handleLogout}
+          apiKeyStatus={apiKeyStatus}
         />
         {!showSettings && !showChat && <Navigation activeTab={activeTab} onTabChange={handleTabChange} />}
         
@@ -136,6 +174,43 @@ const MockAppContent: React.FC = () => {
   const [showChat, setShowChat] = useState(false);
   const [voiceEnabled] = useState(true);
   const [demoMode, setDemoMode] = useState(false);
+  const [apiKeyStatus, setApiKeyStatus] = useState<'valid' | 'invalid' | 'missing'>('missing');
+
+  // Fonction pour vérifier le statut de la clé API
+  const checkApiKeyStatus = () => {
+    const savedSettings = localStorage.getItem('cvAssistantSettings');
+    if (savedSettings) {
+      try {
+        const settings = JSON.parse(savedSettings);
+        const apiKey = settings.ai?.apiKey;
+        const keyStatus = settings.ai?.keyStatus;
+        
+        if (!apiKey || apiKey.length === 0) {
+          setApiKeyStatus('missing');
+        } else if (keyStatus === 'valid') {
+          setApiKeyStatus('valid');
+        } else {
+          // Si clé présente mais pas validée, considérer comme invalide
+          setApiKeyStatus('invalid');
+        }
+      } catch {
+        setApiKeyStatus('missing');
+      }
+    } else {
+      setApiKeyStatus('missing');
+    }
+  };
+
+  // Vérifier le statut de la clé API au chargement et quand on revient des settings
+  React.useEffect(() => {
+    checkApiKeyStatus();
+  }, []);
+
+  React.useEffect(() => {
+    if (!showSettings) {
+      checkApiKeyStatus();
+    }
+  }, [showSettings]);
 
   if (isLoading) {
     return (
@@ -225,6 +300,7 @@ const MockAppContent: React.FC = () => {
           } : user!}
           onSettingsClick={handleSettingsClick}
           onLogout={demoMode ? () => setDemoMode(false) : handleLogout}
+          apiKeyStatus={apiKeyStatus}
         />
         {!showSettings && !showChat && <Navigation activeTab={activeTab} onTabChange={handleTabChange} />}
         
