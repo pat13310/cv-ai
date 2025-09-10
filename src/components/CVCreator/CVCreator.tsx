@@ -3,7 +3,7 @@ import { Document, Packer, Paragraph, AlignmentType } from 'docx';
 import { saveAs } from 'file-saver';
 import { useOpenAI } from '../../hooks/useOpenAI';
 import { useSupabase } from '../../hooks/useSupabase';
-import { CVPreview } from './CVPreview';
+import { CVPreviewDragDrop } from './CVPreviewDragDrop';
 import type { CVExperience, CVSkill, CVLanguage, CVContent, CVEducation } from './CVPreview';
 
 interface Template {
@@ -24,6 +24,7 @@ const availableColors = [
   { name: 'Bleu vif', value: '2563EB' },
   { name: 'Gris foncé', value: '111827' },
   { name: 'Vert foncé', value: '064E3B' },
+  { name: 'Émeraude', value: '10B981' },
   { name: 'Violet', value: '7C3AED' }
 ];
 
@@ -347,7 +348,7 @@ export const CVCreator: React.FC = () => {
       category: "Moderne",
       atsScore: 90,
       preview: "bg-gradient-to-br from-violet-100 to-indigo-100",
-      image: "/images/minimalist.jpg",
+      image: "/images/minimalist.png",
       theme: { primaryColor: "2E3A59", font: "Calibri" },
     },
     {
@@ -357,7 +358,7 @@ export const CVCreator: React.FC = () => {
       category: "Créatif",
       atsScore: 70,
       preview: "bg-gradient-to-br from-pink-100 to-rose-100",
-      image: "/images/creatif.jpg",
+      image: "/images/creatif.png",
       theme: { primaryColor: "2563EB", font: "Helvetica" },
     },
     {
@@ -367,7 +368,7 @@ export const CVCreator: React.FC = () => {
       category: "Classique",
       atsScore: 85,
       preview: "bg-gradient-to-br from-gray-100 to-slate-100",
-      image: "/images/corporate.jpg",
+      image: "/images/corporate.png",
       theme: { primaryColor: "111827", font: "Times New Roman" },
     },
     {
@@ -377,7 +378,7 @@ export const CVCreator: React.FC = () => {
       category: "Moderne",
       atsScore: 88,
       preview: "bg-gradient-to-br from-violet-100 to-purple-100",
-      image: "/images/modern.jpg",
+      image: "/images/modern.png",
       theme: { primaryColor: "7C3AED", font: "Calibri" },
     },
     {
@@ -387,8 +388,18 @@ export const CVCreator: React.FC = () => {
       category: "Classique",
       atsScore: 92,
       preview: "bg-gradient-to-br from-gray-100 to-gray-200",
-      image: "/images/elegant-bw.jpg",
+      image: "/images/elegant-bw.png",
       theme: { primaryColor: "0F172A", font: "Georgia" },
+    },
+    {
+      id: "6",
+      name: "Émeraude",
+      description: "Style élégant avec des accents émeraude pour un look professionnel moderne.",
+      category: "Moderne",
+      atsScore: 94,
+      preview: "bg-gradient-to-br from-emerald-100 to-green-100",
+      image: "/images/emeraude.png",
+      theme: { primaryColor: "10B981", font: "Georgia" },
     },
   ];
 
@@ -503,7 +514,7 @@ export const CVCreator: React.FC = () => {
 
         <div className="w-full lg:w-1/2">
           {/* Aperçu dynamique en temps réel */}
-          <CVPreview
+          <CVPreviewDragDrop
             editableContent={editableContent}
             setEditableContent={setEditableContent}
             experiences={experiences}
@@ -546,7 +557,7 @@ export const CVCreator: React.FC = () => {
                 key={template.id}
                 onClick={() => setSelectedTemplate(template.id)}
                 className={`
-      m-2 rounded-xl border shadow-md transition-all duration-300 ease-in-out relative flex flex-col h-full min-h-[200px] overflow-hidden
+      m-2 rounded-xl border shadow-md transition-all duration-300 ease-in-out relative flex flex-col overflow-hidden
       ${selectedTemplate === template.id
                     ? 'border-violet-500 bg-pink-500'
                     : 'border-gray-200 bg-white'}
@@ -555,27 +566,23 @@ export const CVCreator: React.FC = () => {
                 style={{
                   backgroundImage: `url(${template.image})`,
                   backgroundSize: 'cover',
-                  backgroundPosition: 'center'
+                  backgroundPosition: 'center',
+                  aspectRatio: '1 / 1.414' // Format A4
                 }}
               >
                 {/* Overlay flou blanc par-dessus l'image */}
                 <div className="absolute inset-0 bg-white/40 z-0"></div>
 
-                {/* Bandeau en haut */}
-                <div className="absolute top-0 left-0 w-full bg-gradient-to-r from-violet-500/60 to-purple-500/50  px-4 py-2 z-10 ">
-                  <div className="flex items-center gap-4">
-                    <div>
-                      <h3 className="text-md font-bold text-white drop-shadow-lg">{template.name}</h3>
-                      <p className="text-sm text-white/90 leading-snug drop-shadow-md">
-                        {template.description}
-                      </p>
-                    </div>
+                {/* Titre en diagonal avec fond rose semi-transparent */}
+                <div className="absolute top-4 left-0 right-0 z-10 transform -rotate-12 origin-left">
+                  <div className="bg-pink-500/70 text-white px-6 py-2 shadow-lg">
+                    <h3 className="text-lg font-bold drop-shadow-lg">{template.name}</h3>
                   </div>
                 </div>
 
-                {/* Contenu principal sous le bandeau */}
-                <div className="relative z-10 flex flex-col h-full pt-20 px-4 pb-4">
-                  <div className="flex flex-col sm:flex-row justify-between items-center mt-auto gap-2 sm:gap-0">
+                {/* Contenu principal en bas */}
+                <div className="relative z-10 flex flex-col h-full justify-end p-4">
+                  <div className="flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-0">
                     <div className="flex flex-col gap-1">
                       <span className="text-xs font-medium px-2 py-1 bg-gray-100 text-gray-700 rounded-full w-fit">
                         {template.category}
@@ -592,7 +599,7 @@ export const CVCreator: React.FC = () => {
 
                     {/* Bouton Télécharger */}
                     <button
-                      className="px-4 py-2 bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white font-medium rounded-xl shadow-md hover:shadow-lg transition-all relative z-10 center-below-1156px"
+                      className="px-4 py-2 bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white font-medium rounded-xl shadow-md hover:shadow-lg transition-all relative z-10"
                       onClick={(e) => {
                         e.stopPropagation();
                         generateDocx(template);
