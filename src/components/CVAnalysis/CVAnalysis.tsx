@@ -16,29 +16,31 @@ export const CVAnalysis: React.FC = () => {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [originalContent, setOriginalContent] = useState<string>('');
   const [isOptimizing, setIsOptimizing] = useState(false);
-  const { analyzeFile } = useOpenAI();
+  const [showResults, setShowResults] = useState(false);
+  const { analyzeFile, error } = useOpenAI();
   const { addActivity } = useSupabase();
 
   const handleFileUpload = async (file: File) => {
     setUploadedFile(file);
-    
-    // Extract content for optimization
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const content = e.target?.result as string;
-      setOriginalContent(content || '');
-    };
-    reader.readAsText(file);
-    
     setIsAnalyzing(true);
     
     try {
-      const results = await analyzeFile(file, 'Développeur Full Stack'); // You can make this dynamic based on user input
+      console.log('Début de l\'analyse du fichier:', file.name, 'Type:', file.type);
+      
+      // Analyser le fichier directement avec l'IA - OBLIGATOIRE
+      // L'extraction de contenu se fait dans le hook useOpenAI
+      const results = await analyzeFile(file, 'Développeur Full Stack');
+      
+      console.log('Résultats de l\'analyse:', results);
       
       if (results) {
+        console.log('Analyse réussie, affichage des résultats');
         setAnalysisResults(results);
         
-        // Ajouter l'activité à Supabase
+        // Stocker le contenu original pour l'affichage
+        setOriginalContent(`Analyse du fichier: ${file.name}`);
+        
+        // Ajouter l'activité à Supabase (optionnel - ne pas bloquer l'analyse si ça échoue)
         try {
           await addActivity({
             type: 'analysis',
@@ -53,14 +55,22 @@ export const CVAnalysis: React.FC = () => {
               analysisTime: new Date().toISOString()
             }
           });
+          console.log('Activité enregistrée avec succès');
         } catch (error) {
-          console.error('Erreur lors de l\'enregistrement de l\'activité:', error);
+          console.warn('Impossible d\'enregistrer l\'activité (permissions Supabase):', error);
+          // Ne pas bloquer l'analyse - continuer normalement
         }
+        
+        // Afficher automatiquement les résultats après l'analyse
+        setShowResults(true);
       } else {
-        // The error is already handled by the useOpenAI hook and displayed to the user
+        // Si l'analyse échoue, afficher l'erreur - PAS DE MOCK
+        console.error('Analyse IA échouée - results est null');
+        console.error('Erreur détaillée:', error);
+        // L'erreur sera affichée via le hook useOpenAI
       }
     } catch (error) {
-      console.error('Erreur lors de l\'analyse:', error);
+      console.error('Erreur lors de l\'analyse (catch):', error);
     } finally {
       setIsAnalyzing(false);
     }
@@ -72,6 +82,7 @@ export const CVAnalysis: React.FC = () => {
     setShowOptimization(false);
     setUploadedFile(null);
     setOriginalContent('');
+    setShowResults(false);
   };
 
   const handleOptimize = async () => {
@@ -171,7 +182,7 @@ export const CVAnalysis: React.FC = () => {
     );
   }
 
-  if (analysisResults) {
+  if (analysisResults && showResults) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -202,5 +213,22 @@ export const CVAnalysis: React.FC = () => {
     );
   }
 
-  return <CVUpload onFileUpload={handleFileUpload} />;
+  return (
+    <div className="space-y-6">
+      <CVUpload onFileUpload={handleFileUpload} />
+      
+      {/* Affichage des erreurs */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start space-x-3">
+          <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+            <span className="text-white text-xs font-bold">!</span>
+          </div>
+          <div>
+            <h4 className="font-medium text-red-800 text-sm mb-1">Erreur d'analyse IA</h4>
+            <p className="text-red-700 text-xs">{error}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };

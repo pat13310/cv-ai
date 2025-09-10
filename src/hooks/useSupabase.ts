@@ -113,9 +113,27 @@ export const useSupabase = () => {
     }
 
     try {
+      // Récupérer l'utilisateur connecté
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError) {
+        console.error('Erreur d\'authentification:', authError);
+        throw new Error('Utilisateur non authentifié');
+      }
+      
+      if (!user) {
+        throw new Error('Utilisateur non connecté');
+      }
+
+      // Ajouter le user_id à l'activité
+      const activityWithUserId = {
+        ...activity,
+        user_id: user.id
+      };
+
       const { data, error } = await supabase
         .from('activities')
-        .insert([activity])
+        .insert([activityWithUserId])
         .select()
         .single();
 
