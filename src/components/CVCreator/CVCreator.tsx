@@ -4,7 +4,7 @@ import { saveAs } from 'file-saver';
 import { useOpenAI } from '../../hooks/useOpenAI';
 import { useSupabase } from '../../hooks/useSupabase';
 import { CVPreview } from './CVPreview';
-import type { CVExperience, CVSkill, CVLanguage, CVContent } from './CVPreview';
+import type { CVExperience, CVSkill, CVLanguage, CVContent, CVEducation } from './CVPreview';
 
 interface Template {
   id: string;
@@ -40,7 +40,6 @@ export const CVCreator: React.FC = () => {
     profileContent: 'Résumé de votre profil et de vos objectifs.',
     experienceTitle: 'EXPÉRIENCE PROFESSIONNELLE',
     educationTitle: 'FORMATION',
-    educationContent: '[Diplôme] - [École] - [Année]',
     skillsTitle: 'COMPÉTENCES TECHNIQUES',
     languagesTitle: 'LANGUES'
   });
@@ -61,6 +60,10 @@ export const CVCreator: React.FC = () => {
   const [languages, setLanguages] = useState<CVLanguage[]>([
     { id: 1, name: 'Français', level: 'Natif' },
     { id: 2, name: 'Anglais', level: 'Courant' }
+  ]);
+
+  const [educations, setEducations] = useState<CVEducation[]>([
+    { id: 1, degree: '[Diplôme]', school: '[École]', year: '[Année]' }
   ]);
 
   const [editingField, setEditingField] = useState<string | null>(null);
@@ -140,12 +143,6 @@ export const CVCreator: React.FC = () => {
       }
       console.log('CVCreator - Contenu profil:', profileContent);
 
-      // Construire le contenu de formation
-      let educationContent = '[Diplôme] - [École] - [Année]';
-      if (profileData.profession) {
-        educationContent = `Formation en ${profileData.profession} - [École] - [Année]`;
-      }
-
       // Créer le nouveau contenu sans dépendre de l'état actuel editableContent
       // pour éviter la dépendance circulaire
       const defaultContent = {
@@ -155,7 +152,6 @@ export const CVCreator: React.FC = () => {
         profileContent: 'Résumé de votre profil et de vos objectifs.',
         experienceTitle: 'EXPÉRIENCE PROFESSIONNELLE',
         educationTitle: 'FORMATION',
-        educationContent: '[Diplôme] - [École] - [Année]',
         skillsTitle: 'COMPÉTENCES TECHNIQUES',
         languagesTitle: 'LANGUES'
       };
@@ -164,8 +160,7 @@ export const CVCreator: React.FC = () => {
         ...defaultContent,
         name: fullName || defaultContent.name,
         contact: contactLine,
-        profileContent: profileContent,
-        educationContent: educationContent
+        profileContent: profileContent
       };
       
       console.log('CVCreator - Nouveau contenu:', newContent);
@@ -180,6 +175,18 @@ export const CVCreator: React.FC = () => {
         }];
         console.log('CVCreator - Nouvelle expérience:', newExperience);
         setExperiences(newExperience);
+      }
+
+      // Mettre à jour la formation si on a des infos
+      if (profileData.profession) {
+        const newEducation = [{
+          id: 1,
+          degree: `Formation en ${profileData.profession}`,
+          school: '[École]',
+          year: '[Année]'
+        }];
+        console.log('CVCreator - Nouvelle formation:', newEducation);
+        setEducations(newEducation);
       }
     } else {
       console.log('CVCreator - Aucune donnée de profil disponible');
@@ -221,8 +228,14 @@ export const CVCreator: React.FC = () => {
         case 'educationTitle':
           prompt = "Génère un titre de section pour la formation dans un CV. Réponds uniquement avec le titre, sans texte supplémentaire.";
           break;
-        case 'educationContent':
-          prompt = "Génère une entrée de formation au format '[Diplôme] - [École] - [Année]'. Réponds uniquement avec l'entrée, sans texte supplémentaire.";
+        case 'educationDegree':
+          prompt = "Génère un nom de diplôme pour un CV. Réponds uniquement avec le nom du diplôme, sans texte supplémentaire.";
+          break;
+        case 'educationSchool':
+          prompt = "Génère un nom d'école ou d'université pour un CV. Réponds uniquement avec le nom de l'établissement, sans texte supplémentaire.";
+          break;
+        case 'educationYear':
+          prompt = "Génère une année ou période d'études pour un CV (ex: 2020, 2018-2020). Réponds uniquement avec l'année, sans texte supplémentaire.";
           break;
         case 'skillsTitle':
           prompt = "Génère un titre de section pour les compétences techniques dans un CV. Réponds uniquement avec le titre, sans texte supplémentaire.";
@@ -284,6 +297,30 @@ export const CVCreator: React.FC = () => {
           setLanguages(prev => prev.map(lang =>
             lang.id === langId ? { ...lang, level: aiResponse } : lang
           ));
+        } else if (field === 'educationDegree' && currentContent) {
+          // Trouver la formation correspondante et mettre à jour le diplôme
+          const eduToUpdate = educations.find(edu => edu.degree === currentContent);
+          if (eduToUpdate) {
+            setEducations(prev => prev.map(edu =>
+              edu.id === eduToUpdate.id ? { ...edu, degree: aiResponse } : edu
+            ));
+          }
+        } else if (field === 'educationSchool' && currentContent) {
+          // Trouver la formation correspondante et mettre à jour l'école
+          const eduToUpdate = educations.find(edu => edu.school === currentContent);
+          if (eduToUpdate) {
+            setEducations(prev => prev.map(edu =>
+              edu.id === eduToUpdate.id ? { ...edu, school: aiResponse } : edu
+            ));
+          }
+        } else if (field === 'educationYear' && currentContent) {
+          // Trouver la formation correspondante et mettre à jour l'année
+          const eduToUpdate = educations.find(edu => edu.year === currentContent);
+          if (eduToUpdate) {
+            setEducations(prev => prev.map(edu =>
+              edu.id === eduToUpdate.id ? { ...edu, year: aiResponse } : edu
+            ));
+          }
         } else {
           // Mettre à jour le contenu éditable avec la réponse de l'IA
           setEditableContent(prev => ({ ...prev, [field]: aiResponse }));
@@ -371,6 +408,9 @@ export const CVCreator: React.FC = () => {
     // Générer la chaîne de caractères pour les langues
     const languagesString = languages.map(lang => `${lang.name} (${lang.level})`).join(' • ');
 
+    // Générer la chaîne de caractères pour les formations
+    const educationsString = educations.map(edu => `${edu.degree} - ${edu.school} - ${edu.year}`).join('\n');
+
     const doc = new Document({
       styles: {
         default: {
@@ -405,7 +445,7 @@ export const CVCreator: React.FC = () => {
             new Paragraph({ text: exp.details })
           ]).flat(),
           new Paragraph({ text: editableContent.educationTitle, style: 'Heading2' }),
-          new Paragraph({ text: editableContent.educationContent }),
+          new Paragraph({ text: educationsString }),
           new Paragraph({ text: editableContent.skillsTitle, style: 'Heading2' }),
           ...skills.map(skill => new Paragraph({ text: `• ${skill}` })),
           new Paragraph({ text: editableContent.languagesTitle, style: 'Heading2' }),
@@ -446,6 +486,15 @@ export const CVCreator: React.FC = () => {
     setLanguages(prev => prev.filter(lang => lang.id !== id));
   };
 
+  const addEducation = () => {
+    const newId = educations.length > 0 ? Math.max(...educations.map(edu => edu.id)) + 1 : 1;
+    setEducations(prev => [...prev, { id: newId, degree: '[Diplôme]', school: '[École]', year: '[Année]' }]);
+  };
+
+  const removeEducation = (id: number) => {
+    setEducations(prev => prev.filter(edu => edu.id !== id));
+  };
+
   return (
     <div className='w-full'>
       <h1 className="heading-gradient text-center">Créateur de CV</h1>
@@ -463,6 +512,8 @@ export const CVCreator: React.FC = () => {
             setSkills={setSkills}
             languages={languages}
             setLanguages={setLanguages}
+            educations={educations}
+            setEducations={setEducations}
             editingField={editingField}
             setEditingField={setEditingField}
             customFont={customFont}
@@ -479,6 +530,8 @@ export const CVCreator: React.FC = () => {
             removeSkill={removeSkill}
             addLanguage={addLanguage}
             removeLanguage={removeLanguage}
+            addEducation={addEducation}
+            removeEducation={removeEducation}
             generateWithAI={generateWithAI}
             isLoading={isLoading}
             error={error}

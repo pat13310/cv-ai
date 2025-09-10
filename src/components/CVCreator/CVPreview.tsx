@@ -20,6 +20,13 @@ export interface CVLanguage {
   level: string;
 }
 
+export interface CVEducation {
+  id: number;
+  degree: string;
+  school: string;
+  year: string;
+}
+
 export interface CVContent {
   name: string;
   contact: string;
@@ -27,7 +34,6 @@ export interface CVContent {
   profileContent: string;
   experienceTitle: string;
   educationTitle: string;
-  educationContent: string;
   skillsTitle: string;
   languagesTitle: string;
 }
@@ -43,6 +49,8 @@ export interface CVPreviewProps {
   setSkills: React.Dispatch<React.SetStateAction<CVSkill[]>>;
   languages: CVLanguage[];
   setLanguages: React.Dispatch<React.SetStateAction<CVLanguage[]>>;
+  educations: CVEducation[];
+  setEducations: React.Dispatch<React.SetStateAction<CVEducation[]>>;
   
   // État d'édition
   editingField: string | null;
@@ -65,6 +73,8 @@ export interface CVPreviewProps {
   removeSkill: (id: number) => void;
   addLanguage: () => void;
   removeLanguage: (id: number) => void;
+  addEducation: () => void;
+  removeEducation: (id: number) => void;
   
   // IA
   generateWithAI: (field: string, currentContent?: string) => Promise<void>;
@@ -124,6 +134,8 @@ export const CVPreview: React.FC<CVPreviewProps> = ({
   setSkills,
   languages,
   setLanguages,
+  educations,
+  setEducations,
   editingField,
   setEditingField,
   customFont = 'Calibri',
@@ -147,6 +159,8 @@ export const CVPreview: React.FC<CVPreviewProps> = ({
   removeSkill,
   addLanguage,
   removeLanguage,
+  addEducation,
+  removeEducation,
   generateWithAI,
   isLoading,
   error,
@@ -418,46 +432,132 @@ export const CVPreview: React.FC<CVPreviewProps> = ({
           ) : (
             <div className="flex items-center gap-2">
               <h4
-                className="text-md font-semibold cursor-pointer hover:bg-gray-100 p-1 rounded transition-all duration-200 hover:scale-105"
+                className="text-md font-semibold cursor-pointer hover:bg-gray-100 p-1 rounded whitespace-nowrap transition-all duration-200 hover:scale-105"
                 onClick={() => setEditingField('educationTitle')}
                 style={{ color: `#${titleColor}` }}
               >
                 {editableContent.educationTitle}
               </h4>
-              <AIButton
-                isLoading={isLoading}
-                onClick={() => generateWithAI('educationTitle', editableContent.educationTitle)}
-                title="Modifier avec IA"
-              />
+              <div className="flex gap-1 ml-auto">
+                <AIButton
+                  isLoading={isLoading}
+                  onClick={() => generateWithAI('educationTitle', editableContent.educationTitle)}
+                  title="Modifier avec IA"
+                />
+                <button
+                  onClick={addEducation}
+                  className="p-1 text-violet-600 hover:text-violet-800 transition-all duration-200 hover:scale-110"
+                  title="Ajouter une formation"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           )}
 
-          {editingField === 'educationContent' ? (
-            <input
-              type="text"
-              value={editableContent.educationContent}
-              onChange={(e) => setEditableContent(prev => ({ ...prev, educationContent: e.target.value }))}
-              onBlur={() => setEditingField(null)}
-              onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-              className="text-sm w-full border-b border-gray-400 focus:outline-none focus:border-violet-500 mt-2"
-              autoFocus
-            />
-          ) : (
-            <div className="flex items-center gap-2 mt-2">
-              <p
-                className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 transition-all duration-200 hover:scale-105"
-                onClick={() => setEditingField('educationContent')}
-                style={{ color: `#${customColor}` }}
-              >
-                {editableContent.educationContent}
-              </p>
-              <AIButton
-                isLoading={isLoading}
-                onClick={() => generateWithAI('educationContent', editableContent.educationContent)}
-                title="Modifier avec IA"
-              />
+          {educations.map(edu => (
+            <div key={edu.id} className="relative group mt-2">
+              <div className="flex items-start justify-between gap-2">
+                <div className="grid grid-cols-[2fr_2fr_1fr] gap-2 flex-1">
+                  {/* Diplôme */}
+                  {editingField === `educationDegree-${edu.id}` ? (
+                    <input
+                      type="text"
+                      value={edu.degree}
+                      onChange={(e) => setEducations(prev => prev.map(item => item.id === edu.id ? { ...item, degree: e.target.value } : item))}
+                      onBlur={() => setEditingField(null)}
+                      onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
+                      className="text-sm w-full border-b border-gray-400 focus:outline-none focus:border-violet-500"
+                      placeholder="Diplôme"
+                      autoFocus
+                    />
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <p
+                        className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 transition-all duration-200 hover:scale-105"
+                        onClick={() => setEditingField(`educationDegree-${edu.id}`)}
+                        style={{ color: `#${customColor}` }}
+                      >
+                        {edu.degree}
+                      </p>
+                      <AIButton
+                        isLoading={isLoading}
+                        onClick={() => generateWithAI('educationDegree', edu.degree)}
+                        title="Modifier avec IA"
+                      />
+                    </div>
+                  )}
+
+                  {/* École */}
+                  {editingField === `educationSchool-${edu.id}` ? (
+                    <input
+                      type="text"
+                      value={edu.school}
+                      onChange={(e) => setEducations(prev => prev.map(item => item.id === edu.id ? { ...item, school: e.target.value } : item))}
+                      onBlur={() => setEditingField(null)}
+                      onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
+                      className="text-sm w-full border-b border-gray-400 focus:outline-none focus:border-violet-500"
+                      placeholder="École"
+                      autoFocus
+                    />
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <p
+                        className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 transition-all duration-200 hover:scale-105"
+                        onClick={() => setEditingField(`educationSchool-${edu.id}`)}
+                        style={{ color: `#${customColor}` }}
+                      >
+                        {edu.school}
+                      </p>
+                      <AIButton
+                        isLoading={isLoading}
+                        onClick={() => generateWithAI('educationSchool', edu.school)}
+                        title="Modifier avec IA"
+                      />
+                    </div>
+                  )}
+
+                  {/* Année */}
+                  {editingField === `educationYear-${edu.id}` ? (
+                    <input
+                      type="text"
+                      value={edu.year}
+                      onChange={(e) => setEducations(prev => prev.map(item => item.id === edu.id ? { ...item, year: e.target.value } : item))}
+                      onBlur={() => setEditingField(null)}
+                      onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
+                      className="text-sm w-full border-b border-gray-400 focus:outline-none focus:border-violet-500"
+                      placeholder="Année"
+                      autoFocus
+                    />
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <p
+                        className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 transition-all duration-200 hover:scale-105"
+                        onClick={() => setEditingField(`educationYear-${edu.id}`)}
+                        style={{ color: `#${customColor}` }}
+                      >
+                        {edu.year}
+                      </p>
+                      <AIButton
+                        isLoading={isLoading}
+                        onClick={() => generateWithAI('educationYear', edu.year)}
+                        title="Modifier avec IA"
+                      />
+                    </div>
+                  )}
+                </div>
+                
+                {/* Bouton supprimer bien visible à droite */}
+                <button
+                  onClick={() => removeEducation(edu.id)}
+                  className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-all duration-200 hover:scale-110 opacity-70 group-hover:opacity-100"
+                  title="Supprimer la formation"
+                >
+                  <Minus className="w-4 h-4" />
+                </button>
+              </div>
             </div>
-          )}
+          ))}
         </div>
 
         {/* Compétences */}
