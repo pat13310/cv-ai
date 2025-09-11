@@ -1,5 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Plus, Minus, Database, Search } from 'lucide-react';
+import { Sparkles, Plus, Minus, Database, Search, GripVertical } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  horizontalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { SectionWrapper } from './SectionWrapper';
 import type { CVContent, CVSkill } from '../CVPreview';
 import { useSkills, type Skill } from '../../../hooks/useSkills';
@@ -47,6 +63,139 @@ const AIButton: React.FC<{
   </button>
 );
 
+// Composant pour une compétence déplaçable
+const SortableSkill: React.FC<{
+  skill: CVSkill;
+  isEditing: boolean;
+  isSelected: boolean;
+  onEdit: () => void;
+  onSelect: () => void;
+  onUpdate: (content: string) => void;
+  onFinishEdit: () => void;
+  onRemove: () => void;
+  onAIGenerate: () => void;
+  customColor: string;
+  isLoading: boolean;
+  isLast: boolean;
+  showSeparator: boolean;
+  showBulletPoint: boolean;
+}> = ({
+  skill,
+  isEditing,
+  isSelected,
+  onEdit,
+  onSelect,
+  onUpdate,
+  onFinishEdit,
+  onRemove,
+  onAIGenerate,
+  customColor,
+  isLoading,
+  isLast,
+  showSeparator,
+  showBulletPoint
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: skill.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <span
+      ref={setNodeRef}
+      style={style}
+      className={`inline-flex items-center relative ${isDragging ? 'z-10' : ''}`}
+    >
+      {/* Contenu de la compétence avec groupe hover individuel */}
+      <span className="group relative inline-flex items-center">
+        {/* Handle de drag */}
+        <button
+          {...attributes}
+          {...listeners}
+          className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing"
+          title="Déplacer la compétence"
+        >
+          <GripVertical className="w-3 h-3" />
+        </button>
+
+        {/* Boutons IA et suppression - visibles seulement si sélectionné */}
+        {isSelected && (
+          <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-white rounded shadow-md p-1 z-20 flex gap-1">
+            <AIButton
+              isLoading={isLoading}
+              onClick={onAIGenerate}
+              title="Modifier avec IA"
+            />
+            <button
+              onClick={onRemove}
+              className="p-1 text-red-600 hover:text-red-800"
+              title="Supprimer la compétence"
+            >
+              <Minus className="w-3 h-3" />
+            </button>
+          </div>
+        )}
+
+        {/* Contenu de la compétence */}
+        <div className="flex items-center">
+          {/* Point devant la compétence si les colonnes sont actives */}
+          {showBulletPoint && (
+            <span className="text-sm mr-2" style={{ color: `#${customColor}` }}>
+              •
+            </span>
+          )}
+          
+          {isEditing ? (
+            <input
+              type="text"
+              value={skill.content}
+              onChange={(e) => onUpdate(e.target.value)}
+              onBlur={onFinishEdit}
+              onKeyDown={(e) => e.key === 'Enter' && onFinishEdit()}
+              className="text-sm border-b border-gray-400 focus:outline-none focus:border-violet-500 bg-transparent"
+              style={{ width: `${Math.max(skill.content.length * 8 + 20, 100)}px` }}
+              autoFocus
+            />
+          ) : (
+            <span
+              className={`text-sm cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded transition-all duration-200 hover:scale-105 ${isSelected ? 'bg-violet-50 border border-violet-200' : ''}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (isSelected) {
+                  onEdit();
+                } else {
+                  onSelect();
+                }
+              }}
+              style={{ color: `#${customColor}` }}
+              title={isSelected ? "Clic pour éditer" : "Clic pour sélectionner"}
+            >
+              {skill.content}
+            </span>
+          )}
+        </div>
+      </span>
+
+      {/* Séparateur - seulement en mode libre */}
+      {showSeparator && !isLast && (
+        <span className="text-sm text-gray-400 mx-1" style={{ color: `#${customColor}` }}>
+          •
+        </span>
+      )}
+    </span>
+  );
+};
+
 export const SkillsSection: React.FC<SkillsSectionProps> = ({
   editableContent,
   setEditableContent,
@@ -68,6 +217,33 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
   const [categorySkills, setCategorySkills] = useState<Skill[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Skill[]>([]);
+  const [skillsLayout, setSkillsLayout] = useState<'free' | '1col' | '2col' | '3col'>('free');
+  const [selectedSkillId, setSelectedSkillId] = useState<number | null>(null);
+
+  // Configuration du drag & drop
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Gérer la fin du drag & drop
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = skills.findIndex((skill) => skill.id === active.id);
+      const newIndex = skills.findIndex((skill) => skill.id === over.id);
+      
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const newSkills = [...skills];
+        const [movedSkill] = newSkills.splice(oldIndex, 1);
+        newSkills.splice(newIndex, 0, movedSkill);
+        setSkills(newSkills);
+      }
+    }
+  };
 
   // Charger les catégories disponibles au montage
   useEffect(() => {
@@ -139,7 +315,10 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
 
   return (
     <SectionWrapper id="skills" title="Compétences">
-      <div className="mt-4">
+      <div
+        className="mt-4"
+        onClick={() => setSelectedSkillId(null)}
+      >
         {editingField === 'skillsTitle' ? (
           <div className="flex items-center gap-2">
             <input
@@ -184,6 +363,20 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
                   title="Modifier avec IA"
                 />
               </div>
+              
+              {/* Sélecteur de mise en page */}
+              <select
+                value={skillsLayout}
+                onChange={(e) => setSkillsLayout(e.target.value as 'free' | '1col' | '2col' | '3col')}
+                className="p-1 text-xs border border-gray-300 rounded text-gray-600 hover:text-gray-800 focus:outline-none focus:border-violet-500"
+                title="Mise en page des compétences"
+              >
+                <option value="free">Libre</option>
+                <option value="1col">1 colonne</option>
+                <option value="2col">2 colonnes</option>
+                <option value="3col">3 colonnes</option>
+              </select>
+              
               <button
                 onClick={() => setShowSkillsLibrary(!showSkillsLibrary)}
                 className="p-1 text-blue-600 hover:text-blue-800 transition-all duration-200 hover:scale-110"
@@ -202,44 +395,52 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
           </div>
         )}
 
-        {skills.map(skill => (
-          <div key={skill.id} className="relative group flex items-start gap-2 mt-1">
-            <div className="absolute right-0 top-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-              <AIButton
-                isLoading={isLoading}
-                onClick={() => generateWithAI('skillContent', skill.content)}
-                title="Modifier avec IA"
-              />
-              <button
-                onClick={() => removeSkill(skill.id)}
-                className="p-1 text-red-600 hover:text-red-800"
-                title="Supprimer la compétence"
+        {/* Compétences en ligne avec drag & drop */}
+        <div className="mt-2">
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={skills.map(skill => skill.id)}
+              strategy={horizontalListSortingStrategy}
+            >
+              <div
+                className={
+                  skillsLayout === 'free' ? 'flex flex-wrap items-center gap-1' :
+                  skillsLayout === '1col' ? 'grid grid-cols-1 gap-2' :
+                  skillsLayout === '2col' ? 'grid grid-cols-2 gap-2' :
+                  'grid grid-cols-3 gap-2'
+                }
+                onClick={(e) => e.stopPropagation()}
               >
-                <Minus className="w-4 h-4" />
-              </button>
-            </div>
-
-            {editingField === `skillContent-${skill.id}` ? (
-              <input
-                type="text"
-                value={skill.content}
-                onChange={(e) => setSkills(prev => prev.map(item => item.id === skill.id ? { ...item, content: e.target.value } : item))}
-                onBlur={() => setEditingField(null)}
-                onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-                className="text-sm w-full border-b border-gray-400 focus:outline-none focus:border-violet-500"
-                autoFocus
-              />
-            ) : (
-              <p
-                className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded transition-all duration-200 hover:scale-105"
-                onClick={() => setEditingField(`skillContent-${skill.id}`)}
-                style={{ color: `#${customColor}`, maxWidth: 'calc(100% - 80px)' }}
-              >
-                {skill.content}
-              </p>
-            )}
-          </div>
-        ))}
+                {skills.map((skill, index) => (
+                  <SortableSkill
+                    key={skill.id}
+                    skill={skill}
+                    isEditing={editingField === `skillContent-${skill.id}`}
+                    isSelected={selectedSkillId === skill.id}
+                    onEdit={() => setEditingField(`skillContent-${skill.id}`)}
+                    onSelect={() => setSelectedSkillId(selectedSkillId === skill.id ? null : skill.id)}
+                    onUpdate={(content) => setSkills(prev => prev.map(item => item.id === skill.id ? { ...item, content } : item))}
+                    onFinishEdit={() => setEditingField(null)}
+                    onRemove={() => {
+                      removeSkill(skill.id);
+                      setSelectedSkillId(null);
+                    }}
+                    onAIGenerate={() => generateWithAI('skillContent', skill.content)}
+                    customColor={customColor}
+                    isLoading={isLoading}
+                    isLast={index === skills.length - 1}
+                    showSeparator={skillsLayout === 'free'}
+                    showBulletPoint={skillsLayout !== 'free'}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        </div>
 
       {/* Bibliothèque de compétences */}
       {showSkillsLibrary && (

@@ -64,7 +64,7 @@ export interface CVPreviewProps {
   titleColor?: string;
   setTitleColor?: React.Dispatch<React.SetStateAction<string>>;
   availableFonts?: string[];
-  availableColors?: Array<{ name: string; value: string }>;
+  availableColors?: Array<{ name: string; value: string; category: string }>;
   
   // Fonctions de gestion
   addExperience: () => void;
@@ -146,12 +146,12 @@ export const CVPreview: React.FC<CVPreviewProps> = ({
   setTitleColor,
   availableFonts = ['Calibri', 'Georgia', 'Helvetica', 'Consolas', 'Times New Roman', 'Arial'],
   availableColors = [
-    { name: 'Noir', value: '000000' },
-    { name: 'Bleu marine', value: '2E3A59' },
-    { name: 'Bleu vif', value: '2563EB' },
-    { name: 'Gris foncé', value: '111827' },
-    { name: 'Vert foncé', value: '064E3B' },
-    { name: 'Violet', value: '7C3AED' }
+    { name: 'Noir', value: '000000', category: 'Neutres' },
+    { name: 'Bleu marine', value: '2E3A59', category: 'Bleus' },
+    { name: 'Bleu vif', value: '2563EB', category: 'Bleus' },
+    { name: 'Gris foncé', value: '111827', category: 'Neutres' },
+    { name: 'Vert foncé', value: '064E3B', category: 'Verts' },
+    { name: 'Violet', value: '7C3AED', category: 'Violets' }
   ],
   addExperience,
   removeExperience,

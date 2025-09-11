@@ -3,6 +3,7 @@ import { Document, Packer, Paragraph, AlignmentType } from 'docx';
 import { saveAs } from 'file-saver';
 import { useOpenAI } from '../../hooks/useOpenAI';
 import { useSupabase } from '../../hooks/useSupabase';
+import { useLocalStorageCV } from '../../hooks/useLocalStorageCV';
 import { CVPreviewDragDrop } from './CVPreviewDragDrop';
 import type { CVExperience, CVSkill, CVLanguage, CVContent, CVEducation } from './CVPreview';
 
@@ -19,13 +20,41 @@ interface Template {
 
 const availableFonts = ['Calibri', 'Georgia', 'Helvetica', 'Consolas', 'Times New Roman', 'Arial'];
 const availableColors = [
-  { name: 'Noir', value: '000000' },
-  { name: 'Bleu marine', value: '2E3A90' },
-  { name: 'Bleu vif', value: '2563EB' },
-  { name: 'Gris foncé', value: '111827' },
-  { name: 'Vert foncé', value: '064E3B' },
-  { name: 'Émeraude', value: '10B981' },
-  { name: 'Violet', value: '7C3AED' }
+  // Neutres
+  { name: 'Noir', value: '000000', category: 'Neutres' },
+  { name: 'Gris anthracite', value: '374151', category: 'Neutres' },
+  { name: 'Gris ardoise', value: '64748B', category: 'Neutres' },
+  { name: 'Gris clair', value: '94A3B8', category: 'Neutres' },
+  
+  // Bleus
+  { name: 'Bleu nuit', value: '1E3A8A', category: 'Bleus' },
+  { name: 'Bleu marine', value: '1E40AF', category: 'Bleus' },
+  { name: 'Bleu royal', value: '2563EB', category: 'Bleus' },
+  { name: 'Bleu ciel', value: '3B82F6', category: 'Bleus' },
+  
+  // Verts
+  { name: 'Vert sapin', value: '064E3B', category: 'Verts' },
+  { name: 'Vert forêt', value: '065F46', category: 'Verts' },
+  { name: 'Émeraude', value: '059669', category: 'Verts' },
+  { name: 'Vert menthe', value: '10B981', category: 'Verts' },
+  
+  // Violets
+  { name: 'Violet profond', value: '581C87', category: 'Violets' },
+  { name: 'Violet royal', value: '7C3AED', category: 'Violets' },
+  { name: 'Violet clair', value: '8B5CF6', category: 'Violets' },
+  { name: 'Lavande', value: 'A78BFA', category: 'Violets' },
+  
+  // Rouges
+  { name: 'Bordeaux', value: '7F1D1D', category: 'Rouges' },
+  { name: 'Rouge cardinal', value: 'DC2626', category: 'Rouges' },
+  { name: 'Rouge corail', value: 'EF4444', category: 'Rouges' },
+  { name: 'Rose', value: 'F87171', category: 'Rouges' },
+  
+  // Oranges
+  { name: 'Orange brûlé', value: 'C2410C', category: 'Oranges' },
+  { name: 'Orange vif', value: 'EA580C', category: 'Oranges' },
+  { name: 'Orange clair', value: 'FB923C', category: 'Oranges' },
+  { name: 'Pêche', value: 'FDBA74', category: 'Oranges' }
 ];
 
 export const CVCreator: React.FC = () => {
@@ -47,6 +76,16 @@ export const CVCreator: React.FC = () => {
 
   // Hook pour récupérer les données du profil utilisateur
   const { profile, profileLoading } = useSupabase();
+
+  // Hook pour la sauvegarde automatique dans localStorage
+  const {
+    saveToLocalStorage,
+    loadFromLocalStorage,
+    hasLocalData,
+    lastSaved,
+    autoSaveEnabled,
+    setAutoSaveEnabled
+  } = useLocalStorageCV();
 
   const [experiences, setExperiences] = useState<CVExperience[]>([
     { id: 1, content: '[Poste] - [Entreprise] (Dates)', details: '• Réalisation clé ou projet important.' }
@@ -193,6 +232,68 @@ export const CVCreator: React.FC = () => {
       console.log('CVCreator - Aucune donnée de profil disponible');
     }
   }, [profile, profileLoading]);
+
+  // Effet pour charger les données sauvegardées au démarrage
+  useEffect(() => {
+    const savedData = loadFromLocalStorage();
+    if (savedData && !profile && !profileLoading) {
+      console.log('Chargement des données CV depuis localStorage');
+      
+      if (savedData.editableContent) {
+        setEditableContent(savedData.editableContent);
+      }
+      if (savedData.experiences) {
+        setExperiences(savedData.experiences);
+      }
+      if (savedData.skills) {
+        setSkills(savedData.skills);
+      }
+      if (savedData.languages) {
+        setLanguages(savedData.languages);
+      }
+      if (savedData.educations) {
+        setEducations(savedData.educations);
+      }
+      if (savedData.customFont) {
+        setCustomFont(savedData.customFont);
+      }
+      if (savedData.customColor) {
+        setCustomColor(savedData.customColor);
+      }
+      if (savedData.titleColor) {
+        setTitleColor(savedData.titleColor);
+      }
+    }
+  }, [loadFromLocalStorage, profile, profileLoading]);
+
+  // Effet pour sauvegarder automatiquement les modifications
+  useEffect(() => {
+    if (autoSaveEnabled) {
+      const dataToSave = {
+        editableContent,
+        experiences,
+        skills,
+        languages,
+        educations,
+        customFont,
+        customColor,
+        titleColor
+      };
+      
+      saveToLocalStorage(dataToSave);
+    }
+  }, [
+    editableContent,
+    experiences,
+    skills,
+    languages,
+    educations,
+    customFont,
+    customColor,
+    titleColor,
+    saveToLocalStorage,
+    autoSaveEnabled
+  ]);
 
   const generateWithAI = async (field: string, currentContent?: string) => {
     // Ne pas générer avec l'IA si le champ est déjà en cours d'édition
@@ -509,6 +610,34 @@ export const CVCreator: React.FC = () => {
   return (
     <div className='w-full'>
       <h1 className="heading-gradient text-center">Créateur de CV</h1>
+
+      {/* Indicateur de sauvegarde automatique */}
+      <div className="flex justify-center items-center gap-4 mb-4 p-2 bg-gray-50 rounded-lg mx-4">
+        <div className="flex items-center gap-2">
+          <label className="flex items-center gap-2 text-sm text-gray-700">
+            <input
+              type="checkbox"
+              checked={autoSaveEnabled}
+              onChange={(e) => setAutoSaveEnabled(e.target.checked)}
+              className="rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+            />
+            Sauvegarde automatique
+          </label>
+        </div>
+        
+        {lastSaved && (
+          <div className="text-xs text-gray-500">
+            Dernière sauvegarde : {lastSaved.toLocaleTimeString()}
+          </div>
+        )}
+        
+        {hasLocalData() && (
+          <div className="text-xs text-green-600 flex items-center gap-1">
+            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+            Données sauvegardées localement
+          </div>
+        )}
+      </div>
 
       <div className="p-4 flex flex-col lg:flex-row gap-6">
 
