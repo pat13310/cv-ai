@@ -64,17 +64,27 @@ export const EducationSection: React.FC<EducationSectionProps> = ({
     <SectionWrapper id="education" title="Formation">
       <div className="mt-4">
         {editingField === 'educationTitle' ? (
-          <input
-            type="text"
-            value={editableContent.educationTitle}
-            onChange={(e) => setEditableContent(prev => ({ ...prev, educationTitle: e.target.value }))}
-            onBlur={() => setEditingField(null)}
-            onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-            className="text-md font-semibold w-full border-b border-gray-400 focus:outline-none focus:border-violet-500"
-            autoFocus
-          />
-        ) : (
           <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={editableContent.educationTitle}
+              onChange={(e) => setEditableContent(prev => ({ ...prev, educationTitle: e.target.value }))}
+              onBlur={() => setEditingField(null)}
+              onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
+              className="text-md font-semibold border-b border-gray-400 focus:outline-none focus:border-violet-500 bg-transparent"
+              style={{ width: `${Math.max(editableContent.educationTitle.length * 8 + 20, 200)}px` }}
+              autoFocus
+            />
+            <button
+              onClick={addEducation}
+              className="p-1 text-violet-600 hover:text-violet-800 transition-all duration-200 hover:scale-110"
+              title="Ajouter une formation"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
+        ) : (
+          <div className="group flex items-center gap-2">
             <h4
               className="text-md font-semibold cursor-pointer hover:bg-gray-100 p-1 rounded whitespace-nowrap transition-all duration-200 hover:scale-105"
               onClick={() => setEditingField('educationTitle')}
@@ -83,11 +93,13 @@ export const EducationSection: React.FC<EducationSectionProps> = ({
               {editableContent.educationTitle}
             </h4>
             <div className="flex gap-1 ml-auto">
-              <AIButton
-                isLoading={isLoading}
-                onClick={() => generateWithAI('educationTitle', editableContent.educationTitle)}
-                title="Modifier avec IA"
-              />
+              <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <AIButton
+                  isLoading={isLoading}
+                  onClick={() => generateWithAI('educationTitle', editableContent.educationTitle)}
+                  title="Modifier avec IA"
+                />
+              </div>
               <button
                 onClick={addEducation}
                 className="p-1 text-violet-600 hover:text-violet-800 transition-all duration-200 hover:scale-110"
@@ -116,7 +128,7 @@ export const EducationSection: React.FC<EducationSectionProps> = ({
                     autoFocus
                   />
                 ) : (
-                  <div className="flex items-center gap-1">
+                  <div className="group flex items-center gap-1">
                     <p
                       className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 transition-all duration-200 hover:scale-105"
                       onClick={() => setEditingField(`educationDegree-${edu.id}`)}
@@ -124,11 +136,13 @@ export const EducationSection: React.FC<EducationSectionProps> = ({
                     >
                       {edu.degree}
                     </p>
-                    <AIButton
-                      isLoading={isLoading}
-                      onClick={() => generateWithAI('educationDegree', edu.degree)}
-                      title="Modifier avec IA"
-                    />
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      <AIButton
+                        isLoading={isLoading}
+                        onClick={() => generateWithAI('educationDegree', edu.degree)}
+                        title="Modifier avec IA"
+                      />
+                    </div>
                   </div>
                 )}
 
@@ -145,7 +159,7 @@ export const EducationSection: React.FC<EducationSectionProps> = ({
                     autoFocus
                   />
                 ) : (
-                  <div className="flex items-center gap-1">
+                  <div className="group flex items-center gap-1">
                     <p
                       className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 transition-all duration-200 hover:scale-105"
                       onClick={() => setEditingField(`educationSchool-${edu.id}`)}
@@ -153,11 +167,13 @@ export const EducationSection: React.FC<EducationSectionProps> = ({
                     >
                       {edu.school}
                     </p>
-                    <AIButton
-                      isLoading={isLoading}
-                      onClick={() => generateWithAI('educationSchool', edu.school)}
-                      title="Modifier avec IA"
-                    />
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      <AIButton
+                        isLoading={isLoading}
+                        onClick={() => generateWithAI('educationSchool', edu.school)}
+                        title="Modifier avec IA"
+                      />
+                    </div>
                   </div>
                 )}
 
@@ -174,7 +190,7 @@ export const EducationSection: React.FC<EducationSectionProps> = ({
                     autoFocus
                   />
                 ) : (
-                  <div className="flex items-center gap-1">
+                  <div className="group flex items-center gap-1">
                     <p
                       className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 transition-all duration-200 hover:scale-105"
                       onClick={() => setEditingField(`educationYear-${edu.id}`)}
@@ -182,11 +198,13 @@ export const EducationSection: React.FC<EducationSectionProps> = ({
                     >
                       {edu.year}
                     </p>
-                    <AIButton
-                      isLoading={isLoading}
-                      onClick={() => generateWithAI('educationYear', edu.year)}
-                      title="Modifier avec IA"
-                    />
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      <AIButton
+                        isLoading={isLoading}
+                        onClick={() => generateWithAI('educationYear', edu.year)}
+                        title="Modifier avec IA"
+                      />
+                    </div>
                   </div>
                 )}
               </div>

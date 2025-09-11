@@ -20,6 +20,21 @@ export interface Template {
   updated_at?: string;
 }
 
+// Types pour les compétences
+export interface Skill {
+  id: string;
+  name: string;
+  category: string;
+  subcategory?: string;
+  description?: string;
+  level?: 'débutant' | 'intermédiaire' | 'avancé' | 'expert';
+  keywords: string[];
+  is_ai_generated: boolean;
+  usage_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
 // Types pour les activités
 export interface Activity {
   id: string;
@@ -51,6 +66,7 @@ export interface UserProfile {
   website: string;
   profession: string;
   company: string;
+  openai_api_key?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -71,9 +87,11 @@ export const useSupabase = () => {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [skills, setSkills] = useState<Skill[]>([]);
   const [loading, setLoading] = useState(true);
   const [activitiesLoading, setActivitiesLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(false);
+  const [skillsLoading, setSkillsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Fonction pour charger les activités depuis Supabase
@@ -354,6 +372,216 @@ export const useSupabase = () => {
     }
   };
 
+  // Fonction pour récupérer les compétences par catégorie
+  const getSkillsByCategory = useCallback(async (category: string): Promise<Skill[]> => {
+    if (!supabase) {
+      throw new Error('Supabase non configuré');
+    }
+
+    try {
+      setSkillsLoading(true);
+      setError(null);
+
+      const { data, error } = await supabase
+        .from('skills')
+        .select('*')
+        .eq('category', category)
+        .order('usage_count', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      const skillsData = data as Skill[];
+      
+      // Mettre à jour le state local
+      setSkills(prev => {
+        const filtered = prev.filter(skill => skill.category !== category);
+        return [...filtered, ...skillsData];
+      });
+
+      return skillsData;
+    } catch (err) {
+      console.error('Erreur lors de la récupération des compétences:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Erreur lors de la récupération des compétences';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setSkillsLoading(false);
+    }
+  }, []);
+
+  // Fonction pour ajouter une nouvelle compétence
+  const addSkill = useCallback(async (skillData: Omit<Skill, 'id' | 'created_at' | 'updated_at'>): Promise<Skill> => {
+    if (!supabase) {
+      throw new Error('Supabase non configuré');
+    }
+
+    try {
+      setError(null);
+
+      const { data, error } = await supabase
+        .from('skills')
+        .insert([skillData])
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      const newSkill = data as Skill;
+      
+      // Mettre à jour le state local
+      setSkills(prev => [...prev, newSkill]);
+
+      return newSkill;
+    } catch (err) {
+      console.error('Erreur lors de l\'ajout de la compétence:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Erreur lors de l\'ajout de la compétence';
+      setError(errorMessage);
+      throw err;
+    }
+  }, []);
+
+  // Fonction pour obtenir toutes les catégories de compétences
+  const getSkillCategories = useCallback(async (): Promise<string[]> => {
+    if (!supabase) {
+      throw new Error('Supabase non configuré');
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('skills')
+        .select('category')
+        .order('category');
+
+      if (error) {
+        throw error;
+      }
+
+      // Extraire les catégories uniques
+      const categories = [...new Set(data?.map((item: { category: string }) => item.category) || [])];
+      return categories;
+    } catch (err) {
+      console.error('Erreur lors de la récupération des catégories:', err);
+      throw err;
+    }
+  }, []);
+
+  // Fonction pour rechercher des compétences
+  const searchSkills = useCallback(async (query: string): Promise<Skill[]> => {
+    if (!supabase) {
+      throw new Error('Supabase non configuré');
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('skills')
+        .select('*')
+        .or(`name.ilike.%${query}%,description.ilike.%${query}%`)
+        .order('usage_count', { ascending: false })
+        .limit(20);
+
+      if (error) {
+        throw error;
+      }
+
+      return data as Skill[];
+    } catch (err) {
+      console.error('Erreur lors de la recherche de compétences:', err);
+      throw err;
+    }
+  }, []);
+
+  // Fonction pour sauvegarder la clé OpenAI dans le profil
+  const saveOpenAIKey = async (apiKey: string): Promise<{ success: boolean; error?: unknown; message?: string }> => {
+    if (!supabase) {
+      return { success: false, error: 'Supabase non configuré' };
+    }
+
+    try {
+      setError(null);
+      
+      // Vérifier l'authentification
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        throw new Error('Utilisateur non connecté');
+      }
+
+      // Sauvegarder la clé API dans le profil
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          openai_api_key: apiKey.trim(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      // Mettre à jour le profil local
+      setProfile(prev => prev ? { ...prev, openai_api_key: apiKey.trim() } : null);
+      
+      console.log('Clé OpenAI sauvegardée avec succès');
+      return { success: true };
+    } catch (err: unknown) {
+      console.error('Erreur lors de la sauvegarde de la clé OpenAI:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Erreur lors de la sauvegarde de la clé OpenAI';
+      setError(errorMessage);
+      return { success: false, error: err, message: errorMessage };
+    }
+  };
+
+  // Fonction pour supprimer la clé OpenAI du profil
+  const removeOpenAIKey = async (): Promise<{ success: boolean; error?: unknown; message?: string }> => {
+    if (!supabase) {
+      return { success: false, error: 'Supabase non configuré' };
+    }
+
+    try {
+      setError(null);
+      
+      // Vérifier l'authentification
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        throw new Error('Utilisateur non connecté');
+      }
+
+      // Supprimer la clé API du profil
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          openai_api_key: null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id)
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      // Mettre à jour le profil local
+      setProfile(prev => prev ? { ...prev, openai_api_key: undefined } : null);
+      
+      console.log('Clé OpenAI supprimée avec succès');
+      return { success: true };
+    } catch (err: unknown) {
+      console.error('Erreur lors de la suppression de la clé OpenAI:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Erreur lors de la suppression de la clé OpenAI';
+      setError(errorMessage);
+      return { success: false, error: err, message: errorMessage };
+    }
+  };
+
   useEffect(() => {
     // Chargement des données
     const loadTemplates = async () => {
@@ -393,15 +621,23 @@ export const useSupabase = () => {
     templates,
     activities,
     profile,
+    skills,
     loading,
     activitiesLoading,
     profileLoading,
+    skillsLoading,
     error,
     addActivity,
     refreshActivities: loadActivities,
     loadProfile,
     saveProfile,
     createProfile,
-    deleteProfile
+    deleteProfile,
+    getSkillsByCategory,
+    addSkill,
+    getSkillCategories,
+    searchSkills,
+    saveOpenAIKey,
+    removeOpenAIKey
   };
 };

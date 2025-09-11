@@ -64,17 +64,27 @@ export const ExperienceSection: React.FC<ExperienceSectionProps> = ({
     <SectionWrapper id="experience" title="Expérience Professionnelle">
       <div className="mt-4">
         {editingField === 'experienceTitle' ? (
-          <input
-            type="text"
-            value={editableContent.experienceTitle}
-            onChange={(e) => setEditableContent(prev => ({ ...prev, experienceTitle: e.target.value }))}
-            onBlur={() => setEditingField(null)}
-            onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-            className="text-md font-semibold w-full border-b border-gray-400 focus:outline-none focus:border-violet-500"
-            autoFocus
-          />
-        ) : (
           <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={editableContent.experienceTitle}
+              onChange={(e) => setEditableContent(prev => ({ ...prev, experienceTitle: e.target.value }))}
+              onBlur={() => setEditingField(null)}
+              onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
+              className="text-md font-semibold border-b border-gray-400 focus:outline-none focus:border-violet-500 bg-transparent"
+              style={{ width: `${Math.max(editableContent.experienceTitle.length * 8 + 20, 200)}px` }}
+              autoFocus
+            />
+            <button
+              onClick={addExperience}
+              className="p-1 text-violet-600 hover:text-violet-800 transition-all duration-200 hover:scale-110"
+              title="Ajouter une expérience"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
+        ) : (
+          <div className="group flex items-center gap-2">
             <h4
               className="text-md font-semibold cursor-pointer hover:bg-gray-100 p-1 rounded whitespace-nowrap transition-all duration-200 hover:scale-105"
               onClick={() => setEditingField('experienceTitle')}
@@ -83,11 +93,13 @@ export const ExperienceSection: React.FC<ExperienceSectionProps> = ({
               {editableContent.experienceTitle}
             </h4>
             <div className="flex gap-1 ml-auto">
-              <AIButton
-                isLoading={isLoading}
-                onClick={() => generateWithAI('experienceTitle', editableContent.experienceTitle)}
-                title="Modifier avec IA"
-              />
+              <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <AIButton
+                  isLoading={isLoading}
+                  onClick={() => generateWithAI('experienceTitle', editableContent.experienceTitle)}
+                  title="Modifier avec IA"
+                />
+              </div>
               <button
                 onClick={addExperience}
                 className="p-1 text-violet-600 hover:text-violet-800 transition-all duration-200 hover:scale-110"
@@ -148,7 +160,7 @@ export const ExperienceSection: React.FC<ExperienceSectionProps> = ({
                 rows={2}
               />
             ) : (
-              <div className="flex items-start gap-2 mt-1">
+              <div className="group flex items-start gap-2 mt-1">
                 <p
                   className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 transition-all duration-200 hover:scale-105"
                   onClick={() => setEditingField(`experienceDetails-${exp.id}`)}
@@ -156,12 +168,14 @@ export const ExperienceSection: React.FC<ExperienceSectionProps> = ({
                 >
                   {exp.details}
                 </p>
-                <AIButton
-                  isLoading={isLoading}
-                  onClick={() => generateWithAI('experienceDetails', exp.details)}
-                  title="Modifier avec IA"
-                  className="mt-1"
-                />
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <AIButton
+                    isLoading={isLoading}
+                    onClick={() => generateWithAI('experienceDetails', exp.details)}
+                    title="Modifier avec IA"
+                    className="mt-1"
+                  />
+                </div>
               </div>
             )}
           </div>

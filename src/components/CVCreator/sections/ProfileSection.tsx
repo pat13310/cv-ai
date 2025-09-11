@@ -62,11 +62,12 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
             onChange={(e) => setEditableContent(prev => ({ ...prev, profileTitle: e.target.value }))}
             onBlur={() => setEditingField(null)}
             onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-            className="text-md font-semibold w-full border-b border-gray-400 focus:outline-none focus:border-violet-500"
+            className="text-md font-semibold border-b border-gray-400 focus:outline-none focus:border-violet-500 bg-transparent"
+            style={{ width: `${Math.max(editableContent.profileTitle.length * 8 + 20, 200)}px` }}
             autoFocus
           />
         ) : (
-          <div className="flex items-center gap-2">
+          <div className="group flex items-center gap-2">
             <h4
               className="text-md font-semibold cursor-pointer hover:bg-gray-100 p-1 rounded transition-all duration-200 hover:scale-105"
               onClick={() => setEditingField('profileTitle')}
@@ -74,11 +75,13 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
             >
               {editableContent.profileTitle}
             </h4>
-            <AIButton
-              isLoading={isLoading}
-              onClick={() => generateWithAI('profileTitle', editableContent.profileTitle)}
-              title="Modifier avec IA"
-            />
+            <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <AIButton
+                isLoading={isLoading}
+                onClick={() => generateWithAI('profileTitle', editableContent.profileTitle)}
+                title="Modifier avec IA"
+              />
+            </div>
           </div>
         )}
 
@@ -92,7 +95,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
             rows={3}
           />
         ) : (
-          <div className="flex items-start gap-2">
+          <div className="group flex items-start gap-2">
             <p
               className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 transition-all duration-200 hover:scale-105 line-clamp-3"
               onClick={() => setEditingField('profileContent')}
@@ -100,12 +103,14 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
             >
               {editableContent.profileContent}
             </p>
-            <AIButton
-              isLoading={isLoading}
-              onClick={() => generateWithAI('profileContent', editableContent.profileContent)}
-              title="Modifier avec IA"
-              className="mt-1"
-            />
+            <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <AIButton
+                isLoading={isLoading}
+                onClick={() => generateWithAI('profileContent', editableContent.profileContent)}
+                title="Modifier avec IA"
+                className="mt-1"
+              />
+            </div>
           </div>
         )}
       </div>

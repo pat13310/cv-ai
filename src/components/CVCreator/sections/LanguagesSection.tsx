@@ -64,33 +64,45 @@ export const LanguagesSection: React.FC<LanguagesSectionProps> = ({
     <SectionWrapper id="languages" title="Langues">
       <div className="mt-4">
         {editingField === 'languagesTitle' ? (
-          <input
-            type="text"
-            value={editableContent.languagesTitle}
-            onChange={(e) => setEditableContent(prev => ({ ...prev, languagesTitle: e.target.value }))}
-            onBlur={() => setEditingField(null)}
-            onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-            className="text-md font-semibold w-full border-b border-gray-400 focus:outline-none focus:border-violet-500"
-            autoFocus
-          />
-        ) : (
           <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={editableContent.languagesTitle}
+              onChange={(e) => setEditableContent(prev => ({ ...prev, languagesTitle: e.target.value }))}
+              onBlur={() => setEditingField(null)}
+              onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
+              className="text-md font-semibold border-b border-gray-400 focus:outline-none focus:border-violet-500 bg-transparent"
+              style={{ width: `${Math.max(editableContent.languagesTitle.length * 8 + 20, 200)}px` }}
+              autoFocus
+            />
+            <button
+              onClick={addLanguage}
+              className="p-1 text-violet-600 hover:text-violet-800 transition-all duration-200 hover:scale-110"
+              title="Ajouter une langue"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
+        ) : (
+          <div className="group flex items-center gap-2">
             <h4
-              className="text-md font-semibold cursor-pointer hover:bg-gray-100 p-1 rounded"
+              className="text-md font-semibold cursor-pointer hover:bg-gray-100 p-1 rounded transition-all duration-200 hover:scale-105"
               onClick={() => setEditingField('languagesTitle')}
               style={{ color: `#${titleColor}` }}
             >
               {editableContent.languagesTitle}
             </h4>
             <div className="flex gap-1 ml-auto">
-              <AIButton
-                isLoading={isLoading}
-                onClick={() => generateWithAI('languagesTitle', editableContent.languagesTitle)}
-                title="Modifier avec IA"
-              />
+              <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <AIButton
+                  isLoading={isLoading}
+                  onClick={() => generateWithAI('languagesTitle', editableContent.languagesTitle)}
+                  title="Modifier avec IA"
+                />
+              </div>
               <button
                 onClick={addLanguage}
-                className="p-1 text-violet-600 hover:text-violet-800"
+                className="p-1 text-violet-600 hover:text-violet-800 transition-all duration-200 hover:scale-110"
                 title="Ajouter une langue"
               >
                 <Plus className="w-4 h-4" />
@@ -102,8 +114,8 @@ export const LanguagesSection: React.FC<LanguagesSectionProps> = ({
         {/* Liste des langues */}
         <div className="mt-2">
           {languages.map(lang => (
-            <div key={lang.id} className="relative group flex items-center gap-2 mt-1">
-              <div className="absolute right-0 top-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div key={lang.id} className="relative group flex items-start gap-2 mt-1">
+              <div className="absolute right-0 top-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                 <AIButton
                   isLoading={isLoading}
                   onClick={() => generateWithAI(`languageLevel-${lang.id}`, lang.level)}
@@ -118,45 +130,58 @@ export const LanguagesSection: React.FC<LanguagesSectionProps> = ({
                 </button>
               </div>
 
-              {editingField === `languageName-${lang.id}` ? (
-                <input
-                  type="text"
-                  value={lang.name}
-                  onChange={(e) => setLanguages(prev => prev.map(item => item.id === lang.id ? { ...item, name: e.target.value } : item))}
-                  onBlur={() => setEditingField(null)}
-                  onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-                  className="text-sm w-1/2 border-b border-gray-400 focus:outline-none focus:border-violet-500"
-                  autoFocus
-                />
-              ) : (
-                <p
-                  className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 transition-all duration-200 hover:scale-105"
-                  onClick={() => setEditingField(`languageName-${lang.id}`)}
-                  style={{ color: `#${customColor}` }}
-                >
-                  {lang.name}
-                </p>
-              )}
+              <div className="flex gap-2 flex-1">
+                {editingField === `languageName-${lang.id}` ? (
+                  <input
+                    type="text"
+                    value={lang.name}
+                    onChange={(e) => setLanguages(prev => prev.map(item => item.id === lang.id ? { ...item, name: e.target.value } : item))}
+                    onBlur={() => setEditingField(null)}
+                    onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
+                    className="text-sm border-b border-gray-400 focus:outline-none focus:border-violet-500"
+                    placeholder="Langue"
+                    style={{ width: `${Math.max(lang.name.length * 8 + 20, 80)}px` }}
+                    autoFocus
+                  />
+                ) : (
+                  <p
+                    className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded transition-all duration-200 hover:scale-105"
+                    onClick={() => setEditingField(`languageName-${lang.id}`)}
+                    style={{ color: `#${customColor}`, width: `${Math.max(lang.name.length * 8 + 20, 80)}px` }}
+                  >
+                    {lang.name}
+                  </p>
+                )}
 
-              {editingField === `languageLevel-${lang.id}` ? (
-                <input
-                  type="text"
-                  value={lang.level}
-                  onChange={(e) => setLanguages(prev => prev.map(item => item.id === lang.id ? { ...item, level: e.target.value } : item))}
-                  onBlur={() => setEditingField(null)}
-                  onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-                  className="text-sm w-1/2 border-b border-gray-400 focus:outline-none focus:border-violet-500"
-                  autoFocus
-                />
-              ) : (
-                <p
-                  className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 transition-all duration-200 hover:scale-105"
-                  onClick={() => setEditingField(`languageLevel-${lang.id}`)}
-                  style={{ color: `#${customColor}` }}
-                >
-                  ({lang.level})
-                </p>
-              )}
+                {editingField === `languageLevel-${lang.id}` ? (
+                  <select
+                    value={lang.level}
+                    onChange={(e) => setLanguages(prev => prev.map(item => item.id === lang.id ? { ...item, level: e.target.value } : item))}
+                    onBlur={() => setEditingField(null)}
+                    onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
+                    className="text-sm border border-gray-400 rounded focus:outline-none focus:border-violet-500 px-2 py-1 bg-white"
+                    style={{ width: `${Math.max(lang.level.length * 8 + 40, 120)}px` }}
+                    autoFocus
+                  >
+                    <option value="">Sélectionner un niveau</option>
+                    <option value="Débutant">Débutant</option>
+                    <option value="Élémentaire">Élémentaire</option>
+                    <option value="Intermédiaire">Intermédiaire</option>
+                    <option value="Courant">Courant</option>
+                    <option value="Avancé">Avancé</option>
+                    <option value="Bilingue">Bilingue</option>
+                    <option value="Natif">Natif</option>
+                  </select>
+                ) : (
+                  <p
+                    className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded transition-all duration-200 hover:scale-105"
+                    onClick={() => setEditingField(`languageLevel-${lang.id}`)}
+                    style={{ color: `#${customColor}`, width: `${Math.max(lang.level.length * 8 + 40, 100)}px` }}
+                  >
+                    ({lang.level})
+                  </p>
+                )}
+              </div>
             </div>
           ))}
         </div>

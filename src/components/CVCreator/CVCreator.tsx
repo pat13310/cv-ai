@@ -582,21 +582,7 @@ export const CVCreator: React.FC = () => {
 
                 {/* Contenu principal en bas */}
                 <div className="relative z-10 flex flex-col h-full justify-end p-4">
-                  <div className="flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-0">
-                    <div className="flex flex-col gap-1">
-                      <span className="text-xs font-medium px-2 py-1 bg-gray-100 text-gray-700 rounded-full w-fit">
-                        {template.category}
-                      </span>
-
-                      {/* Barre ATS */}
-                      <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-violet-500 to-purple-500"
-                          style={{ width: `${template.atsScore}%` }}
-                        />
-                      </div>
-                    </div>
-
+                  <div className="flex justify-center">
                     {/* Bouton Télécharger */}
                     <button
                       className="px-4 py-2 bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white font-medium rounded-xl shadow-md hover:shadow-lg transition-all relative z-10"

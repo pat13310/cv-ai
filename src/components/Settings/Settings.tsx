@@ -65,7 +65,7 @@ export const Settings: React.FC<SettingsProps> = ({ onBack, onApiKeyStatusChange
   const [activeSection, setActiveSection] = useState('ai');
   const [authError, setAuthError] = useState<string | null>(null);
   const [showConfigModal, setShowConfigModal] = useState(false);
-  const { profile, profileLoading } = useSupabase();
+  const { profile, profileLoading, saveOpenAIKey, removeOpenAIKey } = useSupabase();
   const {
     getFullName,
     getInitials,
@@ -142,6 +142,11 @@ export const Settings: React.FC<SettingsProps> = ({ onBack, onApiKeyStatusChange
     if (profile && !profileLoading) {
       setSettings(prev => ({
         ...prev,
+        ai: {
+          ...prev.ai,
+          // Charger la clé API depuis le profil Supabase si elle existe
+          apiKey: profile.openai_api_key || prev.ai.apiKey
+        },
         profile: {
           firstName: profile.first_name || '',
           lastName: profile.last_name || '',
@@ -385,6 +390,19 @@ export const Settings: React.FC<SettingsProps> = ({ onBack, onApiKeyStatusChange
                       if (settings.ai.apiKey) {
                         // Test the API key
                         const keyStatus = await testApiKey(settings.ai.apiKey);
+                        
+                        if (keyStatus === 'valid') {
+                          // Sauvegarder la clé API dans Supabase
+                          const result = await saveOpenAIKey(settings.ai.apiKey);
+                          
+                          if (result.success) {
+                            alert('✅ Clé API OpenAI validée et sauvegardée dans votre profil !');
+                          } else {
+                            alert('✅ Clé API validée mais erreur de sauvegarde : ' + (result.message || 'Erreur inconnue'));
+                            console.error('Erreur sauvegarde:', result.error);
+                          }
+                        }
+                        
                         // Save settings to localStorage with the validation result
                         const updatedSettings = {
                           ...settings,
@@ -421,12 +439,42 @@ export const Settings: React.FC<SettingsProps> = ({ onBack, onApiKeyStatusChange
               </div>
               
               {settings.ai.apiKey && (
-                <div className="flex items-center justify-between p-4 bg-white/50 rounded-xl border border-gray-200/30">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-3 h-3 bg-emerald-500 rounded-full"></div>
-                    <span className="text-sm font-medium text-gray-900">Statut de connexion</span>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-4 bg-white/50 rounded-xl border border-gray-200/30">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-3 h-3 bg-emerald-500 rounded-full"></div>
+                      <span className="text-sm font-medium text-gray-900">Statut de connexion</span>
+                    </div>
+                    <span className="text-sm text-emerald-600 font-medium">Connecté</span>
                   </div>
-                  <span className="text-sm text-emerald-600 font-medium">Connecté</span>
+                  
+                  {/* Indicateur de stockage */}
+                  <div className="flex items-center justify-between p-3 bg-blue-50/50 rounded-xl border border-blue-200/30">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      <span className="text-xs font-medium text-blue-900">
+                        {profile?.openai_api_key ? 'Stockée dans votre profil' : 'Stockée localement'}
+                      </span>
+                    </div>
+                    {profile?.openai_api_key && (
+                      <button
+                        onClick={async () => {
+                          if (confirm('Êtes-vous sûr de vouloir supprimer la clé API de votre profil ?')) {
+                            const result = await removeOpenAIKey();
+                            if (result.success) {
+                              alert('✅ Clé API supprimée de votre profil');
+                              // Garder la clé dans les settings locaux
+                            } else {
+                              alert('❌ Erreur lors de la suppression : ' + (result.message || 'Erreur inconnue'));
+                            }
+                          }
+                        }}
+                        className="text-xs text-red-600 hover:text-red-700 font-medium"
+                      >
+                        Supprimer
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

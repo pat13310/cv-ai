@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSupabase } from './useSupabase';
 
 export interface CVAnalysisRequest {
   content: string;
@@ -138,8 +139,8 @@ Le document original est un PDF de ${Math.round(file.size / 1024)} KB qui néces
   });
 };
 
-// Function to get API key from settings
-const getApiKey = (): string | null => {
+// Function to get API key from localStorage (fallback)
+const getApiKeyFromLocalStorage = (): string | null => {
   try {
     const settings = localStorage.getItem('cvAssistantSettings');
     
@@ -155,14 +156,25 @@ const getApiKey = (): string | null => {
     
     return null;
   } catch (error) {
-    console.error('Error retrieving API key:', error);
+    console.error('Error retrieving API key from localStorage:', error);
     return null;
   }
 };
 
+// Function to get API key with priority: profile > localStorage
+const getApiKey = (profile?: { openai_api_key?: string } | null): string | null => {
+  // Priorité 1: Clé API depuis le profil Supabase
+  if (profile?.openai_api_key && profile.openai_api_key.trim().length > 0) {
+    return profile.openai_api_key.trim();
+  }
+  
+  // Priorité 2: Fallback vers localStorage
+  return getApiKeyFromLocalStorage();
+};
+
 // Function to call OpenAI API for CV analysis
-const callOpenAIAPI = async (content: string, targetRole?: string): Promise<CVAnalysisResponse> => {
-  const apiKey = getApiKey();
+const callOpenAIAPI = async (content: string, targetRole?: string, profile?: { openai_api_key?: string } | null): Promise<CVAnalysisResponse> => {
+  const apiKey = getApiKey(profile);
   
   if (!apiKey) {
     throw new Error('Clé API OpenAI non configurée. Veuillez l\'ajouter dans les paramètres.');
@@ -540,8 +552,8 @@ IMPORTANT : Réponds UNIQUEMENT avec le JSON, aucun autre texte.`;
 };
 
 // Function to call OpenAI API for CV generation
-const callOpenAIForGeneration = async (userInfo: UserInfo): Promise<string> => {
-  const apiKey = getApiKey();
+const callOpenAIForGeneration = async (userInfo: UserInfo, profile?: { openai_api_key?: string } | null): Promise<string> => {
+  const apiKey = getApiKey(profile);
   
   if (!apiKey) {
     throw new Error('Clé API OpenAI non configurée. Veuillez l\'ajouter dans les paramètres.');
@@ -606,8 +618,8 @@ Réponds UNIQUEMENT avec le code HTML complet, sans texte supplémentaire.`;
 };
 
 // Function to call OpenAI API for CV field editing
-const callOpenAIForFieldEditing = async (prompt: string): Promise<string> => {
-  const apiKey = getApiKey();
+const callOpenAIForFieldEditing = async (prompt: string, profile?: { openai_api_key?: string } | null): Promise<string> => {
+  const apiKey = getApiKey(profile);
   
   if (!apiKey) {
     throw new Error('Clé API OpenAI non configurée. Veuillez l\'ajouter dans les paramètres.');
@@ -667,6 +679,7 @@ const callOpenAIForFieldEditing = async (prompt: string): Promise<string> => {
 export const useOpenAI = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { profile } = useSupabase();
 
   const analyzeCVContent = async (request: CVAnalysisRequest): Promise<CVAnalysisResponse | null> => {
     console.log('analyzeCVContent appelé');
@@ -676,7 +689,7 @@ export const useOpenAI = () => {
     try {
       // Check if API key is configured
       console.log('Vérification de la clé API...');
-      const apiKey = getApiKey();
+      const apiKey = getApiKey(profile);
       if (!apiKey) {
         console.error('Clé API manquante');
         throw new Error('Clé API OpenAI non configurée. Veuillez l\'ajouter dans les paramètres.');
@@ -685,7 +698,7 @@ export const useOpenAI = () => {
 
       // Call OpenAI API for real analysis
       console.log('Appel de l\'API OpenAI...');
-      const analysisResult = await callOpenAIAPI(request.content, request.targetRole);
+      const analysisResult = await callOpenAIAPI(request.content, request.targetRole, profile);
       console.log('Réponse de l\'API OpenAI:', analysisResult);
 
       setIsLoading(false);
@@ -735,7 +748,7 @@ export const useOpenAI = () => {
     try {
       
       // Call OpenAI API for CV generation
-      const generatedContent = await callOpenAIForGeneration(userInfo);
+      const generatedContent = await callOpenAIForGeneration(userInfo, profile);
       
       setIsLoading(false);
       return generatedContent;
@@ -753,7 +766,7 @@ export const useOpenAI = () => {
 
     try {
       // Call OpenAI API for field editing
-      const editedContent = await callOpenAIForFieldEditing(request.prompt);
+      const editedContent = await callOpenAIForFieldEditing(request.prompt, profile);
       
       setIsLoading(false);
       return editedContent;

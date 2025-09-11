@@ -176,7 +176,7 @@ export const CVPreviewDragDrop: React.FC<CVPreviewProps> = ({
               autoFocus
             />
           ) : (
-            <div className="flex items-center justify-center gap-2">
+            <div className="group flex items-center justify-center gap-2 relative">
               <h3
                 className="text-lg font-bold cursor-pointer hover:bg-gray-100 p-1 rounded transition-all duration-200 hover:scale-105"
                 onClick={() => setEditingField('name')}
@@ -184,11 +184,13 @@ export const CVPreviewDragDrop: React.FC<CVPreviewProps> = ({
               >
                 {editableContent.name}
               </h3>
-              <AIButton
-                isLoading={isLoading}
-                onClick={() => generateWithAI('name', editableContent.name)}
-                title="Modifier avec IA"
-              />
+              <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <AIButton
+                  isLoading={isLoading}
+                  onClick={() => generateWithAI('name', editableContent.name)}
+                  title="Modifier avec IA"
+                />
+              </div>
             </div>
           )}
         </div>
@@ -205,7 +207,7 @@ export const CVPreviewDragDrop: React.FC<CVPreviewProps> = ({
               autoFocus
             />
           ) : (
-            <div className="flex items-center justify-center gap-2">
+            <div className="group flex items-center justify-center gap-2 relative">
               <p
                 className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded transition-all duration-200 hover:scale-105"
                 onClick={() => setEditingField('contact')}
@@ -213,11 +215,13 @@ export const CVPreviewDragDrop: React.FC<CVPreviewProps> = ({
               >
                 {editableContent.contact}
               </p>
-              <AIButton
-                isLoading={isLoading}
-                onClick={() => generateWithAI('contact', editableContent.contact)}
-                title="Modifier avec IA"
-              />
+              <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <AIButton
+                  isLoading={isLoading}
+                  onClick={() => generateWithAI('contact', editableContent.contact)}
+                  title="Modifier avec IA"
+                />
+              </div>
             </div>
           )}
         </div>
