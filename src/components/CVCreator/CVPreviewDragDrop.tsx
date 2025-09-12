@@ -97,7 +97,22 @@ export const CVPreviewDragDrop: React.FC<CVPreviewProps> = ({
   error,
   openAIError
 }) => {
+  const [showError, setShowError] = React.useState(false);
   const { sections, reorderSections, resetSectionsOrder } = useCVSections();
+
+  // Auto-hide error after 3 seconds
+  React.useEffect(() => {
+    if (error || openAIError) {
+      setShowError(true);
+      const timer = setTimeout(() => {
+        setShowError(false);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    } else {
+      setShowError(false);
+    }
+  }, [error, openAIError]);
   
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -159,11 +174,19 @@ export const CVPreviewDragDrop: React.FC<CVPreviewProps> = ({
           </button>
         </div>
 
-        {/* Affichage des erreurs */}
-        {(error || openAIError) && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mt-4" role="alert">
+        {/* Affichage des erreurs avec auto-hide */}
+        {(error || openAIError) && showError && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 pr-12 rounded relative mt-4 transition-opacity duration-300" role="alert">
             <strong className="font-bold">Erreur : </strong>
             <span className="block sm:inline">{error || openAIError}</span>
+            <button
+              onClick={() => setShowError(false)}
+              className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-red-700 hover:text-red-900 hover:bg-red-200 rounded-full text-lg font-bold transition-colors duration-200"
+              aria-label="Fermer"
+              title="Fermer le message"
+            >
+              ×
+            </button>
           </div>
         )}
 

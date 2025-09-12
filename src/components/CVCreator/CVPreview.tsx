@@ -139,6 +139,21 @@ export const CVPreview: React.FC<CVPreviewProps> = ({
   error,
   openAIError
 }) => {
+  const [showError, setShowError] = React.useState(false);
+
+  // Auto-hide error after 3 seconds
+  React.useEffect(() => {
+    if (error || openAIError) {
+      setShowError(true);
+      const timer = setTimeout(() => {
+        setShowError(false);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    } else {
+      setShowError(false);
+    }
+  }, [error, openAIError]);
   return (
     <div className="w-full" style={{ aspectRatio: '1 / 1.414' }}>
       <div className="border border-violet-500 rounded-lg p-4 bg-gray-50 h-full overflow-auto shadow-md" style={{
@@ -160,11 +175,19 @@ export const CVPreview: React.FC<CVPreviewProps> = ({
           />
         )}
 
-        {/* Affichage des erreurs */}
-        {(error || openAIError) && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mt-4" role="alert">
+        {/* Affichage des erreurs avec auto-hide */}
+        {(error || openAIError) && showError && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 pr-12 rounded relative mt-4 transition-opacity duration-300" role="alert">
             <strong className="font-bold">Erreur : </strong>
             <span className="block sm:inline">{error || openAIError}</span>
+            <button
+              onClick={() => setShowError(false)}
+              className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-red-700 hover:text-red-900 hover:bg-red-200 rounded-full text-lg font-bold transition-colors duration-200"
+              aria-label="Fermer"
+              title="Fermer le message"
+            >
+              ×
+            </button>
           </div>
         )}
 

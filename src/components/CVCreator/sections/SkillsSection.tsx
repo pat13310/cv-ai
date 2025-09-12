@@ -219,6 +219,7 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
   const [searchResults, setSearchResults] = useState<Skill[]>([]);
   const [skillsLayout, setSkillsLayout] = useState<'free' | '1col' | '2col' | '3col'>('free');
   const [selectedSkillId, setSelectedSkillId] = useState<number | null>(null);
+  const [titleHovered, setTitleHovered] = React.useState(false);
 
   // Configuration du drag & drop
   const sensors = useSensors(
@@ -347,7 +348,11 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
             </button>
           </div>
         ) : (
-          <div className="group flex items-center gap-2">
+          <div
+            className="flex items-center gap-2"
+            onMouseEnter={() => setTitleHovered(true)}
+            onMouseLeave={() => setTitleHovered(false)}
+          >
             <h4
               className="text-md font-semibold cursor-pointer hover:bg-gray-100 p-1 rounded transition-all duration-200 hover:scale-105"
               onClick={() => setEditingField('skillsTitle')}
@@ -355,14 +360,12 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
             >
               {editableContent.skillsTitle}
             </h4>
-            <div className="flex gap-1 ml-auto">
-              <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                <AIButton
-                  isLoading={isLoading}
-                  onClick={() => generateWithAI('skillsTitle', editableContent.skillsTitle)}
-                  title="Modifier avec IA"
-                />
-              </div>
+            <div className={`flex gap-1 ml-auto transition-opacity duration-200 ${titleHovered ? 'opacity-100' : 'opacity-0'}`}>
+              <AIButton
+                isLoading={isLoading}
+                onClick={() => generateWithAI('skillsTitle', editableContent.skillsTitle)}
+                title="Modifier avec IA"
+              />
               
               {/* Sélecteur de mise en page */}
               <select

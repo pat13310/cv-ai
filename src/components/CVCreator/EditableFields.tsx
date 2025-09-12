@@ -265,17 +265,24 @@ export const SectionTitle: React.FC<SectionTitleProps> = ({
   className = "",
 }) => {
   const isEditing = React.useMemo(() => editingField === fieldKey, [editingField, fieldKey]);
-  const [isHovered, setIsHovered] = React.useState(false);
+  const [showButtons, setShowButtons] = React.useState(false);
 
   const handleClick = React.useCallback(() => {
     setEditingField(fieldKey);
   }, [setEditingField, fieldKey]);
 
-  
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" || e.key === "Escape") {
       setEditingField(null);
     }
+  };
+
+  const handleMouseEnter = () => {
+    setShowButtons(true);
+  };
+
+  const handleMouseLeave = () => {
+    setShowButtons(false);
   };
 
   return (
@@ -286,7 +293,6 @@ export const SectionTitle: React.FC<SectionTitleProps> = ({
             type="text"
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            /*  onBlur={handleBlur}*/
             onKeyDown={handleKeyDown}
             className="text-md font-semibold w-full border-b border-gray-400 focus:outline-none focus:border-violet-500"
             autoFocus
@@ -316,8 +322,8 @@ export const SectionTitle: React.FC<SectionTitleProps> = ({
       ) : (
         <div
           className="flex items-center gap-2"
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
         >
           <h4
             className="editable-title text-md font-semibold cursor-pointer p-1 rounded whitespace-nowrap"
@@ -329,9 +335,9 @@ export const SectionTitle: React.FC<SectionTitleProps> = ({
             {value}
           </h4>
 
-          {/* Boutons IA et Add affichés au hover */}
-          {isHovered && (
-            <>
+          {/* Boutons affichés seulement si showButtons est true */}
+          {showButtons && (
+            <div className="flex gap-1">
               <AIButton
                 isLoading={isLoading}
                 onClick={(e) => {
@@ -350,7 +356,7 @@ export const SectionTitle: React.FC<SectionTitleProps> = ({
                   <Plus className="w-4 h-4" />
                 </button>
               )}
-            </>
+            </div>
           )}
         </div>
       )}

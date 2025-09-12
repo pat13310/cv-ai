@@ -60,6 +60,8 @@ export const EducationSection: React.FC<EducationSectionProps> = ({
   generateWithAI,
   isLoading
 }) => {
+  const [titleHovered, setTitleHovered] = React.useState(false);
+  const [hoveredEduId, setHoveredEduId] = React.useState<number | null>(null);
   return (
     <SectionWrapper id="education" title="Formation">
       <div className="mt-4">
@@ -84,7 +86,11 @@ export const EducationSection: React.FC<EducationSectionProps> = ({
             </button>
           </div>
         ) : (
-          <div className="group flex items-center gap-2">
+          <div
+            className="flex items-center gap-2"
+            onMouseEnter={() => setTitleHovered(true)}
+            onMouseLeave={() => setTitleHovered(false)}
+          >
             <h4
               className="text-md font-semibold cursor-pointer hover:bg-gray-100 p-1 rounded whitespace-nowrap transition-all duration-200 hover:scale-105"
               onClick={() => setEditingField('educationTitle')}
@@ -92,14 +98,12 @@ export const EducationSection: React.FC<EducationSectionProps> = ({
             >
               {editableContent.educationTitle}
             </h4>
-            <div className="flex gap-1 ml-auto">
-              <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                <AIButton
-                  isLoading={isLoading}
-                  onClick={() => generateWithAI('educationTitle', editableContent.educationTitle)}
-                  title="Modifier avec IA"
-                />
-              </div>
+            <div className={`flex gap-1 ml-auto transition-opacity duration-200 ${titleHovered ? 'opacity-100' : 'opacity-0'}`}>
+              <AIButton
+                isLoading={isLoading}
+                onClick={() => generateWithAI('educationTitle', editableContent.educationTitle)}
+                title="Modifier avec IA"
+              />
               <button
                 onClick={addEducation}
                 className="p-1 text-violet-600 hover:text-violet-800 transition-all duration-200 hover:scale-110"
@@ -112,7 +116,12 @@ export const EducationSection: React.FC<EducationSectionProps> = ({
         )}
 
         {educations.map(edu => (
-          <div key={edu.id} className="relative group mt-2">
+          <div
+            key={edu.id}
+            className="relative mt-2"
+            onMouseEnter={() => setHoveredEduId(edu.id)}
+            onMouseLeave={() => setHoveredEduId(null)}
+          >
             <div className="flex items-start justify-between gap-2">
               <div className="grid grid-cols-[2fr_2fr_1fr] gap-2 flex-1">
                 {/* Diplôme */}
@@ -209,10 +218,10 @@ export const EducationSection: React.FC<EducationSectionProps> = ({
                 )}
               </div>
               
-              {/* Bouton supprimer bien visible à droite */}
+              {/* Bouton supprimer visible seulement au hover */}
               <button
                 onClick={() => removeEducation(edu.id)}
-                className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-all duration-200 hover:scale-110 opacity-70 group-hover:opacity-100"
+                className={`p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-all duration-200 hover:scale-110 ${hoveredEduId === edu.id ? 'opacity-100' : 'opacity-0'}`}
                 title="Supprimer la formation"
               >
                 <Minus className="w-4 h-4" />
