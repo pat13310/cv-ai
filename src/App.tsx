@@ -15,6 +15,7 @@ import { Templates } from './components/Templates/Templates';
 import { Settings } from './components/Settings/Settings';
 import { Coaching } from './components/Coaching/Coaching';
 import { AIChat } from './components/Chat/AIChat';
+import { CVCreatorDemo } from './components/CVCreator/CVCreatorDemo';
 
 // Composant pour l'authentification Supabase
 const SupabaseAppContent: React.FC = () => {
@@ -23,6 +24,7 @@ const SupabaseAppContent: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [voiceEnabled] = useState(true);
+  const [showCVCreatorDemo, setShowCVCreatorDemo] = useState(false);
   const [apiKeyStatus, setApiKeyStatus] = useState<'valid' | 'invalid' | 'missing'>('missing');
 
   // Fonction pour vérifier le statut de la clé API
@@ -74,8 +76,13 @@ const SupabaseAppContent: React.FC = () => {
     );
   }
 
+  // Si on est en mode démo CVCreator, afficher seulement le CVCreator
+  if (showCVCreatorDemo) {
+    return <CVCreatorDemo onBack={() => setShowCVCreatorDemo(false)} />;
+  }
+
   if (!isAuthenticated) {
-    return <UniversalLoginPage />;
+    return <UniversalLoginPage onCVCreatorDemo={() => setShowCVCreatorDemo(true)} />;
   }
 
   const renderActiveTab = () => {
@@ -174,6 +181,7 @@ const MockAppContent: React.FC = () => {
   const [showChat, setShowChat] = useState(false);
   const [voiceEnabled] = useState(true);
   const [demoMode, setDemoMode] = useState(false);
+  const [showCVCreatorDemo, setShowCVCreatorDemo] = useState(false);
   const [apiKeyStatus, setApiKeyStatus] = useState<'valid' | 'invalid' | 'missing'>('missing');
 
   // Fonction pour vérifier le statut de la clé API
@@ -225,8 +233,13 @@ const MockAppContent: React.FC = () => {
     );
   }
 
+  // Si on est en mode démo CVCreator, afficher seulement le CVCreator
+  if (showCVCreatorDemo) {
+    return <CVCreatorDemo onBack={() => setShowCVCreatorDemo(false)} />;
+  }
+
   if (!isAuthenticated && !demoMode) {
-    return <UniversalLoginPage onDemoMode={() => setDemoMode(true)} />;
+    return <UniversalLoginPage onDemoMode={() => setDemoMode(true)} onCVCreatorDemo={() => setShowCVCreatorDemo(true)} />;
   }
 
   const renderActiveTab = () => {

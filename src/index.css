@@ -78,3 +78,9 @@ select option:selected {
   }
 }
 
+
+
+/* Style simple pour les champs éditables - comme dans le code de référence */
+.editable-field {
+  position: relative;
+}

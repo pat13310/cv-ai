@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CustomSelect } from './CustomSelect';
+import { Columns, RectangleVertical } from 'lucide-react';
 
 interface StyleControlsProps {
   customFont: string;
@@ -8,6 +9,8 @@ interface StyleControlsProps {
   setCustomColor: (color: string) => void;
   titleColor: string;
   setTitleColor: (color: string) => void;
+  layoutColumns?: number;
+  setLayoutColumns?: (columns: number) => void;
   availableFonts: string[];
   availableColors: Array<{ name: string; value: string; category: string }>;
 }
@@ -52,15 +55,15 @@ const ColorPicker: React.FC<{
     <div className="flex-1 relative">
       <label className="block text-sm font-medium mb-2">{label}</label>
       
-      {/* Couleurs principales - tiles plus petits */}
-      <div className="flex gap-1 flex-wrap">
+      {/* Couleurs principales - tiles plus petits sur une seule ligne */}
+      <div className="flex gap-1">
         {mainColors.map(({ category, mainColor }) => (
           <button
             key={category}
             onClick={() => handleMainColorClick(category, mainColor)}
-            className={`w-6 h-6 rounded-md border-2 transition-all duration-200 hover:scale-110 hover:shadow-md ${
+            className={`w-5 h-5 rounded-2xl border-1 transition-all duration-200 ring-2 hover:ring-violet-200 hover:shadow-xs ${
               value === mainColor.value
-                ? 'border-violet-500 shadow-lg ring-2 ring-violet-200 scale-110'
+                ? 'border-violet-500 shadow-lg ring-2 ring-violet-500 '
                 : 'border-gray-300 hover:border-gray-400'
             }`}
             style={{ backgroundColor: `#${mainColor.value}` }}
@@ -85,7 +88,7 @@ const ColorPicker: React.FC<{
               ✕
             </button>
           </div>
-          <div className="flex gap-1">
+          <div className="flex gap-2">
             {colorsByCategory[expandedCategory].map((color) => (
               <button
                 key={color.value}
@@ -117,6 +120,8 @@ export const StyleControls: React.FC<StyleControlsProps> = ({
   setCustomColor,
   titleColor,
   setTitleColor,
+  layoutColumns = 1,
+  setLayoutColumns,
   availableFonts,
   availableColors
 }) => {
@@ -124,7 +129,7 @@ export const StyleControls: React.FC<StyleControlsProps> = ({
 
   return (
     <div className="bg-violet-50 rounded-lg shadow-sm p-4 mb-4 -mt-2 -ml-2 -mr-2">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-2">
         <div className="lg:col-span-1">
           <label className="block text-sm font-medium mb-2">Police</label>
           <CustomSelect
@@ -132,6 +137,21 @@ export const StyleControls: React.FC<StyleControlsProps> = ({
             onChange={setCustomFont}
             options={fontOptions}
           />
+        </div>
+        
+        <div className="lg:col-span-1">
+          <label className="block text-sm font-medium mb-2">Mise en page</label>
+          <button
+            onClick={() => setLayoutColumns?.(layoutColumns === 1 ? 2 : 1)}
+            className="flex items-center justify-center w-12 h-8 rounded-md text-sm font-medium transition-all bg-violet-500 text-white shadow-md hover:bg-violet-600 hover:shadow-lg"
+            title={layoutColumns === 1 ? "Passer à deux colonnes" : "Passer à une colonne"}
+          >
+            {layoutColumns === 1 ? (
+              <Columns className="w-5 h-4" />
+            ) : (
+              <RectangleVertical className="w-5 h-4" />
+            )}
+          </button>
         </div>
         
         <ColorPicker

@@ -62,6 +62,7 @@ export const CVCreator: React.FC = () => {
   const [customFont, setCustomFont] = useState<string>('Calibri');
   const [customColor, setCustomColor] = useState<string>('000000');
   const [titleColor, setTitleColor] = useState<string>('000000');
+  const [layoutColumns, setLayoutColumns] = useState<number>(1);
   const [error, setError] = useState<string | null>(null);
   const [editableContent, setEditableContent] = useState<CVContent>({
     name: '[VOTRE NOM]',
@@ -263,6 +264,9 @@ export const CVCreator: React.FC = () => {
       if (savedData.titleColor) {
         setTitleColor(savedData.titleColor);
       }
+      if (savedData.layoutColumns) {
+        setLayoutColumns(savedData.layoutColumns);
+      }
     }
   }, [loadFromLocalStorage, profile, profileLoading]);
 
@@ -277,7 +281,8 @@ export const CVCreator: React.FC = () => {
         educations,
         customFont,
         customColor,
-        titleColor
+        titleColor,
+        layoutColumns
       };
       
       saveToLocalStorage(dataToSave);
@@ -291,14 +296,12 @@ export const CVCreator: React.FC = () => {
     customFont,
     customColor,
     titleColor,
+    layoutColumns,
     saveToLocalStorage,
     autoSaveEnabled
   ]);
 
   const generateWithAI = async (field: string, currentContent?: string) => {
-    // Ne pas générer avec l'IA si le champ est déjà en cours d'édition
-    if (editingField === field) return;
-
     // Réinitialiser l'erreur au début de la fonction
     setError(null);
 
@@ -612,7 +615,7 @@ export const CVCreator: React.FC = () => {
       <h1 className="heading-gradient text-center">Créateur de CV</h1>
 
       {/* Indicateur de sauvegarde automatique */}
-      <div className="flex justify-center items-center gap-4 mb-4 p-2 bg-gray-50 rounded-lg mx-4">
+      <div className="flex justify-center items-center gap-4 mb-0 p-1 bg-gray-50 rounded-lg mx-4">
         <div className="flex items-center gap-2">
           <label className="flex items-center gap-2 text-sm text-gray-700">
             <input
@@ -662,6 +665,8 @@ export const CVCreator: React.FC = () => {
             setCustomColor={setCustomColor}
             titleColor={titleColor}
             setTitleColor={setTitleColor}
+            layoutColumns={layoutColumns}
+            setLayoutColumns={setLayoutColumns}
             availableFonts={availableFonts}
             availableColors={availableColors}
             addExperience={addExperience}

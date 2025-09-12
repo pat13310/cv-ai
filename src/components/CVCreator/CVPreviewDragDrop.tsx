@@ -73,6 +73,8 @@ export const CVPreviewDragDrop: React.FC<CVPreviewProps> = ({
   setCustomColor,
   titleColor = '000000',
   setTitleColor,
+  layoutColumns = 1,
+  setLayoutColumns,
   availableFonts = ['Calibri', 'Georgia', 'Helvetica', 'Consolas', 'Times New Roman', 'Arial'],
   availableColors = [
     { name: 'Noir', value: '000000', category: 'Neutres' },
@@ -138,6 +140,8 @@ export const CVPreviewDragDrop: React.FC<CVPreviewProps> = ({
             setCustomColor={setCustomColor}
             titleColor={titleColor}
             setTitleColor={setTitleColor}
+            layoutColumns={layoutColumns}
+            setLayoutColumns={setLayoutColumns}
             availableFonts={availableFonts}
             availableColors={availableColors}
           />

@@ -10,6 +10,7 @@ interface CVData {
   customFont: string;
   customColor: string;
   titleColor: string;
+  layoutColumns: number;
   lastSaved: string;
 }
 
@@ -54,7 +55,7 @@ export const useLocalStorageCV = () => {
     }, AUTO_SAVE_DELAY);
 
     setSaveTimeout(timeout);
-  }, [saveTimeout, saveToLocalStorage]);
+  }, [saveToLocalStorage]);
 
   // Charger les données depuis localStorage
   const loadFromLocalStorage = useCallback((): CVData | null => {

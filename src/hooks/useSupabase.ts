@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { supabase } from '../lib/supabase';
 
 // Types pour les templates
 export interface Template {
@@ -69,17 +69,6 @@ export interface UserProfile {
   openai_api_key?: string;
   created_at?: string;
   updated_at?: string;
-}
-
-// Configuration Supabase
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-let supabase: SupabaseClient | null = null;
-
-// Initialiser Supabase seulement si les variables d'environnement sont disponibles
-if (supabaseUrl && supabaseKey) {
-  supabase = createClient(supabaseUrl, supabaseKey);
 }
 
 // Hook pour gérer les données Supabase

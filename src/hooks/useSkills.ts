@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { supabase } from '../lib/supabase';
 
 // Types pour les compétences
 export interface Skill {
@@ -24,16 +24,6 @@ export interface AISkillGenerationRequest {
   category: string;
   context?: string; // Contexte professionnel pour générer des compétences pertinentes
   count?: number; // Nombre de compétences à générer
-}
-
-// Configuration Supabase
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-let supabase: SupabaseClient | null = null;
-
-if (supabaseUrl && supabaseKey) {
-  supabase = createClient(supabaseUrl, supabaseKey);
 }
 
 // Fonction pour obtenir la clé API OpenAI
@@ -176,7 +166,7 @@ export const useSkills = () => {
 
   // Fonction principale : getSkillsByCategory avec intégration IA
   const getSkillsByCategory = useCallback(async (
-    category: string, 
+    category: string,
     options?: {
       generateIfEmpty?: boolean;
       context?: string;
@@ -214,7 +204,7 @@ export const useSkills = () => {
         // Mise à jour asynchrone du compteur d'usage (sans attendre)
         skillsData.forEach(async (skill) => {
           try {
-            await supabase
+            await supabase!
               .from('skills')
               .update({
                 usage_count: skill.usage_count + 1,
@@ -257,7 +247,7 @@ export const useSkills = () => {
           usage_count: 1 // Première utilisation
         }));
 
-        const { data: insertedSkills, error: insertError } = await supabase
+        const { data: insertedSkills, error: insertError } = await supabase!
           .from('skills')
           .insert(skillsToInsert)
           .select();
@@ -300,7 +290,7 @@ export const useSkills = () => {
     }
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabase!
         .from('skills')
         .select('category')
         .order('category');
@@ -325,7 +315,7 @@ export const useSkills = () => {
     }
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabase!
         .from('skills')
         .insert([skillData])
         .select()
@@ -357,7 +347,7 @@ export const useSkills = () => {
     }
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabase!
         .from('skills')
         .select('*')
         .or(`name.ilike.%${query}%,description.ilike.%${query}%,keywords.cs.{${query}}`)

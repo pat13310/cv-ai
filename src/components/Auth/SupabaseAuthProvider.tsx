@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useCallback } from 'react';
-import { createClient, SupabaseClient, User, Session, AuthError } from '@supabase/supabase-js';
+import { User, Session, AuthError } from '@supabase/supabase-js';
 import { useSupabase, UserProfile } from '../../hooks/useSupabase';
+import { supabase } from '../../lib/supabase';
 
 interface SignUpMetadata {
   first_name?: string;
@@ -26,28 +27,34 @@ interface SupabaseAuthProviderProps {
   children: React.ReactNode;
 }
 
-// Configuration Supabase
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-let supabase: SupabaseClient | null = null;
-
-// Initialiser Supabase seulement si les variables d'environnement sont disponibles
-if (supabaseUrl && supabaseKey) {
-  supabase = createClient(supabaseUrl, supabaseKey);
-}
-
 export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { loadProfile, saveProfile } = useSupabase();
+  const { saveProfile } = useSupabase();
 
   const loadUserProfile = useCallback(async (userId: string) => {
+    if (!supabase) {
+      console.log('Supabase non configuré - pas de chargement de profil');
+      setProfile(null);
+      return;
+    }
+
     try {
       console.log('Chargement du profil utilisateur:', userId);
-      const profileData = await loadProfile(userId);
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+        throw error;
+      }
+
+      const profileData = data || null;
       setProfile(profileData);
       console.log('Profil chargé:', profileData ? 'Succès' : 'Aucun profil');
     } catch (error) {
@@ -55,7 +62,7 @@ export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({ chil
       // Ne pas bloquer l'application si le profil ne peut pas être chargé
       setProfile(null);
     }
-  }, [loadProfile]);
+  }, []);
 
   useEffect(() => {
     if (!supabase) {
@@ -79,7 +86,7 @@ export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({ chil
         console.log('Récupération de la session initiale...');
         
         // Créer une promesse avec timeout pour getSession
-        const sessionPromise = supabase.auth.getSession();
+        const sessionPromise = supabase!.auth.getSession();
         const timeoutPromise = new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error('Timeout getSession')), 3000)
         );
@@ -96,19 +103,12 @@ export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({ chil
           setSession(session);
           setUser(session?.user ?? null);
           
-          // Charger le profil si l'utilisateur est connecté (avec timeout)
+          // Charger le profil si l'utilisateur est connecté (sans timeout)
           if (session?.user) {
-            try {
-              await Promise.race([
-                loadUserProfile(session.user.id),
-                new Promise<never>((_, reject) =>
-                  setTimeout(() => reject(new Error('Timeout loadProfile')), 2000)
-                )
-              ]);
-            } catch (profileError) {
-              console.warn('Timeout ou erreur lors du chargement du profil:', profileError);
+            loadUserProfile(session.user.id).catch((profileError) => {
+              console.warn('Erreur lors du chargement du profil:', profileError);
               setProfile(null);
-            }
+            });
           } else {
             setProfile(null);
           }
@@ -128,26 +128,19 @@ export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({ chil
     getInitialSession();
 
     // Écouter les changements d'authentification
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+    const { data: { subscription } } = supabase!.auth.onAuthStateChange(
+      async (event: string, session: Session | null) => {
         console.log('Auth state changed:', event, session?.user?.id);
         
         setSession(session);
         setUser(session?.user ?? null);
         
         if (event === 'SIGNED_IN' && session?.user) {
-          // Charger le profil avec timeout
-          try {
-            await Promise.race([
-              loadUserProfile(session.user.id),
-              new Promise<never>((_, reject) =>
-                setTimeout(() => reject(new Error('Timeout loadProfile')), 2000)
-              )
-            ]);
-          } catch (profileError) {
-            console.warn('Timeout lors du chargement du profil:', profileError);
+          // Charger le profil sans timeout
+          loadUserProfile(session.user.id).catch((profileError) => {
+            console.warn('Erreur lors du chargement du profil:', profileError);
             setProfile(null);
-          }
+          });
         } else if (event === 'SIGNED_OUT') {
           setProfile(null);
         }
@@ -171,7 +164,7 @@ export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({ chil
     try {
       setIsLoading(true);
       
-      const { data, error } = await supabase.auth.signUp({
+      const { data, error } = await supabase!.auth.signUp({
         email,
         password,
         options: {
@@ -237,7 +230,7 @@ export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({ chil
     try {
       setIsLoading(true);
       
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase!.auth.signInWithPassword({
         email,
         password
       });
@@ -305,7 +298,7 @@ export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({ chil
     
     try {
       // Timeout réduit pour éviter les blocages
-      const signOutPromise = supabase.auth.signOut();
+      const signOutPromise = supabase!.auth.signOut();
       const timeoutPromise = new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error('Timeout de déconnexion')), 2000) // 2 secondes au lieu de 5
       );

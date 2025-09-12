@@ -1,6 +1,14 @@
 import React from 'react';
-import { Sparkles, Plus, Minus } from 'lucide-react';
 import { StyleControls } from './StyleControls';
+import {
+  EditableField,
+  EditableTextarea,
+  SectionTitle,
+  EditableListItem,
+  EditableExperience,
+  EditableLanguage
+} from './EditableFields';
+import { EditableEducationSingleColumn, EditableEducationTwoColumns } from './EditableEducation';
 
 // Interfaces pour les données du CV
 export interface CVExperience {
@@ -63,6 +71,8 @@ export interface CVPreviewProps {
   setCustomColor?: React.Dispatch<React.SetStateAction<string>>;
   titleColor?: string;
   setTitleColor?: React.Dispatch<React.SetStateAction<string>>;
+  layoutColumns?: number;
+  setLayoutColumns?: React.Dispatch<React.SetStateAction<number>>;
   availableFonts?: string[];
   availableColors?: Array<{ name: string; value: string; category: string }>;
   
@@ -85,45 +95,6 @@ export interface CVPreviewProps {
   openAIError: string | null;
 }
 
-// Composant d'animation de chargement avec trois points
-const LoadingDots: React.FC = () => (
-  <div className="flex space-x-1">
-    {[0, 1, 2].map((i) => (
-      <div
-        key={i}
-        className="w-2 h-2 bg-violet-600 rounded-full animate-bounce"
-        style={{ animationDelay: `${i * 0.2}s` }}
-      />
-    ))}
-  </div>
-);
-
-// Composant de bouton IA
-interface AIButtonProps {
-  isLoading: boolean;
-  onClick: () => void;
-  disabled?: boolean;
-  title: string;
-  className?: string;
-}
-
-const AIButton: React.FC<AIButtonProps> = ({
-  isLoading,
-  onClick,
-  disabled = false,
-  title,
-  className = ""
-}) => (
-  <button
-    onClick={onClick}
-    disabled={disabled || isLoading}
-    className={`p-1 text-violet-600 hover:text-violet-800 disabled:opacity-50 ${className}`}
-    title={title}
-  >
-    {isLoading ? <LoadingDots /> : <Sparkles className="w-4 h-4" />}
-  </button>
-);
-
 // Composant principal CVPreview
 export const CVPreview: React.FC<CVPreviewProps> = ({
   editableContent,
@@ -144,6 +115,8 @@ export const CVPreview: React.FC<CVPreviewProps> = ({
   setCustomColor,
   titleColor = '000000', // Noir par défaut
   setTitleColor,
+  layoutColumns = 1,
+  setLayoutColumns,
   availableFonts = ['Calibri', 'Georgia', 'Helvetica', 'Consolas', 'Times New Roman', 'Arial'],
   availableColors = [
     { name: 'Noir', value: '000000', category: 'Neutres' },
@@ -180,6 +153,8 @@ export const CVPreview: React.FC<CVPreviewProps> = ({
             setCustomColor={setCustomColor}
             titleColor={titleColor}
             setTitleColor={setTitleColor}
+            layoutColumns={layoutColumns}
+            setLayoutColumns={setLayoutColumns}
             availableFonts={availableFonts}
             availableColors={availableColors}
           />
@@ -193,550 +168,317 @@ export const CVPreview: React.FC<CVPreviewProps> = ({
           </div>
         )}
 
-        {/* Nom */}
+        {/* En-tête (nom et contact) - toujours en pleine largeur */}
         <div className="mt-4 text-center">
-          {editingField === 'name' ? (
-            <input
-              type="text"
-              value={editableContent.name}
-              onChange={(e) => setEditableContent(prev => ({ ...prev, name: e.target.value }))}
-              onBlur={() => setEditingField(null)}
-              onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-              className="text-lg font-bold w-full text-center border-b border-gray-400 focus:outline-none focus:border-violet-500"
-              autoFocus
-            />
-          ) : (
-            <div className="flex items-center justify-center gap-2">
-              <h3
-                className="text-lg font-bold cursor-pointer hover:bg-gray-100 p-1 rounded transition-all duration-200 hover:scale-105"
-                onClick={() => setEditingField('name')}
-                style={{ color: `#${titleColor}` }}
-              >
-                {editableContent.name}
-              </h3>
-              <AIButton
-                isLoading={isLoading}
-                onClick={() => generateWithAI('name', editableContent.name)}
-                title="Modifier avec IA"
-              />
-            </div>
-          )}
+          <EditableField
+            fieldKey="name"
+            value={editableContent.name}
+            editingField={editingField}
+            setEditingField={setEditingField}
+            onChange={(value) => setEditableContent(prev => ({ ...prev, name: value }))}
+            isLoading={isLoading}
+            generateWithAI={generateWithAI}
+            color={titleColor}
+            className="justify-center"
+            inputClassName="text-lg font-bold w-full text-center"
+          />
         </div>
 
-        {/* Contact */}
         <div className="text-center">
-          {editingField === 'contact' ? (
-            <input
-              type="text"
-              value={editableContent.contact}
-              onChange={(e) => setEditableContent(prev => ({ ...prev, contact: e.target.value }))}
-              onBlur={() => setEditingField(null)}
-              onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-              className="text-sm w-full text-center border-b border-gray-400 focus:outline-none focus:border-violet-500"
-              autoFocus
-            />
-          ) : (
-            <div className="flex items-center justify-center gap-2">
-              <p
-                className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded transition-all duration-200 hover:scale-105"
-                onClick={() => setEditingField('contact')}
-                style={{ color: `#${customColor}` }}
-              >
-                {editableContent.contact}
-              </p>
-              <AIButton
-                isLoading={isLoading}
-                onClick={() => generateWithAI('contact', editableContent.contact)}
-                title="Modifier avec IA"
-              />
-            </div>
-          )}
+          <EditableField
+            fieldKey="contact"
+            value={editableContent.contact}
+            editingField={editingField}
+            setEditingField={setEditingField}
+            onChange={(value) => setEditableContent(prev => ({ ...prev, contact: value }))}
+            isLoading={isLoading}
+            generateWithAI={generateWithAI}
+            color={customColor}
+            className="justify-center"
+            inputClassName="text-sm w-full text-center"
+          />
         </div>
 
-        {/* Profil professionnel */}
-        <div className="mt-4">
-          {editingField === 'profileTitle' ? (
-            <input
-              type="text"
-              value={editableContent.profileTitle}
-              onChange={(e) => setEditableContent(prev => ({ ...prev, profileTitle: e.target.value }))}
-              onBlur={() => setEditingField(null)}
-              onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-              className="text-md font-semibold w-full border-b border-gray-400 focus:outline-none focus:border-violet-500"
-              autoFocus
-            />
-          ) : (
-            <div className="flex items-center gap-2">
-              <h4
-                className="text-md font-semibold cursor-pointer hover:bg-gray-100 p-1 rounded transition-all duration-200 hover:scale-105"
-                onClick={() => setEditingField('profileTitle')}
-                style={{ color: `#${titleColor}` }}
-              >
-                {editableContent.profileTitle}
-              </h4>
-              <AIButton
+        {/* Contenu principal - mise en page conditionnelle */}
+        <div className={layoutColumns === 2 ? "grid grid-cols-2 gap-6 mt-4" : "mt-4"}>
+          {/* Colonne gauche ou contenu unique */}
+          <div className={layoutColumns === 2 ? "" : ""}>
+            {/* Profil professionnel */}
+            <div className="mt-4">
+              <SectionTitle
+                fieldKey="profileTitle"
+                value={editableContent.profileTitle}
+                editingField={editingField}
+                setEditingField={setEditingField}
+                onChange={(value) => setEditableContent(prev => ({ ...prev, profileTitle: value }))}
                 isLoading={isLoading}
-                onClick={() => generateWithAI('profileTitle', editableContent.profileTitle)}
-                title="Modifier avec IA"
+                generateWithAI={generateWithAI}
+                color={titleColor}
+              />
+
+              <EditableTextarea
+                fieldKey="profileContent"
+                value={editableContent.profileContent}
+                editingField={editingField}
+                setEditingField={setEditingField}
+                onChange={(value) => setEditableContent(prev => ({ ...prev, profileContent: value }))}
+                isLoading={isLoading}
+                generateWithAI={generateWithAI}
+                color={customColor}
+                rows={3}
               />
             </div>
-          )}
 
-          {editingField === 'profileContent' ? (
-            <textarea
-              value={editableContent.profileContent}
-              onChange={(e) => setEditableContent(prev => ({ ...prev, profileContent: e.target.value }))}
-              onBlur={() => setEditingField(null)}
-              className="text-sm w-full border border-gray-400 focus:outline-none focus:border-violet-500 p-1 rounded"
-              autoFocus
-              rows={3}
-            />
-          ) : (
-            <div className="flex items-start gap-2">
-              <p
-                className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 transition-all duration-200 hover:scale-105 line-clamp-3"
-                onClick={() => setEditingField('profileContent')}
-                style={{ color: `#${customColor}` }}
-              >
-                {editableContent.profileContent}
-              </p>
-              <AIButton
+            {/* Expérience professionnelle */}
+            <div className="mt-4">
+              <SectionTitle
+                fieldKey="experienceTitle"
+                value={editableContent.experienceTitle}
+                editingField={editingField}
+                setEditingField={setEditingField}
+                onChange={(value) => setEditableContent(prev => ({ ...prev, experienceTitle: value }))}
                 isLoading={isLoading}
-                onClick={() => generateWithAI('profileContent', editableContent.profileContent)}
-                title="Modifier avec IA"
-                className="mt-1"
+                generateWithAI={generateWithAI}
+                color={titleColor}
+                onAdd={addExperience}
+                addTitle="Ajouter une expérience"
               />
-            </div>
-          )}
-        </div>
 
-        {/* Expérience professionnelle */}
-        <div className="mt-4">
-          {editingField === 'experienceTitle' ? (
-            <input
-              type="text"
-              value={editableContent.experienceTitle}
-              onChange={(e) => setEditableContent(prev => ({ ...prev, experienceTitle: e.target.value }))}
-              onBlur={() => setEditingField(null)}
-              onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-              className="text-md font-semibold w-full border-b border-gray-400 focus:outline-none focus:border-violet-500"
-              autoFocus
-            />
-          ) : (
-            <div className="flex items-center gap-2">
-              <h4
-                className="text-md font-semibold cursor-pointer hover:bg-gray-100 p-1 rounded whitespace-nowrap transition-all duration-200 hover:scale-105"
-                onClick={() => setEditingField('experienceTitle')}
-                style={{ color: `#${titleColor}` }}
-              >
-                {editableContent.experienceTitle}
-              </h4>
-              <div className="flex gap-1 ml-auto">
-                <AIButton
+              {experiences.map(exp => (
+                <EditableExperience
+                  key={exp.id}
+                  id={exp.id}
+                  content={exp.content}
+                  details={exp.details}
+                  editingField={editingField}
+                  setEditingField={setEditingField}
+                  onContentChange={(value) => setExperiences(prev => prev.map(item => item.id === exp.id ? { ...item, content: value } : item))}
+                  onDetailsChange={(value) => setExperiences(prev => prev.map(item => item.id === exp.id ? { ...item, details: value } : item))}
+                  onRemove={() => removeExperience(exp.id)}
                   isLoading={isLoading}
-                  onClick={() => generateWithAI('experienceTitle', editableContent.experienceTitle)}
-                  title="Modifier avec IA"
+                  generateWithAI={generateWithAI}
+                  color={customColor}
                 />
-                <button
-                  onClick={addExperience}
-                  className="p-1 text-violet-600 hover:text-violet-800 transition-all duration-200 hover:scale-110"
-                  title="Ajouter une expérience"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
-              </div>
+              ))}
             </div>
-          )}
 
-          {experiences.map(exp => (
-            <div key={exp.id} className="relative group">
-              <div className="absolute right-0 top-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <AIButton
+            {/* Formation - seulement en mode une colonne */}
+            {layoutColumns === 1 && (
+              <div className="mt-4">
+                <SectionTitle
+                  fieldKey="educationTitle"
+                  value={editableContent.educationTitle}
+                  editingField={editingField}
+                  setEditingField={setEditingField}
+                  onChange={(value) => setEditableContent(prev => ({ ...prev, educationTitle: value }))}
                   isLoading={isLoading}
-                  onClick={() => generateWithAI('experienceContent', exp.content)}
-                  title="Modifier avec IA"
+                  generateWithAI={generateWithAI}
+                  color={titleColor}
+                  onAdd={addEducation}
+                  addTitle="Ajouter une formation"
                 />
-                <button
-                  onClick={() => removeExperience(exp.id)}
-                  className="p-1 text-red-600 hover:text-red-800"
-                  title="Supprimer l'expérience"
-                >
-                  <Minus className="w-4 h-4" />
-                </button>
-              </div>
 
-              {editingField === `experienceContent-${exp.id}` ? (
-                <input
-                  type="text"
-                  value={exp.content}
-                  onChange={(e) => setExperiences(prev => prev.map(item => item.id === exp.id ? { ...item, content: e.target.value } : item))}
-                  onBlur={() => setEditingField(null)}
-                  onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-                  className="text-sm w-full border-b border-gray-400 focus:outline-none focus:border-violet-500 mt-2"
-                  autoFocus
-                />
-              ) : (
-                <div className="flex items-center gap-2 mt-2">
-                  <p
-                    className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 font-bold transition-all duration-200 hover:scale-105"
-                    onClick={() => setEditingField(`experienceContent-${exp.id}`)}
-                    style={{ color: `#${customColor}` }}
-                  >
-                    {exp.content}
-                  </p>
-                </div>
-              )}
-
-              {editingField === `experienceDetails-${exp.id}` ? (
-                <textarea
-                  value={exp.details}
-                  onChange={(e) => setExperiences(prev => prev.map(item => item.id === exp.id ? { ...item, details: e.target.value } : item))}
-                  onBlur={() => setEditingField(null)}
-                  className="text-sm w-full border border-gray-400 focus:outline-none focus:border-violet-500 p-1 rounded mt-1"
-                  autoFocus
-                  rows={2}
-                />
-              ) : (
-                <div className="flex items-start gap-2 mt-1">
-                  <p
-                    className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 transition-all duration-200 hover:scale-105"
-                    onClick={() => setEditingField(`experienceDetails-${exp.id}`)}
-                    style={{ color: `#${customColor}` }}
-                  >
-                    {exp.details}
-                  </p>
-                  <AIButton
+                {educations.map(edu => (
+                  <EditableEducationSingleColumn
+                    key={edu.id}
+                    id={edu.id}
+                    degree={edu.degree}
+                    school={edu.school}
+                    year={edu.year}
+                    editingField={editingField}
+                    setEditingField={setEditingField}
+                    onDegreeChange={(value) => setEducations(prev => prev.map(item => item.id === edu.id ? { ...item, degree: value } : item))}
+                    onSchoolChange={(value) => setEducations(prev => prev.map(item => item.id === edu.id ? { ...item, school: value } : item))}
+                    onYearChange={(value) => setEducations(prev => prev.map(item => item.id === edu.id ? { ...item, year: value } : item))}
+                    onRemove={() => removeEducation(edu.id)}
                     isLoading={isLoading}
-                    onClick={() => generateWithAI('experienceDetails', exp.details)}
-                    title="Modifier avec IA"
-                    className="mt-1"
+                    generateWithAI={generateWithAI}
+                    color={customColor}
                   />
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+                ))}
+              </div>
+            )}
 
-        {/* Formation */}
-        <div className="mt-4">
-          {editingField === 'educationTitle' ? (
-            <input
-              type="text"
-              value={editableContent.educationTitle}
-              onChange={(e) => setEditableContent(prev => ({ ...prev, educationTitle: e.target.value }))}
-              onBlur={() => setEditingField(null)}
-              onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-              className="text-md font-semibold w-full border-b border-gray-400 focus:outline-none focus:border-violet-500"
-              autoFocus
-            />
-          ) : (
-            <div className="flex items-center gap-2">
-              <h4
-                className="text-md font-semibold cursor-pointer hover:bg-gray-100 p-1 rounded whitespace-nowrap transition-all duration-200 hover:scale-105"
-                onClick={() => setEditingField('educationTitle')}
-                style={{ color: `#${titleColor}` }}
-              >
-                {editableContent.educationTitle}
-              </h4>
-              <div className="flex gap-1 ml-auto">
-                <AIButton
+            {/* Compétences - seulement en mode une colonne */}
+            {layoutColumns === 1 && (
+              <div className="mt-4">
+                <SectionTitle
+                  fieldKey="skillsTitle"
+                  value={editableContent.skillsTitle}
+                  editingField={editingField}
+                  setEditingField={setEditingField}
+                  onChange={(value) => setEditableContent(prev => ({ ...prev, skillsTitle: value }))}
                   isLoading={isLoading}
-                  onClick={() => generateWithAI('educationTitle', editableContent.educationTitle)}
-                  title="Modifier avec IA"
+                  generateWithAI={generateWithAI}
+                  color={titleColor}
+                  onAdd={addSkill}
+                  addTitle="Ajouter une compétence"
                 />
-                <button
-                  onClick={addEducation}
-                  className="p-1 text-violet-600 hover:text-violet-800 transition-all duration-200 hover:scale-110"
-                  title="Ajouter une formation"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          )}
 
-          {educations.map(edu => (
-            <div key={edu.id} className="relative group mt-2">
-              <div className="flex items-start justify-between gap-2">
-                <div className="grid grid-cols-[2fr_2fr_1fr] gap-2 flex-1">
-                  {/* Diplôme */}
-                  {editingField === `educationDegree-${edu.id}` ? (
-                    <input
-                      type="text"
-                      value={edu.degree}
-                      onChange={(e) => setEducations(prev => prev.map(item => item.id === edu.id ? { ...item, degree: e.target.value } : item))}
-                      onBlur={() => setEditingField(null)}
-                      onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-                      className="text-sm w-full border-b border-gray-400 focus:outline-none focus:border-violet-500"
-                      placeholder="Diplôme"
-                      autoFocus
-                    />
-                  ) : (
-                    <div className="flex items-center gap-1">
-                      <p
-                        className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 transition-all duration-200 hover:scale-105"
-                        onClick={() => setEditingField(`educationDegree-${edu.id}`)}
-                        style={{ color: `#${customColor}` }}
-                      >
-                        {edu.degree}
-                      </p>
-                      <AIButton
-                        isLoading={isLoading}
-                        onClick={() => generateWithAI('educationDegree', edu.degree)}
-                        title="Modifier avec IA"
-                      />
-                    </div>
-                  )}
-
-                  {/* École */}
-                  {editingField === `educationSchool-${edu.id}` ? (
-                    <input
-                      type="text"
-                      value={edu.school}
-                      onChange={(e) => setEducations(prev => prev.map(item => item.id === edu.id ? { ...item, school: e.target.value } : item))}
-                      onBlur={() => setEditingField(null)}
-                      onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-                      className="text-sm w-full border-b border-gray-400 focus:outline-none focus:border-violet-500"
-                      placeholder="École"
-                      autoFocus
-                    />
-                  ) : (
-                    <div className="flex items-center gap-1">
-                      <p
-                        className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 transition-all duration-200 hover:scale-105"
-                        onClick={() => setEditingField(`educationSchool-${edu.id}`)}
-                        style={{ color: `#${customColor}` }}
-                      >
-                        {edu.school}
-                      </p>
-                      <AIButton
-                        isLoading={isLoading}
-                        onClick={() => generateWithAI('educationSchool', edu.school)}
-                        title="Modifier avec IA"
-                      />
-                    </div>
-                  )}
-
-                  {/* Année */}
-                  {editingField === `educationYear-${edu.id}` ? (
-                    <input
-                      type="text"
-                      value={edu.year}
-                      onChange={(e) => setEducations(prev => prev.map(item => item.id === edu.id ? { ...item, year: e.target.value } : item))}
-                      onBlur={() => setEditingField(null)}
-                      onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-                      className="text-sm w-full border-b border-gray-400 focus:outline-none focus:border-violet-500"
-                      placeholder="Année"
-                      autoFocus
-                    />
-                  ) : (
-                    <div className="flex items-center gap-1">
-                      <p
-                        className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 transition-all duration-200 hover:scale-105"
-                        onClick={() => setEditingField(`educationYear-${edu.id}`)}
-                        style={{ color: `#${customColor}` }}
-                      >
-                        {edu.year}
-                      </p>
-                      <AIButton
-                        isLoading={isLoading}
-                        onClick={() => generateWithAI('educationYear', edu.year)}
-                        title="Modifier avec IA"
-                      />
-                    </div>
-                  )}
-                </div>
-                
-                {/* Bouton supprimer bien visible à droite */}
-                <button
-                  onClick={() => removeEducation(edu.id)}
-                  className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-all duration-200 hover:scale-110 opacity-70 group-hover:opacity-100"
-                  title="Supprimer la formation"
-                >
-                  <Minus className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Compétences */}
-        <div className="mt-4">
-          {editingField === 'skillsTitle' ? (
-            <input
-              type="text"
-              value={editableContent.skillsTitle}
-              onChange={(e) => setEditableContent(prev => ({ ...prev, skillsTitle: e.target.value }))}
-              onBlur={() => setEditingField(null)}
-              onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-              className="text-md font-semibold w-full border-b border-gray-400 focus:outline-none focus:border-violet-500"
-              autoFocus
-            />
-          ) : (
-            <div className="flex items-center gap-2">
-              <h4
-                className="text-md font-semibold cursor-pointer hover:bg-gray-100 p-1 rounded transition-all duration-200 hover:scale-105"
-                onClick={() => setEditingField('skillsTitle')}
-                style={{ color: `#${titleColor}` }}
-              >
-                {editableContent.skillsTitle}
-              </h4>
-              <div className="flex gap-1 ml-auto">
-                <AIButton
-                  isLoading={isLoading}
-                  onClick={() => generateWithAI('skillsTitle', editableContent.skillsTitle)}
-                  title="Modifier avec IA"
-                />
-                <button
-                  onClick={addSkill}
-                  className="p-1 text-violet-600 hover:text-violet-800 transition-all duration-200 hover:scale-110"
-                  title="Ajouter une compétence"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {skills.map(skill => (
-            <div key={skill.id} className="relative group flex items-start gap-2 mt-1">
-              <div className="absolute right-0 top-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <AIButton
-                  isLoading={isLoading}
-                  onClick={() => generateWithAI('skillContent', skill.content)}
-                  title="Modifier avec IA"
-                />
-                <button
-                  onClick={() => removeSkill(skill.id)}
-                  className="p-1 text-red-600 hover:text-red-800"
-                  title="Supprimer la compétence"
-                >
-                  <Minus className="w-4 h-4" />
-                </button>
-              </div>
-
-              {editingField === `skillContent-${skill.id}` ? (
-                <input
-                  type="text"
-                  value={skill.content}
-                  onChange={(e) => setSkills(prev => prev.map(item => item.id === skill.id ? { ...item, content: e.target.value } : item))}
-                  onBlur={() => setEditingField(null)}
-                  onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-                  className="text-sm w-full border-b border-gray-400 focus:outline-none focus:border-violet-500"
-                  autoFocus
-                />
-              ) : (
-                <p
-                  className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 transition-all duration-200 hover:scale-105"
-                  onClick={() => setEditingField(`skillContent-${skill.id}`)}
-                  style={{ color: `#${customColor}` }}
-                >
-                  {skill.content}
-                </p>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Langues */}
-        <div className="mt-4">
-          {editingField === 'languagesTitle' ? (
-            <input
-              type="text"
-              value={editableContent.languagesTitle}
-              onChange={(e) => setEditableContent(prev => ({ ...prev, languagesTitle: e.target.value }))}
-              onBlur={() => setEditingField(null)}
-              onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-              className="text-md font-semibold w-full border-b border-gray-400 focus:outline-none focus:border-violet-500"
-              autoFocus
-            />
-          ) : (
-            <div className="flex items-center gap-2">
-              <h4
-                className="text-md font-semibold cursor-pointer hover:bg-gray-100 p-1 rounded"
-                onClick={() => setEditingField('languagesTitle')}
-                style={{ color: `#${titleColor}` }}
-              >
-                {editableContent.languagesTitle}
-              </h4>
-              <div className="flex gap-1 ml-auto">
-                <AIButton
-                  isLoading={isLoading}
-                  onClick={() => generateWithAI('languagesTitle', editableContent.languagesTitle)}
-                  title="Modifier avec IA"
-                />
-                <button
-                  onClick={addLanguage}
-                  className="p-1 text-violet-600 hover:text-violet-800"
-                  title="Ajouter une langue"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Liste des langues */}
-          <div className="mt-2">
-            {languages.map(lang => (
-              <div key={lang.id} className="relative group flex items-center gap-2 mt-1">
-                <div className="absolute right-0 top-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <AIButton
+                {skills.map(skill => (
+                  <EditableListItem
+                    key={skill.id}
+                    id={skill.id}
+                    value={skill.content}
+                    fieldKey={`skillContent-${skill.id}`}
+                    editingField={editingField}
+                    setEditingField={setEditingField}
+                    onChange={(value) => setSkills(prev => prev.map(item => item.id === skill.id ? { ...item, content: value } : item))}
+                    onRemove={() => removeSkill(skill.id)}
                     isLoading={isLoading}
-                    onClick={() => generateWithAI(`languageLevel-${lang.id}`, lang.level)}
-                    title="Générer le niveau avec IA"
+                    generateWithAI={generateWithAI}
+                    color={customColor}
                   />
-                  <button
-                    onClick={() => removeLanguage(lang.id)}
-                    className="p-1 text-red-600 hover:text-red-800"
-                    title="Supprimer la langue"
-                  >
-                    <Minus className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {editingField === `languageName-${lang.id}` ? (
-                  <input
-                    type="text"
-                    value={lang.name}
-                    onChange={(e) => setLanguages(prev => prev.map(item => item.id === lang.id ? { ...item, name: e.target.value } : item))}
-                    onBlur={() => setEditingField(null)}
-                    onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-                    className="text-sm w-1/2 border-b border-gray-400 focus:outline-none focus:border-violet-500"
-                    autoFocus
-                  />
-                ) : (
-                  <p
-                    className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 transition-all duration-200 hover:scale-105"
-                    onClick={() => setEditingField(`languageName-${lang.id}`)}
-                    style={{ color: `#${customColor}` }}
-                  >
-                    {lang.name}
-                  </p>
-                )}
-
-                {editingField === `languageLevel-${lang.id}` ? (
-                  <input
-                    type="text"
-                    value={lang.level}
-                    onChange={(e) => setLanguages(prev => prev.map(item => item.id === lang.id ? { ...item, level: e.target.value } : item))}
-                    onBlur={() => setEditingField(null)}
-                    onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-                    className="text-sm w-1/2 border-b border-gray-400 focus:outline-none focus:border-violet-500"
-                    autoFocus
-                  />
-                ) : (
-                  <p
-                    className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 transition-all duration-200 hover:scale-105"
-                    onClick={() => setEditingField(`languageLevel-${lang.id}`)}
-                    style={{ color: `#${customColor}` }}
-                  >
-                    ({lang.level})
-                  </p>
-                )}
+                ))}
               </div>
-            ))}
+            )}
+
+            {/* Langues - seulement en mode une colonne */}
+            {layoutColumns === 1 && (
+              <div className="mt-4">
+                <SectionTitle
+                  fieldKey="languagesTitle"
+                  value={editableContent.languagesTitle}
+                  editingField={editingField}
+                  setEditingField={setEditingField}
+                  onChange={(value) => setEditableContent(prev => ({ ...prev, languagesTitle: value }))}
+                  isLoading={isLoading}
+                  generateWithAI={generateWithAI}
+                  color={titleColor}
+                  onAdd={addLanguage}
+                  addTitle="Ajouter une langue"
+                />
+
+                {/* Liste des langues */}
+                <div className="mt-2">
+                  {languages.map(lang => (
+                    <EditableLanguage
+                      key={lang.id}
+                      id={lang.id}
+                      name={lang.name}
+                      level={lang.level}
+                      editingField={editingField}
+                      setEditingField={setEditingField}
+                      onNameChange={(value) => setLanguages(prev => prev.map(item => item.id === lang.id ? { ...item, name: value } : item))}
+                      onLevelChange={(value) => setLanguages(prev => prev.map(item => item.id === lang.id ? { ...item, level: value } : item))}
+                      onRemove={() => removeLanguage(lang.id)}
+                      isLoading={isLoading}
+                      generateWithAI={generateWithAI}
+                      color={customColor}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
+
+          {/* Colonne droite - seulement en mode deux colonnes */}
+          {layoutColumns === 2 && (
+            <div>
+              {/* Formation */}
+              <div className="mt-4">
+                <SectionTitle
+                  fieldKey="educationTitle"
+                  value={editableContent.educationTitle}
+                  editingField={editingField}
+                  setEditingField={setEditingField}
+                  onChange={(value) => setEditableContent(prev => ({ ...prev, educationTitle: value }))}
+                  isLoading={isLoading}
+                  generateWithAI={generateWithAI}
+                  color={titleColor}
+                  onAdd={addEducation}
+                  addTitle="Ajouter une formation"
+                />
+
+                {educations.map(edu => (
+                  <EditableEducationTwoColumns
+                    key={edu.id}
+                    id={edu.id}
+                    degree={edu.degree}
+                    school={edu.school}
+                    year={edu.year}
+                    editingField={editingField}
+                    setEditingField={setEditingField}
+                    onDegreeChange={(value) => setEducations(prev => prev.map(item => item.id === edu.id ? { ...item, degree: value } : item))}
+                    onSchoolChange={(value) => setEducations(prev => prev.map(item => item.id === edu.id ? { ...item, school: value } : item))}
+                    onYearChange={(value) => setEducations(prev => prev.map(item => item.id === edu.id ? { ...item, year: value } : item))}
+                    onRemove={() => removeEducation(edu.id)}
+                    isLoading={isLoading}
+                    generateWithAI={generateWithAI}
+                    color={customColor}
+                  />
+                ))}
+              </div>
+
+              {/* Compétences */}
+              <div className="mt-4">
+                <SectionTitle
+                  fieldKey="skillsTitle"
+                  value={editableContent.skillsTitle}
+                  editingField={editingField}
+                  setEditingField={setEditingField}
+                  onChange={(value) => setEditableContent(prev => ({ ...prev, skillsTitle: value }))}
+                  isLoading={isLoading}
+                  generateWithAI={generateWithAI}
+                  color={titleColor}
+                  onAdd={addSkill}
+                  addTitle="Ajouter une compétence"
+                />
+
+                {skills.map(skill => (
+                  <EditableListItem
+                    key={skill.id}
+                    id={skill.id}
+                    value={skill.content}
+                    fieldKey={`skillContent-${skill.id}`}
+                    editingField={editingField}
+                    setEditingField={setEditingField}
+                    onChange={(value) => setSkills(prev => prev.map(item => item.id === skill.id ? { ...item, content: value } : item))}
+                    onRemove={() => removeSkill(skill.id)}
+                    isLoading={isLoading}
+                    generateWithAI={generateWithAI}
+                    color={customColor}
+                  />
+                ))}
+              </div>
+
+              {/* Langues */}
+              <div className="mt-4">
+                <SectionTitle
+                  fieldKey="languagesTitle"
+                  value={editableContent.languagesTitle}
+                  editingField={editingField}
+                  setEditingField={setEditingField}
+                  onChange={(value) => setEditableContent(prev => ({ ...prev, languagesTitle: value }))}
+                  isLoading={isLoading}
+                  generateWithAI={generateWithAI}
+                  color={titleColor}
+                  onAdd={addLanguage}
+                  addTitle="Ajouter une langue"
+                />
+
+                {/* Liste des langues */}
+                <div className="mt-2">
+                  {languages.map(lang => (
+                    <EditableLanguage
+                      key={lang.id}
+                      id={lang.id}
+                      name={lang.name}
+                      level={lang.level}
+                      editingField={editingField}
+                      setEditingField={setEditingField}
+                      onNameChange={(value) => setLanguages(prev => prev.map(item => item.id === lang.id ? { ...item, name: value } : item))}
+                      onLevelChange={(value) => setLanguages(prev => prev.map(item => item.id === lang.id ? { ...item, level: value } : item))}
+                      onRemove={() => removeLanguage(lang.id)}
+                      isLoading={isLoading}
+                      generateWithAI={generateWithAI}
+                      color={customColor}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
