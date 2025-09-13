@@ -1,5 +1,6 @@
 export { SectionWrapper } from './SectionWrapper';
 export { ProfileSection } from './ProfileSection';
+export { ContactSection } from './ContactSection';
 export { ExperienceSection } from './ExperienceSection';
 export { EducationSection } from './EducationSection';
 export { SkillsSection } from './SkillsSection';

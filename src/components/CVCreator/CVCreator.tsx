@@ -7,6 +7,13 @@ import { useLocalStorageCV } from '../../hooks/useLocalStorageCV';
 import { CVPreviewDragDrop } from './CVPreviewDragDrop';
 import type { CVExperience, CVSkill, CVLanguage, CVContent, CVEducation } from './types';
 
+interface SectionConfig {
+  id: string;
+  name: string;
+  component: string;
+  visible: boolean;
+}
+
 interface Template {
   id: string;
   name: string;
@@ -16,6 +23,15 @@ interface Template {
   category: string;
   atsScore: number;
   theme: { primaryColor: string; font: string };
+  layoutColumns: number;
+  sectionTitles: {
+    profileTitle: string;
+    experienceTitle: string;
+    educationTitle: string;
+    skillsTitle: string;
+    languagesTitle: string;
+  };
+  sectionsOrder: SectionConfig[];
 }
 
 const availableFonts = ['Calibri', 'Georgia', 'Helvetica', 'Consolas', 'Times New Roman', 'Arial'];
@@ -59,14 +75,18 @@ const availableColors = [
 
 export const CVCreator: React.FC = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  const [selectedTemplateName, setSelectedTemplateName] = useState<string>('');
   const [customFont, setCustomFont] = useState<string>('Calibri');
   const [customColor, setCustomColor] = useState<string>('000000');
   const [titleColor, setTitleColor] = useState<string>('000000');
   const [layoutColumns, setLayoutColumns] = useState<number>(1);
+  const [nameAlignment, setNameAlignment] = useState<'left' | 'center' | 'right'>('center');
   const [error, setError] = useState<string | null>(null);
+  const [setSectionsOrderFunc, setSectionsOrderFuncSetter] = useState<((sections: SectionConfig[]) => void) | null>(null);
   const [editableContent, setEditableContent] = useState<CVContent>({
     name: '[VOTRE NOM]',
     contact: '[Votre Email] • [Votre Téléphone] • [LinkedIn]',
+    contactTitle: 'CONTACT',
     profileTitle: 'PROFIL PROFESSIONNEL',
     profileContent: 'Résumé de votre profil et de vos objectifs.',
     experienceTitle: 'EXPÉRIENCE PROFESSIONNELLE',
@@ -189,6 +209,7 @@ export const CVCreator: React.FC = () => {
       const defaultContent = {
         name: '[VOTRE NOM]',
         contact: '[Votre Email] • [Votre Téléphone] • [LinkedIn]',
+        contactTitle: 'CONTACT',
         profileTitle: 'PROFIL PROFESSIONNEL',
         profileContent: 'Résumé de votre profil et de vos objectifs.',
         experienceTitle: 'EXPÉRIENCE PROFESSIONNELLE',
@@ -267,6 +288,9 @@ export const CVCreator: React.FC = () => {
       if (savedData.layoutColumns) {
         setLayoutColumns(savedData.layoutColumns);
       }
+      if (savedData.nameAlignment) {
+        setNameAlignment(savedData.nameAlignment);
+      }
     }
   }, [loadFromLocalStorage, profile, profileLoading]);
 
@@ -282,7 +306,8 @@ export const CVCreator: React.FC = () => {
         customFont,
         customColor,
         titleColor,
-        layoutColumns
+        layoutColumns,
+        nameAlignment
       };
       
       saveToLocalStorage(dataToSave);
@@ -297,6 +322,7 @@ export const CVCreator: React.FC = () => {
     customColor,
     titleColor,
     layoutColumns,
+    nameAlignment,
     saveToLocalStorage,
     autoSaveEnabled
   ]);
@@ -314,6 +340,9 @@ export const CVCreator: React.FC = () => {
           break;
         case 'contact':
           prompt = "Génère une ligne de contact professionnelle pour un CV au format '[Email] • [Téléphone] • [LinkedIn]'. Réponds uniquement avec la ligne de contact, sans texte supplémentaire.";
+          break;
+        case 'contactTitle':
+          prompt = "Génère un titre de section pour les informations de contact dans un CV. Réponds uniquement avec le titre, sans texte supplémentaire.";
           break;
         case 'profileTitle':
           prompt = "Génère un titre de section pour le profil professionnel dans un CV. Réponds uniquement avec le titre, sans texte supplémentaire.";
@@ -454,6 +483,22 @@ export const CVCreator: React.FC = () => {
       preview: "bg-gradient-to-br from-violet-100 to-indigo-100",
       image: "/images/minimalist.png",
       theme: { primaryColor: "2E3A59", font: "Calibri" },
+      layoutColumns: 2,
+      sectionTitles: {
+        profileTitle: "PROFIL",
+        experienceTitle: "EXPÉRIENCE",
+        educationTitle: "FORMATION",
+        skillsTitle: "COMPÉTENCES",
+        languagesTitle: "LANGUES"
+      },
+      sectionsOrder: [
+        { id: 'profile', name: 'Profil', component: 'ProfileSection', visible: true },
+        { id: 'contact', name: 'Contact', component: 'ContactSection', visible: true },
+        { id: 'experience', name: 'Expérience', component: 'ExperienceSection', visible: true },
+        { id: 'skills', name: 'Compétences', component: 'SkillsSection', visible: true },
+        { id: 'education', name: 'Formation', component: 'EducationSection', visible: true },
+        { id: 'languages', name: 'Langues', component: 'LanguagesSection', visible: true }
+      ]
     },
     {
       id: "2",
@@ -464,6 +509,22 @@ export const CVCreator: React.FC = () => {
       preview: "bg-gradient-to-br from-pink-100 to-rose-100",
       image: "/images/creatif.png",
       theme: { primaryColor: "2563EB", font: "Helvetica" },
+      layoutColumns: 1,
+      sectionTitles: {
+        profileTitle: "À PROPOS DE MOI",
+        experienceTitle: "PARCOURS CRÉATIF",
+        educationTitle: "FORMATION ARTISTIQUE",
+        skillsTitle: "TALENTS & OUTILS",
+        languagesTitle: "LANGUES PARLÉES"
+      },
+      sectionsOrder: [
+        { id: 'profile', name: 'À propos de moi', component: 'ProfileSection', visible: true },
+        { id: 'contact', name: 'Contact', component: 'ContactSection', visible: true },
+        { id: 'skills', name: 'Talents & Outils', component: 'SkillsSection', visible: true },
+        { id: 'experience', name: 'Parcours Créatif', component: 'ExperienceSection', visible: true },
+        { id: 'education', name: 'Formation Artistique', component: 'EducationSection', visible: true },
+        { id: 'languages', name: 'Langues Parlées', component: 'LanguagesSection', visible: true }
+      ]
     },
     {
       id: "3",
@@ -474,6 +535,22 @@ export const CVCreator: React.FC = () => {
       preview: "bg-gradient-to-br from-gray-100 to-slate-100",
       image: "/images/corporate.png",
       theme: { primaryColor: "111827", font: "Times New Roman" },
+      layoutColumns: 1,
+      sectionTitles: {
+        profileTitle: "PROFIL PROFESSIONNEL",
+        experienceTitle: "EXPÉRIENCE PROFESSIONNELLE",
+        educationTitle: "FORMATION ACADÉMIQUE",
+        skillsTitle: "COMPÉTENCES TECHNIQUES",
+        languagesTitle: "LANGUES ÉTRANGÈRES"
+      },
+      sectionsOrder: [
+        { id: 'profile', name: 'Profil Professionnel', component: 'ProfileSection', visible: true },
+        { id: 'contact', name: 'Contact', component: 'ContactSection', visible: true },
+        { id: 'experience', name: 'Expérience Professionnelle', component: 'ExperienceSection', visible: true },
+        { id: 'education', name: 'Formation Académique', component: 'EducationSection', visible: true },
+        { id: 'skills', name: 'Compétences Techniques', component: 'SkillsSection', visible: true },
+        { id: 'languages', name: 'Langues Étrangères', component: 'LanguagesSection', visible: true }
+      ]
     },
     {
       id: "4",
@@ -484,6 +561,22 @@ export const CVCreator: React.FC = () => {
       preview: "bg-gradient-to-br from-violet-100 to-purple-100",
       image: "/images/modern.png",
       theme: { primaryColor: "7C3AED", font: "Calibri" },
+      layoutColumns: 1,
+      sectionTitles: {
+        profileTitle: "QUI SUIS-JE ?",
+        experienceTitle: "MON PARCOURS",
+        educationTitle: "MES ÉTUDES",
+        skillsTitle: "MES COMPÉTENCES",
+        languagesTitle: "MES LANGUES"
+      },
+      sectionsOrder: [
+        { id: 'profile', name: 'Qui suis-je ?', component: 'ProfileSection', visible: true },
+        { id: 'contact', name: 'Contact', component: 'ContactSection', visible: true },
+        { id: 'skills', name: 'Mes Compétences', component: 'SkillsSection', visible: true },
+        { id: 'experience', name: 'Mon Parcours', component: 'ExperienceSection', visible: true },
+        { id: 'languages', name: 'Mes Langues', component: 'LanguagesSection', visible: true },
+        { id: 'education', name: 'Mes Études', component: 'EducationSection', visible: true }
+      ]
     },
     {
       id: "5",
@@ -494,6 +587,21 @@ export const CVCreator: React.FC = () => {
       preview: "bg-gradient-to-br from-gray-100 to-gray-200",
       image: "/images/elegant-bw.png",
       theme: { primaryColor: "0F172A", font: "Georgia" },
+      layoutColumns: 1,
+      sectionTitles: {
+        profileTitle: "PRÉSENTATION",
+        experienceTitle: "CARRIÈRE PROFESSIONNELLE",
+        educationTitle: "CURSUS ACADÉMIQUE",
+        skillsTitle: "EXPERTISE TECHNIQUE",
+        languagesTitle: "MAÎTRISE LINGUISTIQUE"
+      },
+      sectionsOrder: [
+        { id: 'profile', name: 'Présentation', component: 'ProfileSection', visible: true },
+        { id: 'experience', name: 'Carrière Professionnelle', component: 'ExperienceSection', visible: true },
+        { id: 'education', name: 'Cursus Académique', component: 'EducationSection', visible: true },
+        { id: 'skills', name: 'Expertise Technique', component: 'SkillsSection', visible: true },
+        { id: 'languages', name: 'Maîtrise Linguistique', component: 'LanguagesSection', visible: true }
+      ]
     },
     {
       id: "6",
@@ -504,6 +612,22 @@ export const CVCreator: React.FC = () => {
       preview: "bg-gradient-to-br from-emerald-100 to-green-100",
       image: "/images/emeraude.png",
       theme: { primaryColor: "10B981", font: "Georgia" },
+      layoutColumns: 1,
+      sectionTitles: {
+        profileTitle: "PROFIL PERSONNEL",
+        experienceTitle: "EXPÉRIENCES CLÉS",
+        educationTitle: "PARCOURS ÉDUCATIF",
+        skillsTitle: "SAVOIR-FAIRE",
+        languagesTitle: "COMPÉTENCES LINGUISTIQUES"
+      },
+      sectionsOrder: [
+        { id: 'profile', name: 'Profil Personnel', component: 'ProfileSection', visible: true },
+        { id: 'contact', name: 'Contact', component: 'ContactSection', visible: true },
+        { id: 'experience', name: 'Expériences Clés', component: 'ExperienceSection', visible: true },
+        { id: 'skills', name: 'Savoir-faire', component: 'SkillsSection', visible: true },
+        { id: 'education', name: 'Parcours Éducatif', component: 'EducationSection', visible: true },
+        { id: 'languages', name: 'Compétences Linguistiques', component: 'LanguagesSection', visible: true }
+      ]
     },
   ];
 
@@ -667,6 +791,8 @@ export const CVCreator: React.FC = () => {
             setTitleColor={setTitleColor}
             layoutColumns={layoutColumns}
             setLayoutColumns={setLayoutColumns}
+            nameAlignment={nameAlignment}
+            setNameAlignment={setNameAlignment}
             availableFonts={availableFonts}
             availableColors={availableColors}
             addExperience={addExperience}
@@ -681,6 +807,8 @@ export const CVCreator: React.FC = () => {
             isLoading={isLoading}
             error={error}
             openAIError={openAIError}
+            setSectionsOrder={(func) => setSectionsOrderFuncSetter(() => func)}
+            templateName={selectedTemplateName}
           />
         </div>
 
@@ -691,10 +819,32 @@ export const CVCreator: React.FC = () => {
                 key={template.id}
                 onClick={() => {
                   setSelectedTemplate(template.id);
+                  setSelectedTemplateName(template.name);
                   // Appliquer automatiquement le thème du template
                   setCustomColor(template.theme.primaryColor);
                   setTitleColor(template.theme.primaryColor);
                   setCustomFont(template.theme.font);
+                  // Définir l'alignement du nom selon le template
+                  if (template.name === "Minimaliste") {
+                    setNameAlignment('left');
+                  } else {
+                    setNameAlignment('center');
+                  }
+                  // Appliquer le nombre de colonnes du template
+                  setLayoutColumns(template.layoutColumns);
+                  // Appliquer les titres de sections du template
+                  setEditableContent(prev => ({
+                    ...prev,
+                    profileTitle: template.sectionTitles.profileTitle,
+                    experienceTitle: template.sectionTitles.experienceTitle,
+                    educationTitle: template.sectionTitles.educationTitle,
+                    skillsTitle: template.sectionTitles.skillsTitle,
+                    languagesTitle: template.sectionTitles.languagesTitle
+                  }));
+                  // Appliquer l'ordre des sections du template
+                  if (setSectionsOrderFunc) {
+                    setSectionsOrderFunc(template.sectionsOrder);
+                  }
                 }}
                 className={`
       m-2 rounded-xl border shadow-md transition-all duration-300 ease-in-out relative flex flex-col overflow-hidden

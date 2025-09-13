@@ -5,10 +5,13 @@ export interface SectionConfig {
   name: string;
   component: string;
   visible: boolean;
+  layer?: number;
+  width?: 'full' | 'half';
 }
 
 const DEFAULT_SECTIONS: SectionConfig[] = [
   { id: 'profile', name: 'Profil Professionnel', component: 'ProfileSection', visible: true },
+  { id: 'contact', name: 'Contact', component: 'ContactSection', visible: true },
   { id: 'experience', name: 'Expérience Professionnelle', component: 'ExperienceSection', visible: true },
   { id: 'education', name: 'Formation', component: 'EducationSection', visible: true },
   { id: 'skills', name: 'Compétences', component: 'SkillsSection', visible: true },
@@ -64,10 +67,16 @@ export const useCVSections = () => {
     });
   }, []);
 
+  const setSectionsOrder = useCallback((newOrder: SectionConfig[]) => {
+    setSections(newOrder);
+    localStorage.setItem('cvSectionsOrder', JSON.stringify(newOrder));
+  }, []);
+
   return {
     sections,
     reorderSections,
     resetSectionsOrder,
-    toggleSectionVisibility
+    toggleSectionVisibility,
+    setSectionsOrder
   };
 };

@@ -4,6 +4,7 @@ import React from 'react';
 export interface CVContent {
   name: string;
   contact: string;
+  contactTitle: string;
   profileTitle: string;
   profileContent: string;
   experienceTitle: string;
@@ -36,6 +37,14 @@ export interface CVEducation {
   year: string;
 }
 
+// Interface pour les sections
+export interface SectionConfig {
+  id: string;
+  name: string;
+  component: string;
+  visible: boolean;
+}
+
 // Interface pour les props du composant CVPreview
 export interface CVPreviewProps {
   editableContent: CVContent;
@@ -58,6 +67,8 @@ export interface CVPreviewProps {
   setTitleColor?: React.Dispatch<React.SetStateAction<string>>;
   layoutColumns?: number;
   setLayoutColumns?: React.Dispatch<React.SetStateAction<number>>;
+  nameAlignment?: 'left' | 'center' | 'right';
+  setNameAlignment?: React.Dispatch<React.SetStateAction<'left' | 'center' | 'right'>>;
   availableFonts?: string[];
   availableColors?: Array<{
     name: string;
@@ -76,4 +87,6 @@ export interface CVPreviewProps {
   isLoading: boolean;
   error?: string | null;
   openAIError?: string | null;
+  setSectionsOrder?: (sections: SectionConfig[]) => void;
+  templateName?: string;
 }

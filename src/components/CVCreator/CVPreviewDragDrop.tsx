@@ -18,6 +18,7 @@ import { StyleControls } from './StyleControls';
 import { useCVSections } from '../../hooks/useCVSections';
 import {
   ProfileSection,
+  ContactSection,
   ExperienceSection,
   EducationSection,
   SkillsSection,
@@ -75,6 +76,8 @@ export const CVPreviewDragDrop: React.FC<CVPreviewProps> = ({
   setTitleColor,
   layoutColumns = 1,
   setLayoutColumns,
+  nameAlignment = 'center',
+  setNameAlignment,
   availableFonts = ['Calibri', 'Georgia', 'Helvetica', 'Consolas', 'Times New Roman', 'Arial'],
   availableColors = [
     { name: 'Noir', value: '000000', category: 'Neutres' },
@@ -95,10 +98,12 @@ export const CVPreviewDragDrop: React.FC<CVPreviewProps> = ({
   generateWithAI,
   isLoading,
   error,
-  openAIError
+  openAIError,
+  templateName
 }) => {
   const [showError, setShowError] = React.useState(false);
   const { sections, reorderSections, resetSectionsOrder } = useCVSections();
+
 
   // Auto-hide error after 3 seconds
   React.useEffect(() => {
@@ -157,6 +162,8 @@ export const CVPreviewDragDrop: React.FC<CVPreviewProps> = ({
             setTitleColor={setTitleColor}
             layoutColumns={layoutColumns}
             setLayoutColumns={setLayoutColumns}
+            nameAlignment={nameAlignment}
+            setNameAlignment={setNameAlignment}
             availableFonts={availableFonts}
             availableColors={availableColors}
           />
@@ -191,7 +198,7 @@ export const CVPreviewDragDrop: React.FC<CVPreviewProps> = ({
         )}
 
         {/* Sections fixes : Nom et Contact */}
-        <div className="mt-4 text-center">
+        <div className={`mt-4 ${nameAlignment === 'left' ? 'text-left' : nameAlignment === 'right' ? 'text-right' : 'text-center'}`}>
           {editingField === 'name' ? (
             <input
               type="text"
@@ -199,13 +206,13 @@ export const CVPreviewDragDrop: React.FC<CVPreviewProps> = ({
               onChange={(e) => setEditableContent(prev => ({ ...prev, name: e.target.value }))}
               onBlur={() => setEditingField(null)}
               onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-              className="text-lg font-bold w-full text-center border-b border-gray-400 focus:outline-none focus:border-violet-500"
+              className={`text-lg font-bold w-full border-b border-gray-400 focus:outline-none focus:border-violet-500 ${nameAlignment === 'left' ? 'text-left' : nameAlignment === 'right' ? 'text-right' : 'text-center'}`}
               autoFocus
             />
           ) : (
-            <div className="group flex items-center justify-center gap-2 relative">
+            <div className={`group flex items-center gap-2 relative ${nameAlignment === 'left' ? 'justify-start' : nameAlignment === 'right' ? 'justify-end' : 'justify-center'}`}>
               <h3
-                className="text-lg font-bold cursor-pointer hover:bg-gray-100 p-1 rounded transition-all duration-200 hover:scale-105"
+                className="text-lg font-bold cursor-pointer hover:bg-gray-100 p-1 rounded transition-colors duration-200"
                 onClick={() => setEditingField('name')}
                 style={{ color: `#${titleColor}` }}
               >
@@ -215,37 +222,6 @@ export const CVPreviewDragDrop: React.FC<CVPreviewProps> = ({
                 <AIButton
                   isLoading={isLoading}
                   onClick={() => generateWithAI('name', editableContent.name)}
-                  title="Modifier avec IA"
-                />
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="text-center">
-          {editingField === 'contact' ? (
-            <input
-              type="text"
-              value={editableContent.contact}
-              onChange={(e) => setEditableContent(prev => ({ ...prev, contact: e.target.value }))}
-              onBlur={() => setEditingField(null)}
-              onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-              className="text-sm w-full text-center border-b border-gray-400 focus:outline-none focus:border-violet-500"
-              autoFocus
-            />
-          ) : (
-            <div className="group flex items-center justify-center gap-2 relative">
-              <p
-                className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded transition-all duration-200 hover:scale-105"
-                onClick={() => setEditingField('contact')}
-                style={{ color: `#${customColor}` }}
-              >
-                {editableContent.contact}
-              </p>
-              <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                <AIButton
-                  isLoading={isLoading}
-                  onClick={() => generateWithAI('contact', editableContent.contact)}
                   title="Modifier avec IA"
                 />
               </div>
@@ -263,13 +239,21 @@ export const CVPreviewDragDrop: React.FC<CVPreviewProps> = ({
             items={sections.filter(s => s.visible).map(s => s.id)}
             strategy={verticalListSortingStrategy}
           >
-            {sections
-              .filter(section => section.visible)
-              .map(section => {
+            <div className={`${layoutColumns === 2 ? 'grid grid-cols-2 gap-4' : 'flex flex-col'}`}>
+              {sections
+                .filter(section => section.visible)
+                .map(section => {
                 switch (section.id) {
                   case 'profile':
                     return (
                       <ProfileSection
+                        key={section.id}
+                        {...commonSectionProps}
+                      />
+                    );
+                  case 'contact':
+                    return (
+                      <ContactSection
                         key={section.id}
                         {...commonSectionProps}
                       />
@@ -305,6 +289,7 @@ export const CVPreviewDragDrop: React.FC<CVPreviewProps> = ({
                         setSkills={setSkills}
                         addSkill={addSkill}
                         removeSkill={removeSkill}
+                        templateName={templateName}
                       />
                     );
                   case 'languages':
@@ -322,6 +307,7 @@ export const CVPreviewDragDrop: React.FC<CVPreviewProps> = ({
                     return null;
                 }
               })}
+            </div>
           </SortableContext>
         </DndContext>
       </div>

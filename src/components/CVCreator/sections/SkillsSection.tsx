@@ -33,6 +33,7 @@ interface SkillsSectionProps {
   removeSkill: (id: number) => void;
   generateWithAI: (field: string, currentContent?: string) => Promise<void>;
   isLoading: boolean;
+  templateName?: string;
 }
 
 const AIButton: React.FC<{
@@ -208,7 +209,8 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
   addSkill,
   removeSkill,
   generateWithAI,
-  isLoading
+  isLoading,
+  templateName
 }) => {
   const { getSkillsByCategory, getAvailableCategories, searchSkills, loading: skillsLoading } = useSkills();
   const [showSkillsLibrary, setShowSkillsLibrary] = useState(false);
@@ -217,7 +219,9 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
   const [categorySkills, setCategorySkills] = useState<Skill[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Skill[]>([]);
-  const [skillsLayout, setSkillsLayout] = useState<'free' | '1col' | '2col' | '3col'>('free');
+  // Forcer 2 colonnes pour le template minimaliste
+  const defaultLayout = templateName?.toLowerCase() === 'minimaliste' ? '2col' : 'free';
+  const [skillsLayout, setSkillsLayout] = useState<'free' | '1col' | '2col' | '3col'>(defaultLayout);
   const [selectedSkillId, setSelectedSkillId] = useState<number | null>(null);
   const [titleHovered, setTitleHovered] = React.useState(false);
 

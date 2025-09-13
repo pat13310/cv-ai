@@ -266,7 +266,7 @@ export const Templates: React.FC = () => {
               <title>${template.name}</title>
               <style>
                 body { font-family: 'Calibri', sans-serif; margin: 40px; line-height: 1.6; color: #333; }
-                .header { text-align: center; border-bottom: 3px solid #6366f1; padding-bottom: 20px; margin-bottom: 30px; }
+                .header { text-align: ${template.name.toLowerCase().includes('minimalist') || template.name.toLowerCase().includes('minimaliste') ? 'left' : 'center'}; border-bottom: 3px solid #6366f1; padding-bottom: 20px; margin-bottom: 30px; }
                 .name { font-size: 28px; font-weight: bold; color: #6366f1; margin-bottom: 10px; }
                 .contact { font-size: 14px; color: #666; }
                 .section { margin-bottom: 25px; }
@@ -286,6 +286,14 @@ export const Templates: React.FC = () => {
                 <div class="contact">
                   [Votre Email] • [Votre Téléphone] • [Votre Ville] • [LinkedIn]
                 </div>
+              </div>
+
+              <div class="section">
+                <div class="section-title">CONTACT</div>
+                <p>📧 [votre.email@exemple.com]<br>
+                📱 [+33 X XX XX XX XX]<br>
+                📍 [Votre Ville, Pays]<br>
+                💼 [LinkedIn: linkedin.com/in/votre-profil]</p>
               </div>
 
               <div class="section">
@@ -349,7 +357,7 @@ export const Templates: React.FC = () => {
               <style>
                 @page { margin: 2cm; }
                 body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                .header { text-align: center; border-bottom: 3px solid #6366f1; padding-bottom: 20px; margin-bottom: 30px; }
+                .header { text-align: ${template.name.toLowerCase().includes('minimalist') || template.name.toLowerCase().includes('minimaliste') ? 'left' : 'center'}; border-bottom: 3px solid #6366f1; padding-bottom: 20px; margin-bottom: 30px; }
                 .name { font-size: 24px; font-weight: bold; color: #6366f1; margin-bottom: 10px; }
                 .contact { font-size: 12px; color: #666; }
                 .section { margin-bottom: 20px; page-break-inside: avoid; }
@@ -387,7 +395,7 @@ export const Templates: React.FC = () => {
               <title>${template.name}</title>
               <style>
                 body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.6; }
-                .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
+                .header { text-align: ${template.name.toLowerCase().includes('minimalist') || template.name.toLowerCase().includes('minimaliste') ? 'left' : 'center'}; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
                 .name { font-size: 32px; font-weight: bold; margin-bottom: 10px; }
                 .contact { font-size: 16px; color: #666; }
                 .section { margin-bottom: 30px; }
@@ -403,6 +411,14 @@ export const Templates: React.FC = () => {
               <div class="header">
                 <div class="name">[VOTRE NOM]</div>
                 <div class="contact">[Email] • [Téléphone] • [Ville] • [LinkedIn]</div>
+              </div>
+              
+              <div class="section">
+                <div class="section-title">CONTACT</div>
+                <p>📧 [votre.email@exemple.com]<br>
+                📱 [+33 X XX XX XX XX]<br>
+                📍 [Votre Ville, Pays]<br>
+                💼 [LinkedIn: linkedin.com/in/votre-profil]</p>
               </div>
               
               <div class="section">
@@ -441,6 +457,12 @@ ${template.name.toUpperCase()}
 
 [VOTRE NOM]
 [Email] • [Téléphone] • [Ville] • [LinkedIn]
+
+CONTACT
+📧 [votre.email@exemple.com]
+📱 [+33 X XX XX XX XX]
+📍 [Votre Ville, Pays]
+💼 [LinkedIn: linkedin.com/in/votre-profil]
 
 PROFIL PROFESSIONNEL
 [Décrivez votre profil professionnel en 2-3 lignes, en mettant l'accent sur vos compétences clés et votre expérience dans le domaine ${template.category.toLowerCase()}.]

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { CVContent, CVExperience, CVSkill, CVLanguage, CVEducation } from '../components/CVCreator/CVPreview';
+import type { CVContent, CVExperience, CVSkill, CVLanguage, CVEducation } from '../components/CVCreator/types';
 
 interface CVData {
   editableContent: CVContent;
@@ -11,6 +11,7 @@ interface CVData {
   customColor: string;
   titleColor: string;
   layoutColumns: number;
+  nameAlignment: 'left' | 'center' | 'right';
   lastSaved: string;
 }
 

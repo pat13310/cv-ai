@@ -1,6 +1,6 @@
 import React from 'react';
 import { CustomSelect } from './CustomSelect';
-import { Columns, RectangleVertical } from 'lucide-react';
+import { Columns, RectangleVertical, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
 
 interface StyleControlsProps {
   customFont: string;
@@ -11,6 +11,8 @@ interface StyleControlsProps {
   setTitleColor: (color: string) => void;
   layoutColumns?: number;
   setLayoutColumns?: (columns: number) => void;
+  nameAlignment?: 'left' | 'center' | 'right';
+  setNameAlignment?: (alignment: 'left' | 'center' | 'right') => void;
   availableFonts: string[];
   availableColors: Array<{ name: string; value: string; category: string }>;
 }
@@ -25,6 +27,8 @@ export const StyleControls: React.FC<StyleControlsProps> = ({
   setTitleColor,
   layoutColumns = 1,
   setLayoutColumns,
+  nameAlignment = 'center',
+  setNameAlignment,
   availableFonts,
   availableColors
 }) => {
@@ -57,6 +61,45 @@ export const StyleControls: React.FC<StyleControlsProps> = ({
               ) : (
                 <RectangleVertical className="w-4 h-4" />
               )}
+            </button>
+          </div>
+        </div>
+        
+        <div className="flex-shrink-0">
+          <label className="block text-sm font-medium mb-2">Alignement nom</label>
+          <div className="flex gap-1">
+            <button
+              onClick={() => setNameAlignment?.('left')}
+              className={`p-1 rounded transition-all duration-200 ${
+                nameAlignment === 'left'
+                  ? 'bg-violet-500 text-white shadow-md'
+                  : 'bg-white text-gray-600 hover:bg-violet-100'
+              }`}
+              title="Aligner à gauche"
+            >
+              <AlignLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setNameAlignment?.('center')}
+              className={`p-1 rounded transition-all duration-200 ${
+                nameAlignment === 'center'
+                  ? 'bg-violet-500 text-white shadow-md'
+                  : 'bg-white text-gray-600 hover:bg-violet-100'
+              }`}
+              title="Centrer"
+            >
+              <AlignCenter className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setNameAlignment?.('right')}
+              className={`p-1 rounded transition-all duration-200 ${
+                nameAlignment === 'right'
+                  ? 'bg-violet-500 text-white shadow-md'
+                  : 'bg-white text-gray-600 hover:bg-violet-100'
+              }`}
+              title="Aligner à droite"
+            >
+              <AlignRight className="w-4 h-4" />
             </button>
           </div>
         </div>
