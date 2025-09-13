@@ -1,7 +1,7 @@
 import React from 'react';
 import { Sparkles, Plus, Minus } from 'lucide-react';
 import { SectionWrapper } from './SectionWrapper';
-import type { CVContent, CVLanguage } from '../CVPreview';
+import type { CVContent, CVLanguage } from '../types';
 
 interface LanguagesSectionProps {
   editableContent: CVContent;
@@ -92,7 +92,7 @@ export const LanguagesSection: React.FC<LanguagesSectionProps> = ({
             onMouseLeave={() => setTitleHovered(false)}
           >
             <h4
-              className="text-md font-semibold cursor-pointer hover:bg-gray-100 p-1 rounded transition-all duration-200 hover:scale-105"
+              className="text-md font-semibold cursor-pointer hover:bg-gray-100 p-1 rounded transition-colors duration-200"
               onClick={() => setEditingField('languagesTitle')}
               style={{ color: `#${titleColor}` }}
             >
@@ -154,7 +154,7 @@ export const LanguagesSection: React.FC<LanguagesSectionProps> = ({
                   />
                 ) : (
                   <p
-                    className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded transition-all duration-200 hover:scale-105"
+                    className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded transition-colors duration-200"
                     onClick={() => setEditingField(`languageName-${lang.id}`)}
                     style={{ color: `#${customColor}`, width: `${Math.max(lang.name.length * 8 + 20, 80)}px` }}
                   >
@@ -183,7 +183,7 @@ export const LanguagesSection: React.FC<LanguagesSectionProps> = ({
                   </select>
                 ) : (
                   <p
-                    className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded transition-all duration-200 hover:scale-105"
+                    className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded transition-colors duration-200"
                     onClick={() => setEditingField(`languageLevel-${lang.id}`)}
                     style={{ color: `#${customColor}`, width: `${Math.max(lang.level.length * 8 + 40, 100)}px` }}
                   >

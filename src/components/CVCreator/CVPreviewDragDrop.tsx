@@ -23,7 +23,7 @@ import {
   SkillsSection,
   LanguagesSection,
 } from './sections';
-import type { CVPreviewProps } from './CVPreview';
+import type { CVPreviewProps } from './types';
 
 // Composant de bouton IA pour les sections fixes
 const AIButton: React.FC<{

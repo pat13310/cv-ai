@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Sparkles, Plus, Minus, Database, Search, GripVertical } from 'lucide-react';
 import {
   DndContext,
@@ -17,7 +17,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { SectionWrapper } from './SectionWrapper';
-import type { CVContent, CVSkill } from '../CVPreview';
+import type { CVContent, CVSkill } from '../types';
 import { useSkills, type Skill } from '../../../hooks/useSkills';
 
 interface SkillsSectionProps {
@@ -168,7 +168,7 @@ const SortableSkill: React.FC<{
             />
           ) : (
             <span
-              className={`text-sm cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded transition-all duration-200 hover:scale-105 ${isSelected ? 'bg-violet-50 border border-violet-200' : ''}`}
+              className={`text-sm cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded transition-colors duration-200 ${isSelected ? 'bg-violet-50 border border-violet-200' : ''}`}
               onClick={(e) => {
                 e.stopPropagation();
                 if (isSelected) {
@@ -267,7 +267,7 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
   }, [getAvailableCategories]);
 
   // Charger les compétences par catégorie
-  const loadSkillsByCategory = async (category: string) => {
+  const loadSkillsByCategory = useCallback(async (category: string) => {
     try {
       const skills = await getSkillsByCategory(category, {
         generateIfEmpty: true,
@@ -279,7 +279,7 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
       console.error('Erreur lors du chargement des compétences:', error);
       setCategorySkills([]);
     }
-  };
+  }, [getSkillsByCategory]);
 
   // Rechercher des compétences
   const handleSearch = async (query: string) => {
@@ -312,7 +312,7 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
     if (showSkillsLibrary && selectedCategory) {
       loadSkillsByCategory(selectedCategory);
     }
-  }, [selectedCategory, showSkillsLibrary]);
+  }, [loadSkillsByCategory, selectedCategory, showSkillsLibrary]);
 
   return (
     <SectionWrapper id="skills" title="Compétences">
@@ -354,7 +354,7 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
             onMouseLeave={() => setTitleHovered(false)}
           >
             <h4
-              className="text-md font-semibold cursor-pointer hover:bg-gray-100 p-1 rounded transition-all duration-200 hover:scale-105"
+              className="text-md font-semibold cursor-pointer hover:bg-gray-100 p-1 rounded transition-colors duration-200"
               onClick={() => setEditingField('skillsTitle')}
               style={{ color: `#${titleColor}` }}
             >

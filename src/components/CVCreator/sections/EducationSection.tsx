@@ -1,7 +1,7 @@
 import React from 'react';
 import { Sparkles, Plus, Minus } from 'lucide-react';
 import { SectionWrapper } from './SectionWrapper';
-import type { CVContent, CVEducation } from '../CVPreview';
+import type { CVContent, CVEducation } from '../types';
 
 interface EducationSectionProps {
   editableContent: CVContent;
@@ -92,7 +92,7 @@ export const EducationSection: React.FC<EducationSectionProps> = ({
             onMouseLeave={() => setTitleHovered(false)}
           >
             <h4
-              className="text-md font-semibold cursor-pointer hover:bg-gray-100 p-1 rounded whitespace-nowrap transition-all duration-200 hover:scale-105"
+              className="text-md font-semibold cursor-pointer hover:bg-gray-100 p-1 rounded whitespace-nowrap transition-colors duration-200"
               onClick={() => setEditingField('educationTitle')}
               style={{ color: `#${titleColor}` }}
             >
@@ -137,15 +137,15 @@ export const EducationSection: React.FC<EducationSectionProps> = ({
                     autoFocus
                   />
                 ) : (
-                  <div className="group flex items-center gap-1">
+                  <div className="flex items-center gap-1 relative">
                     <p
-                      className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 transition-all duration-200 hover:scale-105"
+                      className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 transition-colors duration-200"
                       onClick={() => setEditingField(`educationDegree-${edu.id}`)}
                       style={{ color: `#${customColor}` }}
                     >
                       {edu.degree}
                     </p>
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <div className={`transition-opacity duration-200 flex-shrink-0 ${hoveredEduId === edu.id ? 'opacity-100' : 'opacity-0'}`}>
                       <AIButton
                         isLoading={isLoading}
                         onClick={() => generateWithAI('educationDegree', edu.degree)}
@@ -168,15 +168,15 @@ export const EducationSection: React.FC<EducationSectionProps> = ({
                     autoFocus
                   />
                 ) : (
-                  <div className="group flex items-center gap-1">
+                  <div className="flex items-center gap-1 relative">
                     <p
-                      className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 transition-all duration-200 hover:scale-105"
+                      className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 transition-colors duration-200"
                       onClick={() => setEditingField(`educationSchool-${edu.id}`)}
                       style={{ color: `#${customColor}` }}
                     >
                       {edu.school}
                     </p>
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <div className={`transition-opacity duration-200 flex-shrink-0 ${hoveredEduId === edu.id ? 'opacity-100' : 'opacity-0'}`}>
                       <AIButton
                         isLoading={isLoading}
                         onClick={() => generateWithAI('educationSchool', edu.school)}
@@ -199,15 +199,15 @@ export const EducationSection: React.FC<EducationSectionProps> = ({
                     autoFocus
                   />
                 ) : (
-                  <div className="group flex items-center gap-1">
+                  <div className="flex items-center gap-1 relative">
                     <p
-                      className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 transition-all duration-200 hover:scale-105"
+                      className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 transition-colors duration-200"
                       onClick={() => setEditingField(`educationYear-${edu.id}`)}
                       style={{ color: `#${customColor}` }}
                     >
                       {edu.year}
                     </p>
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <div className={`transition-opacity duration-200 flex-shrink-0 ${hoveredEduId === edu.id ? 'opacity-100' : 'opacity-0'}`}>
                       <AIButton
                         isLoading={isLoading}
                         onClick={() => generateWithAI('educationYear', edu.year)}

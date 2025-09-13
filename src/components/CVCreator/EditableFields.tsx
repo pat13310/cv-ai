@@ -13,7 +13,7 @@ interface AIButtonProps {
 const AIButton: React.FC<AIButtonProps> = ({ isLoading, onClick, title }) => (
   <button
     type="button"
-    className="bg-violet-50 border border-violet-200 text-violet-700 rounded-lg px-2 py-1 inline-flex items-center gap-1 disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-violet-400"
+    className="bg-violet-50 border border-violet-200 text-violet-700 rounded-lg px-2 py-1 inline-flex items-center gap-1 disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-violet-400 z-20"
     onClick={onClick}
     title={title}
     disabled={isLoading}
@@ -86,12 +86,12 @@ export const EditableField: React.FC<EditableFieldProps> = ({
             onChange={(e) => onChange(e.target.value)}
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
-            className={`border-b border-gray-400 focus:outline-none focus:border-violet-500 w-full ${inputClassName}`}
+            className={`relative border-b border-gray-400 focus:outline-none focus:border-violet-500 w-full ${inputClassName}`}
             placeholder={placeholder}
             autoFocus
           />
           {/* Bouton IA affiché uniquement en édition */}
-          <div className="absolute right-0 top-0 flex gap-1">
+          <div className="absolute right-0 top-0 flex gap-1 z-10">
             <AIButton
               isLoading={isLoading}
               onClick={(e) => {
@@ -138,6 +138,8 @@ export const EditableField: React.FC<EditableFieldProps> = ({
   );
 };
 
+
+
 // Composant pour champ de texte multi-lignes
 interface EditableTextareaProps extends BaseEditableProps {
   onChange: (value: string) => void;
@@ -158,23 +160,17 @@ export const EditableTextarea: React.FC<EditableTextareaProps> = ({
   className = "",
 }) => {
   const isEditing = React.useMemo(() => editingField === fieldKey, [editingField, fieldKey]);
-  const [hasFocus, setHasFocus] = React.useState(false);
   const [isHovered, setIsHovered] = React.useState(false);
 
   const handleClick = React.useCallback(() => {
     setEditingField(fieldKey);
   }, [setEditingField, fieldKey]);
 
-  const handleFocus = () => {
-    setHasFocus(true);
-  };
-
   const handleBlur = (e: React.FocusEvent) => {
-    setHasFocus(false);
-    // Ne fermer que si le focus ne va pas vers le bouton IA ou les contrôles de style
     if (
       !e.relatedTarget ||
-      (!e.currentTarget.contains(e.relatedTarget as Node) && !(e.relatedTarget as Element)?.closest(".bg-violet-50"))
+      (!e.currentTarget.contains(e.relatedTarget as Node) &&
+        !(e.relatedTarget as Element)?.closest(".ai-button-container"))
     ) {
       setEditingField(null);
     }
@@ -183,30 +179,27 @@ export const EditableTextarea: React.FC<EditableTextareaProps> = ({
   return (
     <div className={`relative ${className}`}>
       {isEditing ? (
-        <div className="flex items-start gap-2">
+        <div className="relative">
           <textarea
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            onFocus={handleFocus}
             onBlur={handleBlur}
-            className="flex-1 border border-gray-400 focus:outline-none focus:border-violet-500 p-1 rounded resize-none"
+            className="w-80 border border-gray-400 focus:outline-none focus:border-violet-500 p-2 rounded resize-none"
             autoFocus
             rows={rows}
           />
-          {/* Bouton IA visible uniquement au focus */}
-          {(hasFocus || isLoading) && (
-            <div className="transition-opacity duration-200">
-              <AIButton
-                isLoading={isLoading}
-                onClick={(e) => {
-                  e?.preventDefault();
-                  e?.stopPropagation();
-                  generateWithAI(fieldKey, value);
-                }}
-                title="Modifier avec IA"
-              />
-            </div>
-          )}
+          {/* Bouton IA dans l’espace réservé */}
+          <div className="ai-button-container pointer-events-auto">
+            <AIButton
+              isLoading={isLoading}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                generateWithAI(fieldKey, value);
+              }}
+              title="Corriger avec IA"
+            />
+          </div>
         </div>
       ) : (
         <div
@@ -217,20 +210,17 @@ export const EditableTextarea: React.FC<EditableTextareaProps> = ({
           <p
             className="editable-field cursor-pointer hover:bg-gray-100 p-1 rounded line-clamp-3"
             onClick={handleClick}
-            style={{
-              color: `#${color}`,
-            }}
+            style={{ color: `#${color}` }}
           >
             {value}
           </p>
-          {/* Bouton IA affiché au hover */}
           {isHovered && (
-            <div className="absolute right-0 top-0 flex gap-1 opacity-0 hover:opacity-100 transition-opacity duration-200" style={{ opacity: isHovered ? 1 : 0 }}>
+            <div className="absolute right-0 top-0 flex gap-1 ai-button-container transition-opacity duration-200 opacity-100">
               <AIButton
                 isLoading={isLoading}
                 onClick={(e) => {
-                  e?.preventDefault();
-                  e?.stopPropagation();
+                  e.preventDefault();
+                  e.stopPropagation();
                   generateWithAI(fieldKey, value);
                 }}
                 title="Modifier avec IA"

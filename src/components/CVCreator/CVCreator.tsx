@@ -5,7 +5,7 @@ import { useOpenAI } from '../../hooks/useOpenAI';
 import { useSupabase } from '../../hooks/useSupabase';
 import { useLocalStorageCV } from '../../hooks/useLocalStorageCV';
 import { CVPreviewDragDrop } from './CVPreviewDragDrop';
-import type { CVExperience, CVSkill, CVLanguage, CVContent, CVEducation } from './CVPreview';
+import type { CVExperience, CVSkill, CVLanguage, CVContent, CVEducation } from './types';
 
 interface Template {
   id: string;
@@ -689,7 +689,13 @@ export const CVCreator: React.FC = () => {
             {templates.map(template => (
               <div
                 key={template.id}
-                onClick={() => setSelectedTemplate(template.id)}
+                onClick={() => {
+                  setSelectedTemplate(template.id);
+                  // Appliquer automatiquement le thème du template
+                  setCustomColor(template.theme.primaryColor);
+                  setTitleColor(template.theme.primaryColor);
+                  setCustomFont(template.theme.font);
+                }}
                 className={`
       m-2 rounded-xl border shadow-md transition-all duration-300 ease-in-out relative flex flex-col overflow-hidden
       ${selectedTemplate === template.id

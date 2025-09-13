@@ -1,7 +1,7 @@
 import React from 'react';
 import { Sparkles, Plus, Minus } from 'lucide-react';
 import { SectionWrapper } from './SectionWrapper';
-import type { CVContent, CVExperience } from '../CVPreview';
+import type { CVContent, CVExperience } from '../types';
 
 interface ExperienceSectionProps {
   editableContent: CVContent;
@@ -92,7 +92,7 @@ export const ExperienceSection: React.FC<ExperienceSectionProps> = ({
             onMouseLeave={() => setTitleHovered(false)}
           >
             <h4
-              className="text-md font-semibold cursor-pointer hover:bg-gray-100 p-1 rounded whitespace-nowrap transition-all duration-200 hover:scale-105"
+              className="text-md font-semibold cursor-pointer hover:bg-gray-100 p-1 rounded whitespace-nowrap transition-colors duration-200"
               onClick={() => setEditingField('experienceTitle')}
               style={{ color: `#${titleColor}` }}
             >
@@ -150,7 +150,7 @@ export const ExperienceSection: React.FC<ExperienceSectionProps> = ({
             ) : (
               <div className="flex items-center gap-2 mt-2">
                 <p
-                  className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 font-bold transition-all duration-200 hover:scale-105"
+                  className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 font-bold transition-colors duration-200"
                   onClick={() => setEditingField(`experienceContent-${exp.id}`)}
                   style={{ color: `#${customColor}` }}
                 >
@@ -171,7 +171,7 @@ export const ExperienceSection: React.FC<ExperienceSectionProps> = ({
             ) : (
               <div className="flex items-start gap-2 mt-1">
                 <p
-                  className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 transition-all duration-200 hover:scale-105"
+                  className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded flex-1 transition-colors duration-200"
                   onClick={() => setEditingField(`experienceDetails-${exp.id}`)}
                   style={{ color: `#${customColor}` }}
                 >
