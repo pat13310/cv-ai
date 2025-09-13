@@ -492,12 +492,12 @@ export const CVCreator: React.FC = () => {
         languagesTitle: "LANGUES"
       },
       sectionsOrder: [
-        { id: 'profile', name: 'Profil', component: 'ProfileSection', visible: true },
-        { id: 'contact', name: 'Contact', component: 'ContactSection', visible: true },
-        { id: 'experience', name: 'Expérience', component: 'ExperienceSection', visible: true },
-        { id: 'skills', name: 'Compétences', component: 'SkillsSection', visible: true },
-        { id: 'education', name: 'Formation', component: 'EducationSection', visible: true },
-        { id: 'languages', name: 'Langues', component: 'LanguagesSection', visible: true }
+        { id: 'profile', name: 'Profil', component: 'ProfileSection', visible: true, layer: 1, width: 'full' },
+        { id: 'experience', name: 'Expérience', component: 'ExperienceSection', visible: true, layer: 2, width: 'half' },
+        { id: 'contact', name: 'Contact', component: 'ContactSection', visible: true, layer: 2, width: 'half' },
+        { id: 'education', name: 'Formation', component: 'EducationSection', visible: true, layer: 3, width: 'half' },
+        { id: 'skills', name: 'Compétences', component: 'SkillsSection', visible: true, layer: 3, width: 'half' },
+        { id: 'languages', name: 'Langues', component: 'LanguagesSection', visible: true, layer: 4, width: 'full' }
       ]
     },
     {
@@ -518,12 +518,12 @@ export const CVCreator: React.FC = () => {
         languagesTitle: "LANGUES PARLÉES"
       },
       sectionsOrder: [
-        { id: 'profile', name: 'À propos de moi', component: 'ProfileSection', visible: true },
-        { id: 'contact', name: 'Contact', component: 'ContactSection', visible: true },
-        { id: 'skills', name: 'Talents & Outils', component: 'SkillsSection', visible: true },
-        { id: 'experience', name: 'Parcours Créatif', component: 'ExperienceSection', visible: true },
-        { id: 'education', name: 'Formation Artistique', component: 'EducationSection', visible: true },
-        { id: 'languages', name: 'Langues Parlées', component: 'LanguagesSection', visible: true }
+        { id: 'profile', name: 'À propos de moi', component: 'ProfileSection', visible: true, layer: 1, width: 'full' },
+        { id: 'contact', name: 'Contact', component: 'ContactSection', visible: true, layer: 2, width: 'full' },
+        { id: 'skills', name: 'Talents & Outils', component: 'SkillsSection', visible: true, layer: 3, width: 'full' },
+        { id: 'experience', name: 'Parcours Créatif', component: 'ExperienceSection', visible: true, layer: 4, width: 'full' },
+        { id: 'education', name: 'Formation Artistique', component: 'EducationSection', visible: true, layer: 5, width: 'half' },
+        { id: 'languages', name: 'Langues Parlées', component: 'LanguagesSection', visible: true, layer: 5, width: 'half' }
       ]
     },
     {
@@ -544,12 +544,12 @@ export const CVCreator: React.FC = () => {
         languagesTitle: "LANGUES ÉTRANGÈRES"
       },
       sectionsOrder: [
-        { id: 'profile', name: 'Profil Professionnel', component: 'ProfileSection', visible: true },
-        { id: 'contact', name: 'Contact', component: 'ContactSection', visible: true },
-        { id: 'experience', name: 'Expérience Professionnelle', component: 'ExperienceSection', visible: true },
-        { id: 'education', name: 'Formation Académique', component: 'EducationSection', visible: true },
-        { id: 'skills', name: 'Compétences Techniques', component: 'SkillsSection', visible: true },
-        { id: 'languages', name: 'Langues Étrangères', component: 'LanguagesSection', visible: true }
+        { id: 'profile', name: 'Profil Professionnel', component: 'ProfileSection', visible: true, layer: 1, width: 'full' },
+        { id: 'contact', name: 'Contact', component: 'ContactSection', visible: true, layer: 2, width: 'full' },
+        { id: 'experience', name: 'Expérience Professionnelle', component: 'ExperienceSection', visible: true, layer: 3, width: 'full' },
+        { id: 'education', name: 'Formation Académique', component: 'EducationSection', visible: true, layer: 4, width: 'full' },
+        { id: 'skills', name: 'Compétences Techniques', component: 'SkillsSection', visible: true, layer: 5, width: 'half' },
+        { id: 'languages', name: 'Langues Étrangères', component: 'LanguagesSection', visible: true, layer: 5, width: 'half' }
       ]
     },
     {
@@ -570,12 +570,12 @@ export const CVCreator: React.FC = () => {
         languagesTitle: "MES LANGUES"
       },
       sectionsOrder: [
-        { id: 'profile', name: 'Qui suis-je ?', component: 'ProfileSection', visible: true },
-        { id: 'contact', name: 'Contact', component: 'ContactSection', visible: true },
-        { id: 'skills', name: 'Mes Compétences', component: 'SkillsSection', visible: true },
-        { id: 'experience', name: 'Mon Parcours', component: 'ExperienceSection', visible: true },
-        { id: 'languages', name: 'Mes Langues', component: 'LanguagesSection', visible: true },
-        { id: 'education', name: 'Mes Études', component: 'EducationSection', visible: true }
+        { id: 'profile', name: 'Qui suis-je ?', component: 'ProfileSection', visible: true, layer: 1, width: 'full' },
+        { id: 'contact', name: 'Contact', component: 'ContactSection', visible: true, layer: 2, width: 'full' },
+        { id: 'skills', name: 'Mes Compétences', component: 'SkillsSection', visible: true, layer: 3, width: 'full' },
+        { id: 'experience', name: 'Mon Parcours', component: 'ExperienceSection', visible: true, layer: 4, width: 'full' },
+        { id: 'languages', name: 'Mes Langues', component: 'LanguagesSection', visible: true, layer: 5, width: 'half' },
+        { id: 'education', name: 'Mes Études', component: 'EducationSection', visible: true, layer: 5, width: 'half' }
       ]
     },
     {

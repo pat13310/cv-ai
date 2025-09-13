@@ -1,59 +1,8 @@
 import React from 'react';
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { Sparkles, RotateCcw } from 'lucide-react';
 import { StyleControls } from './StyleControls';
-import { useCVSections } from '../../hooks/useCVSections';
-import {
-  ProfileSection,
-  ContactSection,
-  ExperienceSection,
-  EducationSection,
-  SkillsSection,
-  LanguagesSection,
-} from './sections';
+import { DraggableSections } from './DraggableSections';
 import type { CVPreviewProps } from './types';
 
-// Composant de bouton IA pour les sections fixes
-const AIButton: React.FC<{
-  isLoading: boolean;
-  onClick: () => void;
-  title: string;
-  className?: string;
-}> = ({ isLoading, onClick, title, className = "" }) => (
-  <button
-    onClick={onClick}
-    disabled={isLoading}
-    className={`p-1 text-violet-600 hover:text-violet-800 disabled:opacity-50 ${className}`}
-    title={title}
-  >
-    {isLoading ? (
-      <div className="flex space-x-1">
-        {[0, 1, 2].map((i) => (
-          <div
-            key={i}
-            className="w-2 h-2 bg-violet-600 rounded-full animate-bounce"
-            style={{ animationDelay: `${i * 0.2}s` }}
-          />
-        ))}
-      </div>
-    ) : (
-      <Sparkles className="w-4 h-4" />
-    )}
-  </button>
-);
 
 export const CVPreviewDragDrop: React.FC<CVPreviewProps> = ({
   editableContent,
@@ -98,12 +47,9 @@ export const CVPreviewDragDrop: React.FC<CVPreviewProps> = ({
   generateWithAI,
   isLoading,
   error,
-  openAIError,
-  templateName
+  openAIError
 }) => {
   const [showError, setShowError] = React.useState(false);
-  const { sections, reorderSections, resetSectionsOrder } = useCVSections();
-
 
   // Auto-hide error after 3 seconds
   React.useEffect(() => {
@@ -118,33 +64,6 @@ export const CVPreviewDragDrop: React.FC<CVPreviewProps> = ({
       setShowError(false);
     }
   }, [error, openAIError]);
-  
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (over && active.id !== over.id) {
-      reorderSections(active.id as string, over.id as string);
-    }
-  };
-
-  // Props communes pour toutes les sections
-  const commonSectionProps = {
-    editableContent,
-    setEditableContent,
-    editingField,
-    setEditingField,
-    customColor,
-    titleColor,
-    generateWithAI,
-    isLoading,
-  };
 
   return (
     <div className="w-full" style={{ aspectRatio: '1 / 1.414' }}>
@@ -169,17 +88,6 @@ export const CVPreviewDragDrop: React.FC<CVPreviewProps> = ({
           />
         )}
 
-        {/* Bouton de réinitialisation de l'ordre */}
-        <div className="flex justify-end mb-2">
-          <button
-            onClick={resetSectionsOrder}
-            className="flex items-center gap-1 px-2 py-1 text-xs text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-all duration-200"
-            title="Réinitialiser l'ordre des sections"
-          >
-            <RotateCcw className="w-3 h-3" />
-            Réinitialiser l'ordre
-          </button>
-        </div>
 
         {/* Affichage des erreurs avec auto-hide */}
         {(error || openAIError) && showError && (
@@ -197,119 +105,35 @@ export const CVPreviewDragDrop: React.FC<CVPreviewProps> = ({
           </div>
         )}
 
-        {/* Sections fixes : Nom et Contact */}
-        <div className={`mt-4 ${nameAlignment === 'left' ? 'text-left' : nameAlignment === 'right' ? 'text-right' : 'text-center'}`}>
-          {editingField === 'name' ? (
-            <input
-              type="text"
-              value={editableContent.name}
-              onChange={(e) => setEditableContent(prev => ({ ...prev, name: e.target.value }))}
-              onBlur={() => setEditingField(null)}
-              onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-              className={`text-lg font-bold w-full border-b border-gray-400 focus:outline-none focus:border-violet-500 ${nameAlignment === 'left' ? 'text-left' : nameAlignment === 'right' ? 'text-right' : 'text-center'}`}
-              autoFocus
-            />
-          ) : (
-            <div className={`group flex items-center gap-2 relative ${nameAlignment === 'left' ? 'justify-start' : nameAlignment === 'right' ? 'justify-end' : 'justify-center'}`}>
-              <h3
-                className="text-lg font-bold cursor-pointer hover:bg-gray-100 p-1 rounded transition-colors duration-200"
-                onClick={() => setEditingField('name')}
-                style={{ color: `#${titleColor}` }}
-              >
-                {editableContent.name}
-              </h3>
-              <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                <AIButton
-                  isLoading={isLoading}
-                  onClick={() => generateWithAI('name', editableContent.name)}
-                  title="Modifier avec IA"
-                />
-              </div>
-            </div>
-          )}
-        </div>
 
         {/* Sections déplaçables */}
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext
-            items={sections.filter(s => s.visible).map(s => s.id)}
-            strategy={verticalListSortingStrategy}
-          >
-            <div className={`${layoutColumns === 2 ? 'grid grid-cols-2 gap-4' : 'flex flex-col'}`}>
-              {sections
-                .filter(section => section.visible)
-                .map(section => {
-                switch (section.id) {
-                  case 'profile':
-                    return (
-                      <ProfileSection
-                        key={section.id}
-                        {...commonSectionProps}
-                      />
-                    );
-                  case 'contact':
-                    return (
-                      <ContactSection
-                        key={section.id}
-                        {...commonSectionProps}
-                      />
-                    );
-                  case 'experience':
-                    return (
-                      <ExperienceSection
-                        key={section.id}
-                        {...commonSectionProps}
-                        experiences={experiences}
-                        setExperiences={setExperiences}
-                        addExperience={addExperience}
-                        removeExperience={removeExperience}
-                      />
-                    );
-                  case 'education':
-                    return (
-                      <EducationSection
-                        key={section.id}
-                        {...commonSectionProps}
-                        educations={educations}
-                        setEducations={setEducations}
-                        addEducation={addEducation}
-                        removeEducation={removeEducation}
-                      />
-                    );
-                  case 'skills':
-                    return (
-                      <SkillsSection
-                        key={section.id}
-                        {...commonSectionProps}
-                        skills={skills}
-                        setSkills={setSkills}
-                        addSkill={addSkill}
-                        removeSkill={removeSkill}
-                        templateName={templateName}
-                      />
-                    );
-                  case 'languages':
-                    return (
-                      <LanguagesSection
-                        key={section.id}
-                        {...commonSectionProps}
-                        languages={languages}
-                        setLanguages={setLanguages}
-                        addLanguage={addLanguage}
-                        removeLanguage={removeLanguage}
-                      />
-                    );
-                  default:
-                    return null;
-                }
-              })}
-            </div>
-          </SortableContext>
-        </DndContext>
+        <DraggableSections
+          editableContent={editableContent}
+          setEditableContent={setEditableContent}
+          experiences={experiences}
+          setExperiences={setExperiences}
+          skills={skills}
+          setSkills={setSkills}
+          languages={languages}
+          setLanguages={setLanguages}
+          educations={educations}
+          setEducations={setEducations}
+          editingField={editingField}
+          setEditingField={setEditingField}
+          customColor={customColor}
+          titleColor={titleColor}
+          addExperience={addExperience}
+          removeExperience={removeExperience}
+          addSkill={addSkill}
+          removeSkill={removeSkill}
+          addLanguage={addLanguage}
+          removeLanguage={removeLanguage}
+          addEducation={addEducation}
+          removeEducation={removeEducation}
+          generateWithAI={generateWithAI}
+          isLoading={isLoading}
+          nameAlignment={nameAlignment}
+        />
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 export { SectionWrapper } from './SectionWrapper';
+export { NameSection } from './NameSection';
 export { ProfileSection } from './ProfileSection';
 export { ContactSection } from './ContactSection';
 export { ExperienceSection } from './ExperienceSection';

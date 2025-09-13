@@ -43,6 +43,8 @@ export interface SectionConfig {
   name: string;
   component: string;
   visible: boolean;
+  layer?: number;
+  width?: 'full' | 'half';
 }
 
 // Interface pour les props du composant CVPreview

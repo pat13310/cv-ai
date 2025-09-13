@@ -364,7 +364,7 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
             >
               {editableContent.skillsTitle}
             </h4>
-            <div className={`flex gap-1 ml-auto transition-opacity duration-200 ${titleHovered ? 'opacity-100' : 'opacity-0'}`}>
+            <div className={`flex gap-1 ml-2 transition-opacity duration-200 ${titleHovered ? 'opacity-100' : 'opacity-0'}`}>
               <AIButton
                 isLoading={isLoading}
                 onClick={() => generateWithAI('skillsTitle', editableContent.skillsTitle)}
@@ -375,7 +375,7 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
               <select
                 value={skillsLayout}
                 onChange={(e) => setSkillsLayout(e.target.value as 'free' | '1col' | '2col' | '3col')}
-                className="p-1 text-xs border border-gray-300 rounded text-gray-600 hover:text-gray-800 focus:outline-none focus:border-violet-500"
+                className="p-1 text-xs border border-gray-300 rounded text-gray-600 hover:text-gray-800 focus:outline-none focus:border-violet-500 w-auto min-w-fit"
                 title="Mise en page des compétences"
               >
                 <option value="free">Libre</option>

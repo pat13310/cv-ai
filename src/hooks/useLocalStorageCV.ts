@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { CVContent, CVExperience, CVSkill, CVLanguage, CVEducation } from '../components/CVCreator/types';
 
 interface CVData {
@@ -21,7 +21,7 @@ const AUTO_SAVE_DELAY = 2000; // 2 secondes
 export const useLocalStorageCV = () => {
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const [saveTimeout, setSaveTimeout] = useState<NodeJS.Timeout | null>(null);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Sauvegarder les données dans localStorage
   const saveToLocalStorage = useCallback((data: Partial<CVData>) => {
@@ -47,15 +47,15 @@ export const useLocalStorageCV = () => {
 
   // Sauvegarder avec délai (debounce)
   const debouncedSave = useCallback((data: Partial<CVData>) => {
-    if (saveTimeout) {
-      clearTimeout(saveTimeout);
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
     }
 
     const timeout = setTimeout(() => {
       saveToLocalStorage(data);
     }, AUTO_SAVE_DELAY);
 
-    setSaveTimeout(timeout);
+    saveTimeoutRef.current = timeout;
   }, [saveToLocalStorage]);
 
   // Charger les données depuis localStorage
@@ -97,11 +97,11 @@ export const useLocalStorageCV = () => {
   // Nettoyer le timeout au démontage
   useEffect(() => {
     return () => {
-      if (saveTimeout) {
-        clearTimeout(saveTimeout);
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [saveTimeout]);
+  }, []);
 
   return {
     saveToLocalStorage: debouncedSave,
