@@ -94,10 +94,9 @@ function migrateSections(raw: unknown): SectionConfig[] | null {
 function cleanupLayersPure(sections: SectionConfig[]): SectionConfig[] {
   const layerGroups = new Map<number, SectionConfig[]>();
   for (const section of sections) {
-    const layer = section.layer ?? 1;
-    const arr = layerGroups.get(layer);
-    if (arr) arr.push(section);
-    else layerGroups.set(layer, [section]);
+    const L = section.layer ?? 1;
+    const arr = layerGroups.get(L);
+    if (arr) arr.push(section); else layerGroups.set(L, [section]);
   }
 
   const sortedLayers = Array.from(layerGroups.keys()).sort((a, b) => a - b);
@@ -105,37 +104,36 @@ function cleanupLayersPure(sections: SectionConfig[]): SectionConfig[] {
 
   sortedLayers.forEach((oldLayer, index) => {
     const newLayer = index + 1;
-    const sectionsInLayer = layerGroups.get(oldLayer)!;
+    const inLayer = layerGroups.get(oldLayer)!;
+    const byOrder = [...inLayer].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    const limited = byOrder.slice(0, 2);
 
-    const sortedInLayer = [...sectionsInLayer].sort(
-      (a, b) => (a.order ?? 0) - (b.order ?? 0)
-    );
-
-    const limited = sortedInLayer.slice(0, 2);
-
-    limited.forEach((section) => {
+    if (limited.length === 2) {
+      limited.forEach((s, i) =>
+        result.push({ ...s, layer: newLayer, order: i, width: "half" })
+      );
+    } else if (limited.length === 1) {
+      const s = limited[0];
       result.push({
-        ...section,
+        ...s,
         layer: newLayer,
-        order: section.order ?? 0,
-        width: limited.length === 1 ? "full" : "half",
+        order: s.order ?? 0,
+        // 🔒 préserver la width choisie (half ou full)
+        width: s.width ?? (limited.length === 1 ? "full" : "half"),
       });
-    });
+    }
 
-    if (sortedInLayer.length > 2) {
-      sortedInLayer.slice(2).forEach((section, extraIndex) => {
-        result.push({
-          ...section,
-          layer: sortedLayers.length + extraIndex + 1,
-          order: 0,
-          width: "full",
-        });
+    if (byOrder.length > 2) {
+      byOrder.slice(2).forEach((s, extraIdx) => {
+        result.push({ ...s, layer: sortedLayers.length + extraIdx + 1, order: 0, width: "full" });
       });
     }
   });
 
   return result;
 }
+
+
 
 /* ---------------- Lecture initiale ---------------- */
 function loadInitialSections(): SectionConfig[] {

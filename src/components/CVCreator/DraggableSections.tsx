@@ -65,15 +65,17 @@ function moveToLayer(
   const target = sections.filter((s) => s.layer === targetLayer && s.id !== id);
 
   if (target.length === 0) {
+    // première section → full (mais sera visuellement half si un slot vide existe en face)
     return sections.map((s) =>
       s.id === id ? { ...s, layer: targetLayer, order: 0, width: "full" } : s
     );
   }
 
   if (target.length === 1) {
+    // déjà une section → split gauche/droite
     return sections.map((s) => {
-      if (s.id === id) return { ...s, layer: targetLayer, order: 1, width: "half" };
-      if (s.id === target[0].id) return { ...s, order: 0, width: "half" };
+      if (s.id === id) return { ...s, layer: targetLayer, order: 1, width: "half" as const };
+      if (s.id === target[0].id) return { ...s, order: 0, width: "half" as const };
       return s;
     });
   }
@@ -81,25 +83,35 @@ function moveToLayer(
   return sections; // layer plein
 }
 
-/* --------- Collision : priorité aux sections --------- */
-
+/* --------- Collision : priorise sections, puis empty-* --------- */
 const preferSectionsCollision: CollisionDetection = (args) => {
   const collisions = rectIntersection(args);
-  const onlySections = collisions.filter((c) => {
+
+  // On exclut seulement layers & inter-layers
+  const targets = collisions.filter((c) => {
     const id = String(c.id);
     return !id.startsWith("layer-") && !id.startsWith("inter-layer-");
   });
-  return onlySections.length ? onlySections : collisions;
+
+  // Priorité aux vraies sections ; sinon, on laisse passer les empty-*
+  const sectionsOnly = targets.filter((c) => !String(c.id).startsWith("empty-"));
+  return sectionsOnly.length ? sectionsOnly : targets;
 };
 
 /* ---------------- Containers droppables ---------------- */
 
-const LayerContainer: React.FC<{
+interface LayerContainerProps {
   layer: number;
   isDragging: boolean;
-  disabled?: boolean;
   children: React.ReactNode;
-}> = ({ layer, isDragging, disabled = false, children }) => {
+  disabled?: boolean;
+}
+const LayerContainer: React.FC<LayerContainerProps> = ({
+  layer,
+  isDragging,
+  children,
+  disabled = false,
+}) => {
   const { setNodeRef, isOver } = useDroppable({ id: `layer-${layer}`, disabled });
 
   return (
@@ -111,8 +123,7 @@ const LayerContainer: React.FC<{
           ? "border-2 border-green-400 border-dashed bg-green-50"
           : isDragging
             ? "border border-gray-200"
-            : "hover:border-2 hover:border-violet-500 hover:border-dashed"
-        }
+            : "hover:border-2 hover:border-violet-500 hover:border-dashed"}
       `}
       style={{ minHeight: "140px" }}
     >
@@ -121,12 +132,8 @@ const LayerContainer: React.FC<{
   );
 };
 
-const InterLayerDropZone: React.FC<{ index: number; isDragging: boolean }> = ({
-  index,
-  isDragging,
-}) => {
+const InterLayerDropZone: React.FC<{ index: number; isDragging: boolean }> = ({ index, isDragging }) => {
   const { setNodeRef, isOver } = useDroppable({ id: `inter-layer-${index}` });
-
   return (
     <div
       ref={setNodeRef}
@@ -141,14 +148,22 @@ const InterLayerDropZone: React.FC<{ index: number; isDragging: boolean }> = ({
 
 /* ---------------- SectionDroppable ---------------- */
 
-const SectionDroppable: React.FC<{
+interface SectionDroppableProps {
   section: SectionConfig;
   isDragging: boolean;
   activeSection: string | null;
   children: React.ReactNode;
   forceHalf?: boolean;
   onContract?: (id: string) => void;
-}> = ({ section, isDragging, activeSection, children, forceHalf = false, onContract }) => {
+}
+const SectionDroppable: React.FC<SectionDroppableProps> = ({
+  section,
+  isDragging,
+  activeSection,
+  children,
+  forceHalf = false,
+  onContract,
+}) => {
   const { setNodeRef, isOver } = useDroppable({ id: section.id });
 
   const widthClass = forceHalf || section.width === "half" ? "w-1/2" : "w-full";
@@ -170,14 +185,13 @@ const SectionDroppable: React.FC<{
     >
       {children}
 
-      {/* Bouton Contract si full */}
       {section.width === "full" && onContract && (
         <button
           onClick={(e) => {
             e.stopPropagation();
             onContract(section.id);
           }}
-          className="absolute top-2 right-2 p-1 rounded-full hover:bg-gray-100"
+          className="absolute bottom-2 right-2 z-20 p-1 rounded-full hover:bg-gray-100 pointer-events-auto"
           title="Revenir en deux colonnes"
         >
           <Minimize2 className="w-4 h-4 text-gray-500 hover:text-violet-600" />
@@ -189,25 +203,37 @@ const SectionDroppable: React.FC<{
 
 /* ---------------- EmptySlot ---------------- */
 
-const EmptySlot: React.FC<{ half?: boolean; onExpand?: () => void }> = ({
+interface EmptySlotProps {
+  half?: boolean;
+  onExpand?: () => void;
+  id: string;
+  isDragging?: boolean;
+}
+const EmptySlot: React.FC<EmptySlotProps> = ({
   half = false,
   onExpand,
+  id,
+  isDragging,
 }) => {
+  const { setNodeRef, isOver } = useDroppable({ id });
+
   return (
     <div
+      ref={setNodeRef}
       className={`
         ${half ? "w-1/2" : "w-full"}
-        min-h-[120px] rounded-md border-2 border-dashed border-gray-300
-        bg-gray-50 flex items-center justify-center
-        text-gray-400 text-xs italic relative
+        min-h-[120px] rounded-md border-2 border-dashed 
+        flex items-center justify-center text-gray-400 text-xs italic relative
+        transition-colors
+        ${isOver ? "border-violet-500 bg-violet-50" : "border-gray-300 bg-gray-50"}
+        ${isDragging ? "opacity-100" : "opacity-50"}
       `}
     >
       Emplacement vide
       {onExpand && (
         <button
           onClick={onExpand}
-          className="absolute top-2 right-2 p-1 rounded-full hover:bg-gray-100"
-
+          className="absolute bottom-2 right-2 z-20 p-1 rounded-full hover:bg-gray-100 pointer-events-auto"
           title="Étendre en pleine largeur"
         >
           <Maximize2 className="w-4 h-4 text-gray-500 hover:text-violet-600" />
@@ -276,7 +302,14 @@ export const DraggableSections: React.FC<DraggableSectionsProps> = ({
   isLoading,
   nameAlignment,
 }) => {
-  const { sections, setSectionsOrder, cleanupLayers, expandSection, contractSection } = useCVSections();
+  const {
+    sections,
+    setSectionsOrder,
+    cleanupLayers,
+    expandSection,
+    contractSection,
+  } = useCVSections();
+
   const [isDragging, setIsDragging] = React.useState(false);
   const [activeSection, setActiveSection] = React.useState<string | null>(null);
 
@@ -299,31 +332,56 @@ export const DraggableSections: React.FC<DraggableSectionsProps> = ({
     let next: SectionConfig[] = [];
 
     if (typeof over.id === "string" && over.id.startsWith("inter-layer-")) {
+      // drop entre 2 layers → crée un nouveau layer + full
       const idx = parseInt(over.id.replace("inter-layer-", ""), 10);
       next = sections.map((s) =>
         s.id === active.id ? { ...s, layer: idx + 1, order: 0, width: "full" } : s
       );
-    } else if (typeof over.id === "string" && over.id.startsWith("layer-")) {
-      const targetLayer = parseInt(over.id.replace("layer-", ""), 10);
-      const a = sections.find((s) => s.id === active.id);
-      const layerSections = sections.filter((s) => s.layer === targetLayer);
 
-      if (a && a.layer === targetLayer && layerSections.length === 2) {
-        const other = layerSections.find((s) => s.id !== a.id)!;
-        next = sections.map((s) =>
-          s.id === a.id ? { ...s, order: other.order } : s.id === other.id ? { ...s, order: a.order } : s
-        );
-      } else {
-        next = moveToLayer(sections, active.id as string, targetLayer);
-      }
+    } else if (typeof over.id === "string" && over.id.startsWith("layer-")) {
+      // drop dans un layer sans slot précis
+      const targetLayer = parseInt(over.id.replace("layer-", ""), 10);
+      next = moveToLayer(sections, active.id as string, targetLayer);
+
+    } else if (typeof over.id === "string" && over.id.startsWith("empty-")) {
+      // drop sur un slot vide (0 = gauche, 1 = droite)
+      const [, layerStr, slotStr] = over.id.split("-");
+      const targetLayer = parseInt(layerStr, 10);
+      const targetSlot = parseInt(slotStr, 10);
+      next = sections.map((s) =>
+        s.id === active.id
+          ? { ...s, layer: targetLayer, order: targetSlot, width: "half" as const }
+          : s
+      );
+
     } else if (active.id !== over.id) {
+      // drop sur une autre section
       const a = sections.find((s) => s.id === active.id);
       const b = sections.find((s) => s.id === over.id);
       if (a && b) {
-        next =
-          a.layer === b.layer
-            ? swapInSameLayer(sections, a.id, b.id)
-            : moveToLayer(sections, a.id, b.layer);
+        if (a.layer === b.layer) {
+          next = swapInSameLayer(sections, a.id, b.id);
+        } else {
+          // b = cible ; si b est full → split ; sinon, on se met en face
+          next = sections.map((s) => {
+            if (s.id === a.id) {
+              return {
+                ...s,
+                layer: b.layer,
+                order: b.width === "full" ? 1 : b.order === 0 ? 1 : 0,
+                width: "half" as const,
+              };
+            }
+            if (s.id === b.id) {
+              return {
+                ...s,
+                width: "half" as const,
+                order: b.width === "full" ? 0 : b.order,
+              };
+            }
+            return s;
+          });
+        }
       }
     }
 
@@ -365,18 +423,60 @@ export const DraggableSections: React.FC<DraggableSectionsProps> = ({
 
   visible.forEach((s) => {
     const key = s.layer ?? 1;
-    if (!layersMap.has(key)) {
-      layersMap.set(key, { capacity: 2, sections: [] }); // par défaut 2 slots
-    }
+    if (!layersMap.has(key)) layersMap.set(key, { capacity: 2, sections: [] });
     layersMap.get(key)!.sections.push(s);
   });
 
-  // déduction automatique de la capacité
+  // capacité = 1 si une section est full
   layersMap.forEach((entry) => {
-    if (entry.sections.some((s) => s.width === "full")) {
-      entry.capacity = 1;
-    }
+    if (entry.sections.some((s) => s.width === "full")) entry.capacity = 1;
   });
+
+  // utilitaire de rendu de contenu
+  const renderContent = (id: string) => {
+    switch (id) {
+      case "name": return <NameSection {...commonSectionProps} nameAlignment={nameAlignment} />;
+      case "profile": return <ProfileSection {...commonSectionProps} />;
+      case "contact": return <ContactSection {...commonSectionProps} />;
+      case "experience": return (
+        <ExperienceSection
+          {...commonSectionProps}
+          experiences={experiences}
+          setExperiences={setExperiences}
+          addExperience={addExperience}
+          removeExperience={removeExperience}
+        />
+      );
+      case "education": return (
+        <EducationSection
+          {...commonSectionProps}
+          educations={educations}
+          setEducations={setEducations}
+          addEducation={addEducation}
+          removeEducation={removeEducation}
+        />
+      );
+      case "skills": return (
+        <SkillsSection
+          {...commonSectionProps}
+          skills={skills}
+          setSkills={setSkills}
+          addSkill={addSkill}
+          removeSkill={removeSkill}
+        />
+      );
+      case "languages": return (
+        <LanguagesSection
+          {...commonSectionProps}
+          languages={languages}
+          setLanguages={setLanguages}
+          addLanguage={addLanguage}
+          removeLanguage={removeLanguage}
+        />
+      );
+      default: return null;
+    }
+  };
 
   return (
     <div className="w-full space-y-1">
@@ -411,68 +511,77 @@ export const DraggableSections: React.FC<DraggableSectionsProps> = ({
                     disabled={sorted.length >= capacity}
                   >
                     <SortableContext items={sorted.map((s) => s.id)} strategy={rectSortingStrategy}>
-                      <div className={capacity === 2 ? "flex gap-3 items-stretch" : "flex"}>
-                        {sorted.map((section) => {
-                          const content = (() => {
-                            switch (section.id) {
-                              case "name":
-                                return <NameSection {...commonSectionProps} nameAlignment={nameAlignment} />;
-                              case "profile":
-                                return <ProfileSection {...commonSectionProps} />;
-                              case "contact":
-                                return <ContactSection {...commonSectionProps} />;
-                              case "experience":
-                                return (
-                                  <ExperienceSection
-                                    {...commonSectionProps}
-                                    experiences={experiences}
-                                    setExperiences={setExperiences}
-                                    addExperience={addExperience}
-                                    removeExperience={removeExperience}
-                                  />
-                                );
-                              case "education":
-                                return (
-                                  <EducationSection
-                                    {...commonSectionProps}
-                                    educations={educations}
-                                    setEducations={setEducations}
-                                    addEducation={addEducation}
-                                    removeEducation={removeEducation}
-                                  />
-                                );
-                              case "skills":
-                                return (
-                                  <SkillsSection
-                                    {...commonSectionProps}
-                                    skills={skills}
-                                    setSkills={setSkills}
-                                    addSkill={addSkill}
-                                    removeSkill={removeSkill}
-                                  />
-                                );
-                              case "languages":
-                                return (
-                                  <LanguagesSection
-                                    {...commonSectionProps}
-                                    languages={languages}
-                                    setLanguages={setLanguages}
-                                    addLanguage={addLanguage}
-                                    removeLanguage={removeLanguage}
-                                  />
-                                );
-                              default:
-                                return null;
-                            }
-                          })();
+                      {capacity === 2 ? (
+                        <div className="flex gap-3 items-stretch">
+                          {(() => {
+                            const left = sorted.find((s) => s.order === 0);
+                            const right = sorted.find((s) => s.order === 1);
 
-                          return (
+                            // cellule gauche
+                            const cellLeft = left ? (
+                              <SectionDroppable
+                                key={left.id}
+                                section={left}
+                                isDragging={isDragging}
+                                activeSection={activeSection}
+                                forceHalf={!right}
+                                onContract={contractSection}
+                              >
+                                <SectionWrapper id={left.id} title={left.name} position="left">
+                                  {renderContent(left.id)}
+                                </SectionWrapper>
+                              </SectionDroppable>
+                            ) : (
+                              <EmptySlot
+                                key={`empty-${layer}-0`}
+                                id={`empty-${layer}-0`}
+                                isDragging={isDragging}
+                                half
+                                onExpand={right ? () => expandSection(right.id) : undefined}
+                              />
+                            );
+
+                            // cellule droite
+                            const cellRight = right ? (
+                              <SectionDroppable
+                                key={right.id}
+                                section={right}
+                                isDragging={isDragging}
+                                activeSection={activeSection}
+                                forceHalf={!left}
+                                onContract={contractSection}
+                              >
+                                <SectionWrapper id={right.id} title={right.name} position="right">
+                                  {renderContent(right.id)}
+                                </SectionWrapper>
+                              </SectionDroppable>
+                            ) : (
+                              <EmptySlot
+                                key={`empty-${layer}-1`}
+                                id={`empty-${layer}-1`}
+                                isDragging={isDragging}
+                                half
+                                onExpand={left ? () => expandSection(left.id) : undefined}
+                              />
+                            );
+
+                            return (
+                              <>
+                                {cellLeft}
+                                {cellRight}
+                              </>
+                            );
+                          })()}
+                        </div>
+                      ) : (
+                        // capacité 1 : rendu plein
+                        <div className="flex">
+                          {sorted.map((section) => (
                             <SectionDroppable
                               key={section.id}
                               section={section}
                               isDragging={isDragging}
                               activeSection={activeSection}
-                              forceHalf={capacity === 2 && sorted.length === 1}
                               onContract={contractSection}
                             >
                               <SectionWrapper
@@ -480,19 +589,12 @@ export const DraggableSections: React.FC<DraggableSectionsProps> = ({
                                 title={section.name}
                                 position={section.order === 0 ? "left" : "right"}
                               >
-                                {content}
+                                {renderContent(section.id)}
                               </SectionWrapper>
                             </SectionDroppable>
-                          );
-                        })}
-
-                        {/* slots vides */}
-                        {capacity === 2 && sorted.length === 0 && <EmptySlot />}
-                        {capacity === 2 && sorted.length === 1 && (
-                          <EmptySlot half onExpand={() => expandSection(sorted[0].id)} />
-                        )}
-                        {capacity === 1 && sorted.length === 0 && <EmptySlot />}
-                      </div>
+                          ))}
+                        </div>
+                      )}
                     </SortableContext>
                   </LayerContainer>
 
