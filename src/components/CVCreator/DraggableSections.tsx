@@ -21,6 +21,7 @@ import { RotateCcw, Move, Maximize2, Minimize2 } from "lucide-react";
 import { useCVSections } from "../../hooks/useCVSections";
 import {
   NameSection,
+  PhotoSection,
   ProfileSection,
   ContactSection,
   ExperienceSection,
@@ -271,6 +272,9 @@ interface DraggableSectionsProps {
   generateWithAI: (field: string, currentContent?: string) => Promise<void>;
   isLoading: boolean;
   nameAlignment: "left" | "center" | "right";
+  photoAlignment?: "left" | "center" | "right";
+  photoSize?: "small" | "medium" | "large";
+  photoShape?: "circle" | "square" | "rounded";
 }
 
 /* ---------------- Composant principal ---------------- */
@@ -301,6 +305,9 @@ export const DraggableSections: React.FC<DraggableSectionsProps> = ({
   generateWithAI,
   isLoading,
   nameAlignment,
+  photoAlignment,
+  photoSize,
+  photoShape,
 }) => {
   const {
     sections,
@@ -436,6 +443,15 @@ export const DraggableSections: React.FC<DraggableSectionsProps> = ({
   const renderContent = (id: string) => {
     switch (id) {
       case "name": return <NameSection {...commonSectionProps} nameAlignment={nameAlignment} />;
+      case "photo": return (
+        <PhotoSection
+          editableContent={editableContent}
+          setEditableContent={setEditableContent}
+          photoAlignment={photoAlignment}
+          photoSize={photoSize}
+          photoShape={photoShape}
+        />
+      );
       case "profile": return <ProfileSection {...commonSectionProps} />;
       case "contact": return <ContactSection {...commonSectionProps} />;
       case "experience": return (

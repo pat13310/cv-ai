@@ -1,438 +1,497 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Mic, MicOff, Volume2, VolumeX, ArrowLeft, Settings } from 'lucide-react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useImperativeHandle } from "react";
+import { ArrowLeft, Send, User, Bot, Loader2, AlertCircle, Mic, Volume2, VolumeX, CheckCircle2, Copy, Sparkles } from "lucide-react";
+import { useOpenAI } from "../../hooks/useOpenAI";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { ChatBubble } from './ChatBubble';
 
-interface Message {
-  id: string;
-  type: 'bot' | 'user';
-  content: string;
-  timestamp: Date;
-  isVoice?: boolean;
+export interface ChatMessage {
+  id?: string;
+  role: "user" | "model";
+  text: string;
+  createdAt?: string | number | Date;
 }
 
-interface AIChatProps {
+interface ChatProps {
   onBack: () => void;
-  voiceEnabled: boolean;
-  onSettingsClick: () => void;
-  fromCoaching?: boolean;
+  voiceEnabled?: boolean;
 }
 
-export const AIChat: React.FC<AIChatProps> = ({ onBack, voiceEnabled, onSettingsClick, fromCoaching = false }) => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      type: 'bot',
-      content: fromCoaching 
-        ? "Bonjour ! Je suis votre coach IA spécialisé en développement de carrière. Je suis là pour vous aider avec vos questions sur l'emploi, la recherche de poste, les entretiens, et l'évolution professionnelle. Comment puis-je vous accompagner aujourd'hui ?"
-        : "Bonjour ! Je suis votre assistant IA pour optimiser votre CV. Comment puis-je vous aider aujourd'hui ? Vous pouvez me parler ou m'écrire.",
-      timestamp: new Date()
-    }
-  ]);
-  const [inputValue, setInputValue] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [speechSupported, setSpeechSupported] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const recognitionRef = useRef<any>(null);
-  const synthRef = useRef<SpeechSynthesis | null>(null);
+const clsx = (...tokens: Array<string | false | null | undefined>) => tokens.filter(Boolean).join(" ");
 
-  useEffect(() => {
-    // Check for speech recognition support
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (SpeechRecognition && voiceEnabled) {
-      setSpeechSupported(true);
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.interimResults = false;
-      recognitionRef.current.lang = 'fr-FR';
+const VisuallyHidden: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <span className="sr-only">{children}</span>
+);
 
-      recognitionRef.current.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setInputValue(transcript);
-        setIsListening(false);
-      };
+// ---------- HEADER ----------
+const ChatHeader: React.FC<{ onBack: () => void; speechSupported: boolean; isListening: boolean; voiceEnabled: boolean; isSpeaking: boolean; onCancelSpeak: () => void; }>
+  = ({ onBack, speechSupported, isListening, voiceEnabled, isSpeaking, onCancelSpeak }) => (
+    <header className="flex items-center justify-between p-4 border-b border-violet-100 bg-white/70 backdrop-blur-sm">
+      <button
+        onClick={onBack}
+        className="border rounded-lg border-transparent p-2 flex items-center space-x-2 text-violet-600 hover:text-violet-700 font-medium transition-colors hover:border-violet-400"
+        aria-label="Retour au Coaching"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        <span>Retour au Coaching</span>
+      </button>
 
-      recognitionRef.current.onerror = () => {
-        setIsListening(false);
-      };
+      <div className="text-center">
+        <h2 className="text-lg font-bold text-gray-800">Coach de Carrière IA</h2>
+        <p className="text-sm text-gray-500">Votre assistant personnel pour des conseils</p>
+      </div>
 
-      recognitionRef.current.onend = () => {
-        setIsListening(false);
-      };
-    }
+      <div className="flex items-center gap-2 w-36 justify-end">
+        {voiceEnabled && speechSupported && (
+          <span className={clsx("inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full border", isListening ? "border-green-300 text-green-700 bg-green-50" : "border-gray-200 text-gray-600 bg-white")}>
+            <Mic className="w-3 h-3" /> {isListening ? "Écoute…" : "Vocal"}
+          </span>
+        )}
+        {voiceEnabled && isSpeaking && (
+          <button onClick={onCancelSpeak} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full border border-violet-200 text-violet-700 bg-violet-50 hover:bg-violet-100">
+            <VolumeX className="w-3 h-3" /> Stop
+          </button>
+        )}
+      </div>
+    </header>
+  );
 
-    // Check for speech synthesis support
-    if ('speechSynthesis' in window && voiceEnabled) {
-      synthRef.current = window.speechSynthesis;
-    }
+// ---------- BULLE AVEC MARKDOWN ----------
+type BubbleProps = { message: ChatMessage; onSpeak?: (text: string) => void; canSpeak?: boolean };
 
-    return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
-      if (synthRef.current) {
-        synthRef.current.cancel();
-      }
-    };
-  }, [voiceEnabled]);
+const CopyButton: React.FC<{ text: string }> = ({ text }) => {
+  const [copied, setCopied] = useState(false);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const addMessage = (content: string, type: 'bot' | 'user', isVoice = false) => {
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      type,
-      content,
-      timestamp: new Date(),
-      isVoice
-    };
-    setMessages(prev => [...prev, newMessage]);
-  };
-
-  const speakMessage = (text: string) => {
-    if (synthRef.current && voiceEnabled) {
-      synthRef.current.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'fr-FR';
-      utterance.rate = 0.9;
-      utterance.pitch = 1;
-      
-      utterance.onstart = () => setIsSpeaking(true);
-      utterance.onend = () => setIsSpeaking(false);
-      utterance.onerror = () => setIsSpeaking(false);
-      
-      synthRef.current.speak(utterance);
-    }
-  };
-
-  const simulateTyping = async (content: string) => {
-    setIsTyping(true);
-    await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
-    setIsTyping(false);
-    addMessage(content, 'bot');
-    
-    // Speak the response if voice is enabled
-    if (voiceEnabled) {
-      setTimeout(() => speakMessage(content), 500);
-    }
-  };
-
-  const generateAIResponse = (userMessage: string): string => {
-    const cvResponses = {
-      greeting: [
-        "Bonjour ! Je suis ravi de vous aider avec votre CV. Que souhaitez-vous améliorer ?",
-        "Salut ! Comment puis-je optimiser votre CV aujourd'hui ?",
-        "Hello ! Prêt à booster votre CV avec l'IA ?"
-      ],
-      keywords: [
-        "Pour optimiser vos mots-clés, analysez les offres d'emploi de votre secteur et intégrez les termes techniques récurrents. Voulez-vous que je vous aide à identifier les mots-clés pour votre domaine ?",
-        "Les mots-clés sont cruciaux pour passer les filtres ATS. Je peux analyser votre secteur et vous suggérer les termes les plus recherchés par les recruteurs."
-      ],
-      structure: [
-        "Une bonne structure de CV commence par vos coordonnées, suivi d'un résumé professionnel, puis vos expériences en ordre chronologique inverse. Souhaitez-vous que je vous guide étape par étape ?",
-        "La structure idéale dépend de votre profil. Pour un profil senior comme le vôtre, je recommande de mettre l'accent sur vos réalisations quantifiées."
-      ],
-      experience: [
-        "Pour valoriser votre expérience, utilisez la méthode STAR : Situation, Tâche, Action, Résultat. Chaque bullet point devrait inclure des métriques concrètes.",
-        "Transformez vos responsabilités en réalisations ! Au lieu de 'Gestion d'équipe', écrivez 'Management d'une équipe de 8 développeurs, augmentation de la productivité de 25%'."
-      ],
-      default: [
-        "C'est une excellente question ! Pouvez-vous me donner plus de détails pour que je puisse vous aider de manière plus précise ?",
-        "Je suis là pour vous aider à optimiser votre CV. Voulez-vous qu'on se concentre sur un aspect particulier : mots-clés, structure, ou contenu ?",
-        "Intéressant ! Pour vous donner les meilleurs conseils, pouvez-vous me parler de votre secteur d'activité et du type de poste que vous visez ?"
-      ]
-    };
-    
-    const coachingResponses = {
-      greeting: [
-        "Bonjour ! Je suis votre coach carrière IA. Parlons de vos objectifs professionnels !",
-        "Salut ! Prêt à booster votre carrière ? Comment puis-je vous aider ?",
-        "Hello ! Votre coach IA est là pour vous accompagner dans votre évolution professionnelle !"
-      ],
-      jobSearch: [
-        "Pour optimiser votre recherche d'emploi, concentrez-vous sur 3 axes : ciblage des offres, personnalisation des candidatures, et networking. Sur quel aspect souhaitez-vous que je vous aide ?",
-        "La recherche d'emploi efficace nécessite une stratégie claire. Avez-vous défini votre profil cible et les entreprises qui vous intéressent ?"
-      ],
-      interview: [
-        "Pour réussir vos entretiens, préparez des exemples concrets avec la méthode STAR (Situation, Tâche, Action, Résultat). Voulez-vous qu'on travaille sur des questions spécifiques ?",
-        "L'entretien se prépare ! Avez-vous des questions particulières qui vous préoccupent ou un type d'entretien spécifique à préparer ?"
-      ],
-      career: [
-        "L'évolution de carrière se planifie ! Quels sont vos objectifs à court et moyen terme ? Souhaitez-vous changer de poste, de secteur, ou développer de nouvelles compétences ?",
-        "Pour faire évoluer votre carrière, identifions ensemble vos forces, vos axes d'amélioration et les opportunités de votre marché. Par quoi commençons-nous ?"
-      ],
-      salary: [
-        "La négociation salariale se prépare avec des données de marché et une argumentation solide. Connaissez-vous les fourchettes de salaire pour votre poste et votre secteur ?",
-        "Pour négocier efficacement, il faut connaître sa valeur sur le marché. Voulez-vous qu'on travaille sur votre argumentaire de négociation ?"
-      ],
-      default: [
-        "C'est une excellente question de développement professionnel ! Pouvez-vous me donner plus de contexte sur votre situation actuelle ?",
-        "Je suis là pour vous accompagner dans tous les aspects de votre carrière. Voulez-vous qu'on se concentre sur la recherche d'emploi, les entretiens, ou l'évolution professionnelle ?",
-        "Intéressant ! Pour vous donner les meilleurs conseils carrière, parlez-moi de votre situation professionnelle actuelle et de vos objectifs."
-      ]
-    };
-
-    const message = userMessage.toLowerCase();
-    const responses = fromCoaching ? coachingResponses : cvResponses;
-    
-    if (message.includes('bonjour') || message.includes('salut') || message.includes('hello')) {
-      return responses.greeting[Math.floor(Math.random() * responses.greeting.length)];
-    } else if (fromCoaching && (message.includes('emploi') || message.includes('job') || message.includes('recherche'))) {
-      return responses.jobSearch[Math.floor(Math.random() * responses.jobSearch.length)];
-    } else if (fromCoaching && (message.includes('entretien') || message.includes('interview'))) {
-      return responses.interview[Math.floor(Math.random() * responses.interview.length)];
-    } else if (fromCoaching && (message.includes('carrière') || message.includes('évolution') || message.includes('career'))) {
-      return responses.career[Math.floor(Math.random() * responses.career.length)];
-    } else if (fromCoaching && (message.includes('salaire') || message.includes('négociation') || message.includes('salary'))) {
-      return responses.salary[Math.floor(Math.random() * responses.salary.length)];
-    } else if (!fromCoaching && (message.includes('mot') && message.includes('clé') || message.includes('keyword'))) {
-      return responses.keywords[Math.floor(Math.random() * responses.keywords.length)];
-    } else if (!fromCoaching && (message.includes('structure') || message.includes('format') || message.includes('organis'))) {
-      return responses.structure[Math.floor(Math.random() * responses.structure.length)];
-    } else if (!fromCoaching && (message.includes('expérience') || message.includes('réalisation') || message.includes('compétence'))) {
-      return responses.experience[Math.floor(Math.random() * responses.experience.length)];
-    } else {
-      return responses.default[Math.floor(Math.random() * responses.default.length)];
-    }
-  };
-
-  const handleSendMessage = async () => {
-    if (!inputValue.trim()) return;
-
-    const userMessage = inputValue.trim();
-    addMessage(userMessage, 'user');
-    setInputValue('');
-
-    // Generate AI response
-    const aiResponse = generateAIResponse(userMessage);
-    await simulateTyping(aiResponse);
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
-
-  const startListening = () => {
-    if (recognitionRef.current && speechSupported && voiceEnabled) {
-      setIsListening(true);
-      recognitionRef.current.start();
-    }
-  };
-
-  const stopListening = () => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-      setIsListening(false);
-    }
-  };
-
-  const toggleSpeaking = () => {
-    if (synthRef.current) {
-      if (isSpeaking) {
-        synthRef.current.cancel();
-        setIsSpeaking(false);
-      }
-    }
-  };
+  const copyToClipboard = useCallback(() => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, [text]);
 
   return (
-    <div className="h-[calc(100vh-200px)] flex flex-col bg-white/80 backdrop-blur-sm rounded-3xl border border-gray-200/30 overflow-hidden">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-violet-600 via-rose-400 to-purple-700 p-6 text-white">
-        <div className="flex items-center justify-between">
-          <button
-            onClick={onBack}
-            className="flex items-center space-x-2 text-white/90 hover:text-white transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Retour</span>
-          </button>
-          
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-              <Bot className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-semibold">Chat IA CV</h3>
-              <p className="text-xs text-white/80">Assistant intelligent</p>
-            </div>
-          ) : (
-            <div>
-              <h3 className="font-semibold">Coach IA Carrière</h3>
-              <p className="text-xs text-white/80">Spécialiste emploi</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            {voiceEnabled && (
-              <>
-                {speechSupported && (
-                  <div className="flex items-center space-x-1 text-xs">
-                    <Mic className="w-3 h-3" />
-                    <span>Vocal activé</span>
-                  </div>
-                )}
-                {isSpeaking && (
-                  <button
-                    onClick={toggleSpeaking}
-                    className="p-1 bg-white/20 rounded-full hover:bg-white/30 transition-colors"
-                  >
-                    <VolumeX className="w-3 h-3" />
-                  </button>
-                )}
-              </>
-            )}
-            <button
-              onClick={onSettingsClick}
-              className="p-1 bg-white/20 rounded-full hover:bg-white/30 transition-colors"
-            >
-              <Settings className="w-3 h-3" />
-            </button>
-          </div>
-        </div>
-      </div>
+    <button
+      onClick={copyToClipboard}
+      className="absolute top-2 right-2 p-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition-colors"
+      title="Copier le code"
+    >
+      {copied ? <CheckCircle2 className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+    </button>
+  );
+};
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4">
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={`flex items-start space-x-3 ${
-              message.type === 'user' ? 'flex-row-reverse space-x-reverse' : ''
-            }`}
-          >
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-              message.type === 'bot'
-                ? 'bg-gradient-to-br from-violet-500 to-pink-500'
-                : 'bg-gradient-to-br from-blue-500 to-cyan-500'
-            }`}>
-              {message.type === 'bot' ? (
-                <Bot className="w-4 h-4 text-white" />
-              ) : (
-                <User className="w-4 h-4 text-white" />
-              )}
-            </div>
-            
-            <div className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl relative ${
-              message.type === 'bot'
-                ? 'bg-gray-100 text-gray-800'
-                : 'bg-gradient-to-r from-violet-600 to-pink-600 text-white'
-            }`}>
-              {message.isVoice && (
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
-                  <Mic className="w-2 h-2 text-white" />
-                </div>
-              )}
-              
-              <p className="text-sm leading-relaxed">{message.content}</p>
-              <p className={`text-xs mt-2 ${
-                message.type === 'bot' ? 'text-gray-500' : 'text-white/70'
-              }`}>
-                {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </p>
-              
-              {message.type === 'bot' && voiceEnabled && (
-                <button
-                  onClick={() => speakMessage(message.content)}
-                  className="absolute -bottom-1 -right-1 w-6 h-6 bg-violet-500 rounded-full flex items-center justify-center hover:bg-violet-600 transition-colors"
-                >
-                  <Volume2 className="w-3 h-3 text-white" />
-                </button>
-              )}
-            </div>
-          </div>
-        ))}
-        
-        {isTyping && (
-          <div className="flex items-start space-x-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-violet-500 to-pink-500 rounded-full flex items-center justify-center">
-              <Bot className="w-4 h-4 text-white" />
-            </div>
-            <div className="bg-gray-100 px-4 py-3 rounded-2xl">
-              <div className="flex space-x-1">
-                {[0, 1, 2].map((i) => (
-                  <div
-                    key={i}
-                    className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                    style={{ animationDelay: `${i * 0.3}s` }}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-        
-        <div ref={messagesEndRef} />
-      </div>
+type CodeProps = {
+  className?: string;
+  children?: React.ReactNode;
+};
 
-      {/* Input */}
-      <div className="p-6 border-t border-gray-200/30">
-        <div className="flex items-center space-x-3">
-          <div className="flex-1 relative">
-            <input
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder={isListening ? "Parlez maintenant..." : "Tapez votre message ou utilisez le micro..."}
-              className={`w-full px-4 py-3 pr-20 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all duration-200 ${
-                isListening ? 'bg-green-50 border-green-300' : ''
-              }`}
-              disabled={isTyping || isListening}
-            />
-            
-            {voiceEnabled && speechSupported && (
-              <button
-                onClick={isListening ? stopListening : startListening}
-                disabled={isTyping}
-                className={`absolute right-12 top-1/2 -translate-y-1/2 p-2 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
-                  isListening 
-                    ? 'bg-red-500 text-white animate-pulse' 
-                    : 'bg-violet-100 text-violet-600 hover:bg-violet-200'
-                }`}
+// Composant pour rendre le Markdown
+const MarkdownContent: React.FC<{ content: string; isUser: boolean }> = ({ content, isUser }) => {
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      components={{
+        code({ className, children }: CodeProps) {
+          const inline = !(children as string)?.includes('\n');
+          const match = /language-(\w+)/.exec(className || '');
+          return !inline && match ? (
+            <span className="relative block my-2">
+              <SyntaxHighlighter
+                style={oneDark}
+                language={match[1]}
+                PreTag="div"
+                className="!rounded-lg !shadow-lg"
+                customStyle={{
+                  margin: 0,
+                  padding: '1rem',
+                  background: 'rgba(0,0,0,0.8)',
+                  fontSize: '0.875rem',
+                  borderRadius: '0.5rem',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                }}
               >
-                {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-              </button>
-            )}
-            
-            <button
-              onClick={handleSendMessage}
-              disabled={!inputValue.trim() || isTyping || isListening}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-gradient-to-r from-violet-600 to-pink-600 text-white rounded-lg hover:from-violet-700 hover:to-pink-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
+                {String(children).replace(/\n$/, '')}
+              </SyntaxHighlighter>
+              <CopyButton text={String(children)} />
+            </span>
+          ) : (
+            <code
+              className={clsx(
+                "px-1 py-0.5 rounded text-xs font-mono relative",
+                isUser ? "bg-violet-700 text-violet-100" : "bg-gray-200 text-gray-800"
+              )}
             >
-              <Send className="w-4 h-4" />
-            </button>
+              {children}
+            </code>
+          );
+        },
+        h1: ({ children }) => (
+          <h1 className="text-lg font-bold mb-2 mt-4 first:mt-0">{children}</h1>
+        ),
+        h2: ({ children }) => (
+          <h2 className="text-base font-semibold mb-2 mt-3 first:mt-0">{children}</h2>
+        ),
+        h3: ({ children }) => (
+          <h3 className="text-sm font-semibold mb-1 mt-2 first:mt-0">{children}</h3>
+        ),
+        p: ({ children }) => (
+          <p className="text-sm leading-relaxed mb-3 last:mb-0 text-gray-800 dark:text-gray-500" style={{ color: 'var(--tw-text-gray-800)' }}>{children}</p>
+        ),
+        ul: ({ children }) => (
+          <ul className={`list-disc list-inside mb-3 space-y-2 ml-4 ${isUser ? 'text-gray-100' : 'text-gray-700 dark:text-gray-500'} [&>li]:marker:text-purple-500 [&>li]:marker:font-semibold`}>{children}</ul>
+        ),
+        ol: ({ children }) => (
+          <ol className={`list-decimal list-inside mb-3 space-y-2 ml-4 ${isUser ? 'text-gray-200' : 'text-black dark:text-gray-500'} [&>li]:marker:text-violet-600 [&>li]:marker:font-semibold`}>{children}</ol>
+        ),
+        li: ({ children }) => (
+          <li className="text-sm leading-relaxed">{children}</li>
+        ),
+        blockquote: ({ children }) => (
+          <blockquote className="border-l-4 border-violet-400 pl-4 pr-4 py-2 my-2 bg-violet-50 rounded-r-lg italic">
+            {children}
+          </blockquote>
+        ),
+        hr: () => (
+          <hr className="border-gray-300 my-4" />
+        ),
+        strong: ({ children }) => (
+          <strong className="font-semibold">{children}</strong>
+        ),
+        em: ({ children }) => (
+          <em className="italic">{children}</em>
+        ),
+        link: ({ children, href }) => (
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={clsx(
+              "underline hover:no-underline transition-colors",
+              isUser ? "text-violet-200 hover:text-violet-100" : "text-violet-600 hover:text-violet-800"
+            )}
+          >
+            {children}
+          </a>
+        ),
+        table: ({ children }) => (
+          <div className="overflow-x-auto my-3 rounded-lg border border-gray-300">
+            <table className="w-full text-sm">{children}</table>
+          </div>
+        ),
+        thead: ({ children }) => (
+          <thead className="bg-gray-100">{children}</thead>
+        ),
+        tbody: ({ children }) => (
+          <tbody className="divide-y divide-gray-200">{children}</tbody>
+        ),
+        tr: ({ children }) => (
+          <tr className="hover:bg-gray-50">{children}</tr>
+        ),
+        th: ({ children }) => (
+          <th className="px-3 py-2 text-left font-semibold border-r border-gray-200 last:border-r-0">{children}</th>
+        ),
+        td: ({ children }) => (
+          <td className="px-3 py-2 border-r border-gray-200 last:border-r-0">{children}</td>
+        ),
+      }}
+    >
+      {content}
+    </ReactMarkdown>
+  );
+};
+
+const ChatMessageBubble = React.memo<BubbleProps>(({ message, onSpeak, canSpeak }) => {
+  const isUser = message.role === "user";
+
+  const timeLabel = useMemo(() => {
+    if (!message.createdAt) return null;
+    try {
+      const d = new Date(message.createdAt);
+      return d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+    } catch {
+      return null;
+    }
+  }, [message.createdAt]);
+
+  return (
+    <div className={clsx("flex items-start gap-3 group", isUser && "justify-end")}>
+      {!isUser && (
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center flex-shrink-0 shadow-sm relative">
+          <Bot size={18} className="text-white" />
+          <div className="absolute inset-0 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 opacity-50 animate-pulse" />
+        </div>
+      )}
+
+      <div className="flex flex-col">
+        <div
+          className={clsx(
+            "relative max-w-xl md:max-w-2xl leading-relaxed rounded-2xl px-4 py-3 shadow-lg transition-all duration-200 group-hover:shadow-xl",
+            isUser
+              ? "bg-gradient-to-br from-violet-600 to-purple-700 text-white rounded-br-lg before:absolute before:-right-2 before:bottom-0 before:border-[8px] before:border-transparent before:border-b-violet-600 before:border-r-3"
+              : "bg-gradient-to-br from-white to-gray-50 text-gray-800 rounded-bl-lg border border-gray-200 before:absolute before:-left-2 before:bottom-0 before:border-[8px] before:border-transparent before:border-b-white before:border-l-3"
+          )}
+        >
+          {/* Background pattern overlay */}
+          <div className={clsx(
+            "absolute inset-0 rounded-2xl opacity-5",
+            isUser
+              ? "bg-gradient-to-br from-white to-transparent"
+              : "bg-gradient-to-br from-violet-500 to-transparent"
+          )} />
+
+          {/* Content with relative positioning */}
+          <div className="relative z-10">
+            {!isUser && (
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="w-3 h-3 text-violet-500 animate-pulse" />
+                <span className="text-xs font-medium text-violet-600">Coach IA</span>
+              </div>
+            )}
+
+            <div className={clsx("prose", "prose-sm max-w-none", isUser ? "prose-invert" : "")}>
+              <MarkdownContent content={message.text} isUser={isUser} />
+            </div>
+
+            {/* Sparkle effect for bot messages */}
+            {!isUser && (
+              <div className="absolute -top-1 -left-1 w-4 h-4 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full opacity-60 animate-ping" />
+            )}
           </div>
         </div>
-        
-        <div className="flex items-center justify-between mt-3 text-xs text-gray-500">
-          <div className="flex items-center space-x-4">
-            <span>Appuyez sur Entrée pour envoyer</span>
-            {voiceEnabled && speechSupported && (
-              <span className="flex items-center space-x-1 text-green-600">
-                <Mic className="w-3 h-3" />
-                <span>Reconnaissance vocale active</span>
-              </span>
-            )}
-          </div>
-          
-          {isSpeaking && (
-            <div className="flex items-center space-x-1 text-violet-600">
-              <Volume2 className="w-3 h-3 animate-pulse" />
-              <span>IA en train de parler...</span>
+
+        {/* Timestamp and speak button */}
+        <div className={clsx("flex items-center gap-2 mt-1 px-2", isUser && "justify-end")}>
+          {timeLabel && (
+            <div className={clsx("text-[10px]", isUser ? "text-violet-300" : "text-gray-400")}>
+              {timeLabel}
             </div>
+          )}
+
+          {!isUser && canSpeak && onSpeak && (
+            <button
+              onClick={() => onSpeak(message.text)}
+              className="p-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-800 transition-colors shadow-sm"
+              aria-label="Lire ce message"
+              title="Lire ce message"
+            >
+              <Volume2 className="w-3 h-3" />
+            </button>
           )}
         </div>
       </div>
+
+      {isUser && (
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-100 to-gray-300 flex items-center justify-center flex-shrink-0 shadow-sm relative">
+          <User size={18} className="text-gray-700" />
+          <div className="absolute inset-0 rounded-full bg-gradient-to-br from-violet-200 to-violet-400 opacity-30" />
+        </div>
+      )}
+    </div>
+  );
+});
+ChatMessageBubble.displayName = "ChatMessageBubble";
+
+// ---------- MESSAGE LIST ----------
+const ChatMessages: React.FC<{
+  messages: ChatMessage[];
+  isLoading: boolean;
+  initialGreeting?: boolean;
+  sendMessage: (text: string) => void;
+}> = ({ messages, isLoading, initialGreeting, sendMessage }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const endRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "auto") => {
+    endRef.current?.scrollIntoView({ behavior });
+  }, []);
+
+  useLayoutEffect(() => {
+    scrollToBottom("smooth");
+  }, [messages, isLoading, scrollToBottom]);
+
+  return (
+    <section ref={containerRef} className="flex-1 p-6 overflow-y-auto space-y-6">
+      {initialGreeting && (
+        <ChatBubble
+          message="Bonjour ! Je suis votre coach de carrière IA. Comment puis-je vous aider à améliorer votre CV ou à vous préparer pour un entretien aujourd'hui ?"
+          type="assistant"
+          timestamp={new Date()}
+          onCopy={() => console.log('Message copié')}
+          onLike={() => console.log('Message aimé')}
+          onDislike={() => console.log('Message non aimé')}
+          onListItemClick={(itemId: string, itemText: string) => {
+            // Envoyer automatiquement la question détaillée
+            const detailQuestion = `Peux-tu me donner plus de détails sur : ${itemText}`;
+            sendMessage(detailQuestion);
+          }}
+        />
+      )}
+
+      {messages.map((msg, idx) => (
+        <ChatBubble
+          key={msg.id ?? `${msg.role}-${idx}`}
+          message={msg.text}
+          type={msg.role === "user" ? "user" : "assistant"}
+          timestamp={msg.createdAt ? new Date(msg.createdAt) : new Date()}
+          userName={msg.role === "user" ? "Vous" : undefined}
+          onCopy={() => console.log('Message copié')}
+          onLike={() => console.log('Message aimé')}
+          onDislike={() => console.log('Message non aimé')}
+          onListItemClick={(itemId: string, itemText: string) => {
+            // Envoyer automatiquement une question de suivi
+            const followUpQuestion = `Peux-tu me donner plus de détails sur : ${itemText}`;
+            sendMessage(followUpQuestion);
+          }}
+        />
+      ))}
+
+      {isLoading && (
+        <div className="flex items-start gap-3">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center flex-shrink-0" aria-hidden>
+            <Bot size={18} className="text-white" />
+          </div>
+          <div className="px-4 py-3 rounded-2xl bg-white text-gray-800 rounded-bl-lg border">
+            <div className="flex items-center space-x-2">
+              <Loader2 className="w-4 h-4 animate-spin text-violet-400" />
+              <span className="text-sm text-gray-500">Réflexion…</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div ref={endRef} />
+    </section>
+  );
+};
+
+// ---------- COMPOSER ----------
+const DRAFT_KEY = "chat_draft_input_v1";
+
+export type ChatComposerHandle = {
+  setDraft: (text: string) => void;
+  focus: () => void;
+};
+
+const ChatComposer = React.memo(
+  React.forwardRef<ChatComposerHandle, {
+    onSend: (text: string) => void;
+    disabled?: boolean;
+  }>(({ onSend, disabled }, ref) => {
+    const [input, setInput] = useState<string>(() => localStorage.getItem(DRAFT_KEY) ?? "");
+
+    useEffect(() => {
+      localStorage.setItem(DRAFT_KEY, input);
+    }, [input]);
+
+    const send = useCallback(() => {
+      const val = input.trim();
+      if (!val) return;
+      onSend(val);
+      setInput("");
+      localStorage.removeItem(DRAFT_KEY);
+    }, [input, onSend]);
+
+    useImperativeHandle(ref, () => ({
+      setDraft: (text: string) => setInput(text),
+      focus: () => { }
+    }), []);
+
+    return (
+      <footer className="p-4 border-t border-violet-100 bg-white/70 backdrop-blur-sm">
+        <form
+          onSubmit={(e) => { e.preventDefault(); if (!disabled) send(); }}
+          className="flex items-end gap-3"
+        >
+          <div className="relative flex-1">
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  if (!disabled && input.trim()) {
+                    send();
+                  }
+                }
+              }}
+              placeholder="Posez une question sur votre CV… (Entrée pour envoyer, Shift+Entrée pour une nouvelle ligne)"
+              className="w-full px-4 py-3 pr-24 border border-gray-200 rounded-xl hover:border-violet-400 focus:outline-2 focus:outline-violet-500 resize-none"
+              rows={1}
+              maxLength={4000}
+              disabled={disabled}
+            />
+            <button
+              type="submit"
+              disabled={disabled || !input.trim()}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-gradient-to-r from-violet-600 to-pink-600 text-white rounded-lg"
+            >
+              <Send size={18} />
+              <VisuallyHidden>Envoyer</VisuallyHidden>
+            </button>
+          </div>
+        </form>
+      </footer>
+    );
+  })
+);
+ChatComposer.displayName = "ChatComposer";
+
+// ---------- ERREUR ----------
+const ErrorBanner: React.FC<{ error?: string | null }> = ({ error }) => {
+  if (!error) return null;
+  return (
+    <div className="p-3 text-sm text-red-700 bg-red-50 border-t border-red-100 flex items-center gap-2">
+      <AlertCircle className="w-4 h-4" />
+      <span>{error}</span>
+    </div>
+  );
+};
+
+// ---------- CHAT PRINCIPAL ----------
+export const AIChat: React.FC<ChatProps> = ({ onBack, voiceEnabled = true }) => {
+  const { editCVField, isLoading, error } = useOpenAI();
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+
+  const sendMessage = useCallback(async (text: string) => {
+    const userMsg: ChatMessage = { role: "user", text, createdAt: new Date() };
+    setMessages((prev) => [...prev, userMsg]);
+
+    try {
+      const response = await editCVField({ prompt: text });
+      if (response) {
+        const botMsg: ChatMessage = { role: "model", text: response, createdAt: new Date() };
+        setMessages((prev) => [...prev, botMsg]);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, [editCVField]);
+
+  return (
+    <div className="flex flex-col h-full w-full bg-white/50 rounded-2xl border border-violet-200 shadow-lg overflow-hidden">
+      <ChatHeader
+        onBack={onBack}
+        speechSupported={false}
+        isListening={false}
+        voiceEnabled={!!voiceEnabled}
+        isSpeaking={false}
+        onCancelSpeak={() => { }}
+      />
+
+      <ChatMessages
+        messages={messages}
+        isLoading={isLoading}
+        initialGreeting={true}
+        sendMessage={sendMessage}
+      />
+
+      {error && <ErrorBanner error={error} />}
+
+      <ChatComposer
+        onSend={sendMessage}
+        disabled={isLoading}
+      />
     </div>
   );
 };

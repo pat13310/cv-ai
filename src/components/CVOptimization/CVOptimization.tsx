@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ArrowLeft, Wand2, Download, Copy, CheckCircle, AlertTriangle, Lightbulb, Target, Sparkles, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { CVAnalysisResponse } from '../../hooks/useOpenAI';
 
@@ -32,13 +32,8 @@ export const CVOptimization: React.FC<CVOptimizationProps> = ({
   const [showOriginal, setShowOriginal] = useState(true);
   const [selectedSuggestion, setSelectedSuggestion] = useState<string | null>(null);
 
-  useEffect(() => {
-    generateOptimizationSuggestions();
-  }, [analysisResults]);
-
-  const generateOptimizationSuggestions = () => {
+  const generateOptimizationSuggestions = useCallback(() => {
     setIsGenerating(true);
-    
     // Génération de suggestions d'optimisation basées sur l'analyse
     // TODO: Remplacer par un appel API réel vers le service d'optimisation IA
     setTimeout(() => {
@@ -46,7 +41,7 @@ export const CVOptimization: React.FC<CVOptimizationProps> = ({
       const baseScore = analysisResults.overallScore || 0;
       const weaknesses = analysisResults.weaknesses || [];
       const improvements = analysisResults.improvements || [];
-      
+
       const generatedSuggestions: OptimizationSuggestion[] = [
         {
           id: '1',
@@ -172,11 +167,15 @@ export const CVOptimization: React.FC<CVOptimizationProps> = ({
           }
         });
       }
-      
+
       setSuggestions(generatedSuggestions);
       setIsGenerating(false);
     }, 2000);
-  };
+  }, [analysisResults]);
+
+  useEffect(() => {
+    generateOptimizationSuggestions();
+  }, [analysisResults, generateOptimizationSuggestions]);
 
   const applySuggestion = (suggestionId: string) => {
     setSuggestions(prev => prev.map(s => 

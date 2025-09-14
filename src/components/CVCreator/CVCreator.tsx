@@ -82,6 +82,9 @@ export const CVCreator: React.FC = () => {
   const [titleColor, setTitleColor] = useState<string>('000000');
   const [layoutColumns, setLayoutColumns] = useState<number>(1);
   const [nameAlignment, setNameAlignment] = useState<'left' | 'center' | 'right'>('center');
+  const [photoAlignment, setPhotoAlignment] = useState<'left' | 'center' | 'right'>('center');
+  const [photoSize, setPhotoSize] = useState<'small' | 'medium' | 'large'>('medium');
+  const [photoShape, setPhotoShape] = useState<'circle' | 'square' | 'rounded'>('circle');
   const [error, setError] = useState<string | null>(null);
   const [setSectionsOrderFunc, setSectionsOrderFuncSetter] = useState<((sections: SectionConfig[]) => void) | null>(null);
   const [editableContent, setEditableContent] = useState<CVContent>({
@@ -800,6 +803,12 @@ export const CVCreator: React.FC = () => {
             setLayoutColumns={setLayoutColumns}
             nameAlignment={nameAlignment}
             setNameAlignment={setNameAlignment}
+            photoAlignment={photoAlignment}
+            setPhotoAlignment={setPhotoAlignment}
+            photoSize={photoSize}
+            setPhotoSize={setPhotoSize}
+            photoShape={photoShape}
+            setPhotoShape={setPhotoShape}
             availableFonts={availableFonts}
             availableColors={availableColors}
             addExperience={addExperience}

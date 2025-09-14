@@ -1,6 +1,6 @@
 import React from 'react';
 import { CustomSelect } from './CustomSelect';
-import { Columns, RectangleVertical, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
+import { Columns, RectangleVertical, AlignLeft, AlignCenter, AlignRight, Circle, Square } from 'lucide-react';
 
 interface StyleControlsProps {
   customFont: string;
@@ -13,6 +13,12 @@ interface StyleControlsProps {
   setLayoutColumns?: (columns: number) => void;
   nameAlignment?: 'left' | 'center' | 'right';
   setNameAlignment?: (alignment: 'left' | 'center' | 'right') => void;
+  photoAlignment?: 'left' | 'center' | 'right';
+  setPhotoAlignment?: (alignment: 'left' | 'center' | 'right') => void;
+  photoSize?: 'small' | 'medium' | 'large';
+  setPhotoSize?: (size: 'small' | 'medium' | 'large') => void;
+  photoShape?: 'circle' | 'square' | 'rounded';
+  setPhotoShape?: (shape: 'circle' | 'square' | 'rounded') => void;
   availableFonts: string[];
   availableColors: Array<{ name: string; value: string; category: string }>;
 }
@@ -29,6 +35,12 @@ export const StyleControls: React.FC<StyleControlsProps> = ({
   setLayoutColumns,
   nameAlignment = 'center',
   setNameAlignment,
+  photoAlignment = 'center',
+  setPhotoAlignment,
+  photoSize = 'medium',
+  setPhotoSize,
+  photoShape = 'circle',
+  setPhotoShape,
   availableFonts,
   availableColors
 }) => {
@@ -149,6 +161,126 @@ export const StyleControls: React.FC<StyleControlsProps> = ({
                 title={color.name}
               />
             ))}
+          </div>
+        </div>
+      </div>
+      
+      {/* Contrôles Photo - Ligne séparée */}
+      <div className="flex items-start gap-4 mt-3 pt-3 border-t border-violet-200">
+        <div className="flex-shrink-0">
+          <label className="block text-sm font-medium mb-2">Forme photo</label>
+          <div className="flex gap-1">
+            <button
+              onClick={() => setPhotoShape?.('circle')}
+              className={`p-1 rounded transition-all duration-200 ${
+                photoShape === 'circle'
+                  ? 'bg-violet-500 text-white shadow-md'
+                  : 'bg-white text-gray-600 hover:bg-violet-100'
+              }`}
+              title="Photo ronde"
+            >
+              <Circle className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setPhotoShape?.('square')}
+              className={`p-1 rounded transition-all duration-200 ${
+                photoShape === 'square'
+                  ? 'bg-violet-500 text-white shadow-md'
+                  : 'bg-white text-gray-600 hover:bg-violet-100'
+              }`}
+              title="Photo carrée"
+            >
+              <Square className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setPhotoShape?.('rounded')}
+              className={`p-1 rounded transition-all duration-200 ${
+                photoShape === 'rounded'
+                  ? 'bg-violet-500 text-white shadow-md'
+                  : 'bg-white text-gray-600 hover:bg-violet-100'
+              }`}
+              title="Photo arrondie"
+            >
+              <div className="w-4 h-4 border border-current rounded" />
+            </button>
+          </div>
+        </div>
+        
+        <div className="flex-shrink-0">
+          <label className="block text-sm font-medium mb-2">Taille photo</label>
+          <div className="flex gap-1">
+            <button
+              onClick={() => setPhotoSize?.('small')}
+              className={`px-2 py-1 rounded text-xs transition-all duration-200 ${
+                photoSize === 'small'
+                  ? 'bg-violet-500 text-white shadow-md'
+                  : 'bg-white text-gray-600 hover:bg-violet-100'
+              }`}
+              title="Petite photo"
+            >
+              S
+            </button>
+            <button
+              onClick={() => setPhotoSize?.('medium')}
+              className={`px-2 py-1 rounded text-xs transition-all duration-200 ${
+                photoSize === 'medium'
+                  ? 'bg-violet-500 text-white shadow-md'
+                  : 'bg-white text-gray-600 hover:bg-violet-100'
+              }`}
+              title="Photo moyenne"
+            >
+              M
+            </button>
+            <button
+              onClick={() => setPhotoSize?.('large')}
+              className={`px-2 py-1 rounded text-xs transition-all duration-200 ${
+                photoSize === 'large'
+                  ? 'bg-violet-500 text-white shadow-md'
+                  : 'bg-white text-gray-600 hover:bg-violet-100'
+              }`}
+              title="Grande photo"
+            >
+              L
+            </button>
+          </div>
+        </div>
+        
+        <div className="flex-shrink-0">
+          <label className="block text-sm font-medium mb-2">Alignement photo</label>
+          <div className="flex gap-1">
+            <button
+              onClick={() => setPhotoAlignment?.('left')}
+              className={`p-1 rounded transition-all duration-200 ${
+                photoAlignment === 'left'
+                  ? 'bg-violet-500 text-white shadow-md'
+                  : 'bg-white text-gray-600 hover:bg-violet-100'
+              }`}
+              title="Photo à gauche"
+            >
+              <AlignLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setPhotoAlignment?.('center')}
+              className={`p-1 rounded transition-all duration-200 ${
+                photoAlignment === 'center'
+                  ? 'bg-violet-500 text-white shadow-md'
+                  : 'bg-white text-gray-600 hover:bg-violet-100'
+              }`}
+              title="Photo centrée"
+            >
+              <AlignCenter className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setPhotoAlignment?.('right')}
+              className={`p-1 rounded transition-all duration-200 ${
+                photoAlignment === 'right'
+                  ? 'bg-violet-500 text-white shadow-md'
+                  : 'bg-white text-gray-600 hover:bg-violet-100'
+              }`}
+              title="Photo à droite"
+            >
+              <AlignRight className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>

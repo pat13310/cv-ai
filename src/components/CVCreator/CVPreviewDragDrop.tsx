@@ -27,6 +27,12 @@ export const CVPreviewDragDrop: React.FC<CVPreviewProps> = ({
   setLayoutColumns,
   nameAlignment = 'center',
   setNameAlignment,
+  photoAlignment = 'center',
+  setPhotoAlignment,
+  photoSize = 'medium',
+  setPhotoSize,
+  photoShape = 'circle',
+  setPhotoShape,
   availableFonts = ['Calibri', 'Georgia', 'Helvetica', 'Consolas', 'Times New Roman', 'Arial'],
   availableColors = [
     { name: 'Noir', value: '000000', category: 'Neutres' },
@@ -83,6 +89,12 @@ export const CVPreviewDragDrop: React.FC<CVPreviewProps> = ({
             setLayoutColumns={setLayoutColumns}
             nameAlignment={nameAlignment}
             setNameAlignment={setNameAlignment}
+            photoAlignment={photoAlignment}
+            setPhotoAlignment={setPhotoAlignment}
+            photoSize={photoSize}
+            setPhotoSize={setPhotoSize}
+            photoShape={photoShape}
+            setPhotoShape={setPhotoShape}
             availableFonts={availableFonts}
             availableColors={availableColors}
           />
@@ -133,6 +145,9 @@ export const CVPreviewDragDrop: React.FC<CVPreviewProps> = ({
           generateWithAI={generateWithAI}
           isLoading={isLoading}
           nameAlignment={nameAlignment}
+          photoAlignment={photoAlignment}
+          photoSize={photoSize}
+          photoShape={photoShape}
         />
       </div>
     </div>

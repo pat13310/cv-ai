@@ -11,6 +11,7 @@ export interface CVContent {
   educationTitle: string;
   skillsTitle: string;
   languagesTitle: string;
+  photo?: string; // URL de la photo en base64 ou URL
 }
 
 export interface CVExperience {
@@ -74,6 +75,12 @@ export interface CVPreviewProps {
   setLayoutColumns?: React.Dispatch<React.SetStateAction<number>>;
   nameAlignment?: 'left' | 'center' | 'right';
   setNameAlignment?: React.Dispatch<React.SetStateAction<'left' | 'center' | 'right'>>;
+  photoAlignment?: 'left' | 'center' | 'right';
+  setPhotoAlignment?: React.Dispatch<React.SetStateAction<'left' | 'center' | 'right'>>;
+  photoSize?: 'small' | 'medium' | 'large';
+  setPhotoSize?: React.Dispatch<React.SetStateAction<'small' | 'medium' | 'large'>>;
+  photoShape?: 'circle' | 'square' | 'rounded';
+  setPhotoShape?: React.Dispatch<React.SetStateAction<'circle' | 'square' | 'rounded'>>;
   availableFonts?: string[];
   availableColors?: Array<{
     name: string;

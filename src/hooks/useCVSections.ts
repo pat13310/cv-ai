@@ -6,7 +6,8 @@ const LEGACY_KEYS = ["cvSectionsOrder"];
 
 const DEFAULT_SECTIONS: SectionConfig[] = [
   { id: "name", name: "Nom", component: "NameSection", visible: true, layer: 1, order: 0, width: "full" },
-  { id: "profile", name: "Profil Professionnel", component: "ProfileSection", visible: true, layer: 2, order: 0, width: "full" },
+  { id: "photo", name: "Photo", component: "PhotoSection", visible: true, layer: 2, order: 0, width: "half" },
+  { id: "profile", name: "Profil Professionnel", component: "ProfileSection", visible: true, layer: 2, order: 1, width: "half" },
   { id: "contact", name: "Contact", component: "ContactSection", visible: true, layer: 3, order: 0, width: "half" },
   { id: "experience", name: "Expérience Professionnelle", component: "ExperienceSection", visible: true, layer: 3, order: 1, width: "half" },
   { id: "education", name: "Formation", component: "EducationSection", visible: true, layer: 4, order: 0, width: "half" },

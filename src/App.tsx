@@ -104,7 +104,7 @@ const SupabaseAppContent: React.FC = () => {
       case 'settings':
         return <Settings onBack={handleBackToDashboard} onApiKeyStatusChange={setApiKeyStatus} />;
       case 'chat':
-        return <AIChat onBack={handleBackToDashboard} voiceEnabled={voiceEnabled} onSettingsClick={handleSettingsClick} fromCoaching={true} />;
+        return <AIChat onBack={handleBackToDashboard} voiceEnabled={voiceEnabled}   />;
       default:
         return <Dashboard />;
     }
@@ -261,7 +261,7 @@ const MockAppContent: React.FC = () => {
       case 'settings':
         return <Settings onBack={handleBackToDashboard} />;
       case 'chat':
-        return <AIChat onBack={handleBackToDashboard} voiceEnabled={voiceEnabled} onSettingsClick={handleSettingsClick} fromCoaching={true} />;
+        return <AIChat onBack={handleBackToDashboard} voiceEnabled={voiceEnabled}  />;
       default:
         return <Dashboard />;
     }
