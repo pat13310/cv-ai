@@ -1,146 +1,216 @@
+// src/hooks/useCVSections.ts
 import { useState, useCallback } from 'react';
+import type { SectionConfig } from '../components/CVCreator/types';
 
-export interface SectionConfig {
-  id: string;
-  name: string;
-  component: string;
-  visible: boolean;
-  layer?: number;
-  width?: 'full' | 'half';
-}
+const STORAGE_KEY_V2 = 'cvSectionsOrder';
+const LEGACY_KEYS = ['cvSectionsOrder'];
 
 const DEFAULT_SECTIONS: SectionConfig[] = [
-  { id: 'name', name: 'Nom', component: 'NameSection', visible: true, layer: 1, width: 'full' },
-  { id: 'profile', name: 'Profil Professionnel', component: 'ProfileSection', visible: true, layer: 2, width: 'full' },
-  { id: 'contact', name: 'Contact', component: 'ContactSection', visible: true, layer: 3, width: 'half' },
-  { id: 'experience', name: 'Expérience Professionnelle', component: 'ExperienceSection', visible: true, layer: 3, width: 'half' },
-  { id: 'education', name: 'Formation', component: 'EducationSection', visible: true, layer: 4, width: 'half' },
-  { id: 'skills', name: 'Compétences', component: 'SkillsSection', visible: true, layer: 4, width: 'half' },
-  { id: 'languages', name: 'Langues', component: 'LanguagesSection', visible: true, layer: 5, width: 'full' }
+  { id: 'name', name: 'Nom', component: 'NameSection', visible: true, layer: 1, order: 0, width: 'full' },
+  { id: 'profile', name: 'Profil Professionnel', component: 'ProfileSection', visible: true, layer: 2, order: 0, width: 'full' },
+  { id: 'contact', name: 'Contact', component: 'ContactSection', visible: true, layer: 3, order: 0, width: 'half' },
+  { id: 'experience', name: 'Expérience Professionnelle', component: 'ExperienceSection', visible: true, layer: 3, order: 1, width: 'half' },
+  { id: 'education', name: 'Formation', component: 'EducationSection', visible: true, layer: 4, order: 0, width: 'half' },
+  { id: 'skills', name: 'Compétences', component: 'SkillsSection', visible: true, layer: 4, order: 1, width: 'half' },
+  { id: 'languages', name: 'Langues', component: 'LanguagesSection', visible: true, layer: 5, order: 0, width: 'full' },
 ];
 
-export const useCVSections = () => {
-  const [sections, setSections] = useState<SectionConfig[]>(() => {
-    // Essayer de récupérer l'ordre depuis localStorage
-    const savedOrder = localStorage.getItem('cvSectionsOrder');
-    if (savedOrder) {
-      try {
-        const parsed = JSON.parse(savedOrder);
-        // Vérifier si la section nom existe, sinon forcer la réinitialisation
-        const hasNameSection = parsed.some((section: SectionConfig) => section.id === 'name');
-        if (hasNameSection) {
-          return parsed;
-        }
-      } catch (error) {
-        console.error('Erreur lors du chargement de l\'ordre des sections:', error);
+/* ---------------- Type guards utilitaires ---------------- */
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null;
+}
+function isString(v: unknown): v is string {
+  return typeof v === 'string';
+}
+function isNumber(v: unknown): v is number {
+  return typeof v === 'number' && !Number.isNaN(v);
+}
+function isBoolean(v: unknown): v is boolean {
+  return typeof v === 'boolean';
+}
+function isLeftRight(v: unknown): v is 'left' | 'right' {
+  return v === 'left' || v === 'right';
+}
+function isWidth(v: unknown): v is 'full' | 'half' {
+  return v === 'full' || v === 'half';
+}
+
+/* ------------- Migration d’anciens schémas (sans any) ------------- */
+function migrateSections(raw: unknown): SectionConfig[] | null {
+  if (!Array.isArray(raw)) return null;
+
+  const prelim: Array<Partial<SectionConfig> & { id: string }> = raw
+    .filter((item: unknown): item is Record<string, unknown> => isRecord(item) && isString(item.id))
+    .map((s): Partial<SectionConfig> & { id: string } => {
+      const layer = isNumber(s.layer) ? s.layer : 1;
+
+      let order: number | undefined = isNumber(s.order) ? s.order : undefined;
+      if (order === undefined && isLeftRight(s.position)) {
+        order = s.position === 'left' ? 0 : 1;
       }
+
+      const width = isWidth(s.width) ? s.width : undefined;
+
+      return {
+        id: s.id as string,
+        name: isString(s.name) ? s.name : (s.id as string),
+        component: isString(s.component) ? s.component : '',
+        visible: isBoolean(s.visible) ? s.visible : true,
+        layer,
+        order,
+        width,
+      };
+    });
+
+  // Assigner un order aux entrées qui n’en ont pas, par layer, selon l’ordre d’apparition
+  const byLayer = new Map<number, (Partial<SectionConfig> & { id: string })[]>();
+  for (const s of prelim) {
+    const L = isNumber(s.layer) ? s.layer : 1;
+    const arr = byLayer.get(L);
+    if (arr) arr.push(s); else byLayer.set(L, [s]);
+  }
+
+  for (const arr of byLayer.values()) {
+    const needAssign = arr.some((s) => !isNumber(s.order));
+    if (needAssign) {
+      arr.forEach((s, idx) => {
+        if (!isNumber(s.order)) s.order = idx; // 0,1,2...
+      });
     }
-    // Forcer la sauvegarde des nouvelles sections par défaut
-    localStorage.setItem('cvSectionsOrder', JSON.stringify(DEFAULT_SECTIONS));
-    return DEFAULT_SECTIONS;
-  });
+  }
 
-  const reorderSections = useCallback((activeId: string, overId: string) => {
-    setSections((sections) => {
-      const oldIndex = sections.findIndex((section) => section.id === activeId);
-      const newIndex = sections.findIndex((section) => section.id === overId);
-      
-      if (oldIndex === -1 || newIndex === -1) return sections;
+  // Projection finale (width sera recalée par cleanup)
+  return prelim.map((s) => ({
+    id: s.id,
+    name: s.name as string,
+    component: s.component as string,
+    visible: s.visible as boolean,
+    layer: (isNumber(s.layer) ? s.layer : 1) as number,
+    order: (isNumber(s.order) ? s.order : 0) as number,
+    width: s.width,
+  })) as SectionConfig[];
+}
 
-      const newSections = [...sections];
-      const [movedSection] = newSections.splice(oldIndex, 1);
-      
-      // Déterminer le layer de destination
-      const targetSection = newSections[newIndex];
-      const targetLayer = targetSection?.layer || 1;
-      
-      // Assigner le nouveau layer à la section déplacée
-      movedSection.layer = targetLayer;
-      
-      newSections.splice(newIndex, 0, movedSection);
+/* ------------- Nettoyage “pur” des layers (préserve order) ------------- */
+function cleanupLayersPure(sections: SectionConfig[]): SectionConfig[] {
+  const layerGroups = new Map<number, SectionConfig[]>();
+  for (const section of sections) {
+    const layer = section.layer ?? 1;
+    const arr = layerGroups.get(layer);
+    if (arr) arr.push(section); else layerGroups.set(layer, [section]);
+  }
 
-      // Nettoyer les layers vides et réorganiser
-      const cleanedSections = cleanupLayers(newSections);
+  const sortedLayers = Array.from(layerGroups.keys()).sort((a, b) => a - b);
+  const result: SectionConfig[] = [];
 
-      // Sauvegarder dans localStorage
-      localStorage.setItem('cvSectionsOrder', JSON.stringify(cleanedSections));
-      
-      return cleanedSections;
+  sortedLayers.forEach((oldLayer, index) => {
+    const newLayer = index + 1;
+    const sectionsInLayer = layerGroups.get(oldLayer)!;
+
+    // ✅ respecter l’ordre existant (important pour SWAP)
+    const sortedInLayer = [...sectionsInLayer].sort(
+      (a, b) => (a.order ?? 0) - (b.order ?? 0)
+    );
+
+    const limited = sortedInLayer.slice(0, 2);
+
+    limited.forEach((section, i) => {
+      result.push({
+        ...section,
+        layer: newLayer,
+        order: i, // normalise en 0/1
+        width: limited.length === 1 ? 'full' : 'half',
+      });
     });
-  }, []);
 
-  // Fonction pour nettoyer les layers vides et réorganiser
-  const cleanupLayers = (sections: SectionConfig[]): SectionConfig[] => {
-    // Grouper par layer
-    const layerGroups = new Map<number, SectionConfig[]>();
-    
-    sections.forEach(section => {
-      const layer = section.layer || 1;
-      if (!layerGroups.has(layer)) {
-        layerGroups.set(layer, []);
-      }
-      layerGroups.get(layer)!.push(section);
-    });
-
-    // Réorganiser les layers pour éliminer les trous
-    const sortedLayers = Array.from(layerGroups.keys()).sort((a, b) => a - b);
-    const newSections: SectionConfig[] = [];
-    
-    sortedLayers.forEach((oldLayer, index) => {
-      const newLayer = index + 1;
-      const sectionsInLayer = layerGroups.get(oldLayer)!;
-      
-      // Limiter à 2 sections par layer maximum
-      const limitedSections = sectionsInLayer.slice(0, 2);
-      
-      limitedSections.forEach(section => {
-        newSections.push({
+    if (sortedInLayer.length > 2) {
+      sortedInLayer.slice(2).forEach((section, extraIndex) => {
+        result.push({
           ...section,
-          layer: newLayer
+          layer: sortedLayers.length + extraIndex + 1,
+          order: 0,
+          width: 'full',
         });
       });
-      
-      // Si il y a plus de 2 sections, créer de nouveaux layers
-      if (sectionsInLayer.length > 2) {
-        sectionsInLayer.slice(2).forEach((section, extraIndex) => {
-          newSections.push({
-            ...section,
-            layer: sortedLayers.length + extraIndex + 1
-          });
-        });
+    }
+  });
+
+  return result;
+}
+
+/* ---------------- Lecture initiale (localStorage + migration) ---------------- */
+function loadInitialSections(): SectionConfig[] {
+  const keysToTry = [STORAGE_KEY_V2, ...LEGACY_KEYS];
+  for (const key of keysToTry) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+      const parsed = JSON.parse(raw) as unknown;
+      const migrated = migrateSections(parsed);
+      if (migrated && migrated.length) {
+        return cleanupLayersPure(migrated);
       }
-    });
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn('[useCVSections] Échec lecture/migration localStorage:', e);
+    }
+  }
+  return cleanupLayersPure(DEFAULT_SECTIONS);
+}
 
-    return newSections;
-  };
+/* ---------------- Hook public ---------------- */
+export const useCVSections = () => {
+  const [sections, setSections] = useState<SectionConfig[]>(() => loadInitialSections());
 
-  const resetSectionsOrder = useCallback(() => {
-    setSections(DEFAULT_SECTIONS);
-    localStorage.removeItem('cvSectionsOrder');
+  /** Nettoyage public (à appeler après un vrai drag/drop uniquement) */
+  const cleanupLayers = useCallback((arr: SectionConfig[]): SectionConfig[] => {
+    return cleanupLayersPure(arr);
   }, []);
 
-  const toggleSectionVisibility = useCallback((sectionId: string) => {
-    setSections((sections) => {
-      const newSections = sections.map((section) =>
-        section.id === sectionId
-          ? { ...section, visible: !section.visible }
-          : section
-      );
-      localStorage.setItem('cvSectionsOrder', JSON.stringify(newSections));
-      return newSections;
-    });
-  }, []);
-
+  /** Écrit tel quel (ne nettoie pas ici pour ne pas écraser un SWAP) */
   const setSectionsOrder = useCallback((newOrder: SectionConfig[]) => {
     setSections(newOrder);
-    localStorage.setItem('cvSectionsOrder', JSON.stringify(newOrder));
+    try {
+      localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(newOrder));
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn('[useCVSections] Échec écriture localStorage:', e);
+    }
+  }, []);
+
+  /** Reset complet */
+  const resetSectionsOrder = useCallback(() => {
+    const clean = cleanupLayersPure(DEFAULT_SECTIONS);
+    setSections(clean);
+    try {
+      localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(clean));
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn('[useCVSections] Échec écriture localStorage (reset):', e);
+    }
+  }, []);
+
+  /** Toggle visibilité (NE touche PAS aux layers/orders) */
+  const toggleSectionVisibility = useCallback((sectionId: string) => {
+    setSections((prev) => {
+      const next = prev.map((s) =>
+        s.id === sectionId ? { ...s, visible: !s.visible } : s
+      );
+      try {
+        localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(next));
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn('[useCVSections] Échec écriture localStorage (toggle):', e);
+      }
+      return next;
+    });
   }, []);
 
   return {
     sections,
-    reorderSections,
+    setSectionsOrder,
+    cleanupLayers,
     resetSectionsOrder,
     toggleSectionVisibility,
-    setSectionsOrder
   };
 };

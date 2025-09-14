@@ -8,13 +8,15 @@ interface SectionWrapperProps {
   title: string;
   children: React.ReactNode;
   className?: string;
+  position?: 'left' | 'right';
 }
 
 export const SectionWrapper: React.FC<SectionWrapperProps> = ({
   id,
   title,
   children,
-  className = ""
+  className = "",
+  position
 }) => {
   const {
     attributes,
@@ -36,18 +38,20 @@ export const SectionWrapper: React.FC<SectionWrapperProps> = ({
       style={style}
       className={`relative group ${isDragging ? 'opacity-50' : ''} ${className}`}
     >
-      {/* Poignée de drag */}
+      {/* Poignée de drag positionnée selon l'alignement */}
       <div
         {...attributes}
         {...listeners}
-        className="absolute left-0 top-0 p-2 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10 bg-white/80 rounded-md shadow-sm"
+        className={`absolute top-0 p-2 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10 bg-white/80 rounded-md shadow-sm ${
+          position === 'right' ? 'right-0' : 'left-0'
+        }`}
         title={`Déplacer la section ${title}`}
       >
         <GripVertical className="w-4 h-4 text-gray-500" />
       </div>
       
       {/* Contenu de la section */}
-      <div className="pl-2">
+      <div className={position === 'right' ? 'pr-2' : 'pl-2'}>
         {children}
       </div>
     </div>

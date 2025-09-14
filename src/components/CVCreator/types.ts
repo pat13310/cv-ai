@@ -37,15 +37,18 @@ export interface CVEducation {
   year: string;
 }
 
-// Interface pour les sections
+
+
 export interface SectionConfig {
   id: string;
   name: string;
   component: string;
   visible: boolean;
-  layer?: number;
-  width?: 'full' | 'half';
+  layer: number;
+  order: number;                // ordre dans le layer (0 = gauche, 1 = droite)
+  width?: "full" | "half";      // largeur visuelle
 }
+
 
 // Interface pour les props du composant CVPreview
 export interface CVPreviewProps {

@@ -30,6 +30,7 @@ interface Template {
     educationTitle: string;
     skillsTitle: string;
     languagesTitle: string;
+    contactTitle: string;
   };
   sectionsOrder: SectionConfig[];
 }
@@ -489,7 +490,8 @@ export const CVCreator: React.FC = () => {
         experienceTitle: "EXPÉRIENCE",
         educationTitle: "FORMATION",
         skillsTitle: "COMPÉTENCES",
-        languagesTitle: "LANGUES"
+        languagesTitle: "LANGUES",
+        contactTitle: "CONTACT"
       },
       sectionsOrder: [
         { id: 'profile', name: 'Profil', component: 'ProfileSection', visible: true, layer: 1, width: 'full' },
@@ -515,7 +517,8 @@ export const CVCreator: React.FC = () => {
         experienceTitle: "PARCOURS CRÉATIF",
         educationTitle: "FORMATION ARTISTIQUE",
         skillsTitle: "TALENTS & OUTILS",
-        languagesTitle: "LANGUES PARLÉES"
+        languagesTitle: "LANGUES PARLÉES",
+        contactTitle: "CONTACT"
       },
       sectionsOrder: [
         { id: 'profile', name: 'À propos de moi', component: 'ProfileSection', visible: true, layer: 1, width: 'full' },
@@ -541,7 +544,8 @@ export const CVCreator: React.FC = () => {
         experienceTitle: "EXPÉRIENCE PROFESSIONNELLE",
         educationTitle: "FORMATION ACADÉMIQUE",
         skillsTitle: "COMPÉTENCES TECHNIQUES",
-        languagesTitle: "LANGUES ÉTRANGÈRES"
+        languagesTitle: "LANGUES ÉTRANGÈRES",
+        contactTitle: "CONTACT"
       },
       sectionsOrder: [
         { id: 'profile', name: 'Profil Professionnel', component: 'ProfileSection', visible: true, layer: 1, width: 'full' },
@@ -567,7 +571,8 @@ export const CVCreator: React.FC = () => {
         experienceTitle: "MON PARCOURS",
         educationTitle: "MES ÉTUDES",
         skillsTitle: "MES COMPÉTENCES",
-        languagesTitle: "MES LANGUES"
+        languagesTitle: "MES LANGUES",
+        contactTitle: "CONTACT"
       },
       sectionsOrder: [
         { id: 'profile', name: 'Qui suis-je ?', component: 'ProfileSection', visible: true, layer: 1, width: 'full' },
@@ -593,7 +598,8 @@ export const CVCreator: React.FC = () => {
         experienceTitle: "CARRIÈRE PROFESSIONNELLE",
         educationTitle: "CURSUS ACADÉMIQUE",
         skillsTitle: "EXPERTISE TECHNIQUE",
-        languagesTitle: "MAÎTRISE LINGUISTIQUE"
+        languagesTitle: "MAÎTRISE LINGUISTIQUE",
+        contactTitle: "CONTACT"
       },
       sectionsOrder: [
         { id: 'profile', name: 'Présentation', component: 'ProfileSection', visible: true },
@@ -618,7 +624,8 @@ export const CVCreator: React.FC = () => {
         experienceTitle: "EXPÉRIENCES CLÉS",
         educationTitle: "PARCOURS ÉDUCATIF",
         skillsTitle: "SAVOIR-FAIRE",
-        languagesTitle: "COMPÉTENCES LINGUISTIQUES"
+        languagesTitle: "COMPÉTENCES LINGUISTIQUES",
+        contactTitle: "CONTACT"
       },
       sectionsOrder: [
         { id: 'profile', name: 'Profil Personnel', component: 'ProfileSection', visible: true },
@@ -839,7 +846,8 @@ export const CVCreator: React.FC = () => {
                     experienceTitle: template.sectionTitles.experienceTitle,
                     educationTitle: template.sectionTitles.educationTitle,
                     skillsTitle: template.sectionTitles.skillsTitle,
-                    languagesTitle: template.sectionTitles.languagesTitle
+                    languagesTitle: template.sectionTitles.languagesTitle,
+                    contactTitle: template.sectionTitles.contactTitle
                   }));
                   // Appliquer l'ordre des sections du template
                   if (setSectionsOrderFunc) {
