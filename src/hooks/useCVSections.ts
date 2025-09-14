@@ -1,41 +1,40 @@
-// src/hooks/useCVSections.ts
-import { useState, useCallback } from 'react';
-import type { SectionConfig } from '../components/CVCreator/types';
+import { useState, useCallback } from "react";
+import type { SectionConfig } from "../components/CVCreator/types";
 
-const STORAGE_KEY_V2 = 'cvSectionsOrder';
-const LEGACY_KEYS = ['cvSectionsOrder'];
+const STORAGE_KEY_V2 = "cvSectionsOrder";
+const LEGACY_KEYS = ["cvSectionsOrder"];
 
 const DEFAULT_SECTIONS: SectionConfig[] = [
-  { id: 'name', name: 'Nom', component: 'NameSection', visible: true, layer: 1, order: 0, width: 'full' },
-  { id: 'profile', name: 'Profil Professionnel', component: 'ProfileSection', visible: true, layer: 2, order: 0, width: 'full' },
-  { id: 'contact', name: 'Contact', component: 'ContactSection', visible: true, layer: 3, order: 0, width: 'half' },
-  { id: 'experience', name: 'Expérience Professionnelle', component: 'ExperienceSection', visible: true, layer: 3, order: 1, width: 'half' },
-  { id: 'education', name: 'Formation', component: 'EducationSection', visible: true, layer: 4, order: 0, width: 'half' },
-  { id: 'skills', name: 'Compétences', component: 'SkillsSection', visible: true, layer: 4, order: 1, width: 'half' },
-  { id: 'languages', name: 'Langues', component: 'LanguagesSection', visible: true, layer: 5, order: 0, width: 'full' },
+  { id: "name", name: "Nom", component: "NameSection", visible: true, layer: 1, order: 0, width: "full" },
+  { id: "profile", name: "Profil Professionnel", component: "ProfileSection", visible: true, layer: 2, order: 0, width: "full" },
+  { id: "contact", name: "Contact", component: "ContactSection", visible: true, layer: 3, order: 0, width: "half" },
+  { id: "experience", name: "Expérience Professionnelle", component: "ExperienceSection", visible: true, layer: 3, order: 1, width: "half" },
+  { id: "education", name: "Formation", component: "EducationSection", visible: true, layer: 4, order: 0, width: "half" },
+  { id: "skills", name: "Compétences", component: "SkillsSection", visible: true, layer: 4, order: 1, width: "half" },
+  { id: "languages", name: "Langues", component: "LanguagesSection", visible: true, layer: 5, order: 0, width: "full" },
 ];
 
-/* ---------------- Type guards utilitaires ---------------- */
+/* ---------------- Type guards ---------------- */
 function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === 'object' && v !== null;
+  return typeof v === "object" && v !== null;
 }
 function isString(v: unknown): v is string {
-  return typeof v === 'string';
+  return typeof v === "string";
 }
 function isNumber(v: unknown): v is number {
-  return typeof v === 'number' && !Number.isNaN(v);
+  return typeof v === "number" && !Number.isNaN(v);
 }
 function isBoolean(v: unknown): v is boolean {
-  return typeof v === 'boolean';
+  return typeof v === "boolean";
 }
-function isLeftRight(v: unknown): v is 'left' | 'right' {
-  return v === 'left' || v === 'right';
+function isLeftRight(v: unknown): v is "left" | "right" {
+  return v === "left" || v === "right";
 }
-function isWidth(v: unknown): v is 'full' | 'half' {
-  return v === 'full' || v === 'half';
+function isWidth(v: unknown): v is "full" | "half" {
+  return v === "full" || v === "half";
 }
 
-/* ------------- Migration d’anciens schémas (sans any) ------------- */
+/* ------------- Migration anciens schémas ------------- */
 function migrateSections(raw: unknown): SectionConfig[] | null {
   if (!Array.isArray(raw)) return null;
 
@@ -46,7 +45,7 @@ function migrateSections(raw: unknown): SectionConfig[] | null {
 
       let order: number | undefined = isNumber(s.order) ? s.order : undefined;
       if (order === undefined && isLeftRight(s.position)) {
-        order = s.position === 'left' ? 0 : 1;
+        order = s.position === "left" ? 0 : 1;
       }
 
       const width = isWidth(s.width) ? s.width : undefined;
@@ -54,7 +53,7 @@ function migrateSections(raw: unknown): SectionConfig[] | null {
       return {
         id: s.id as string,
         name: isString(s.name) ? s.name : (s.id as string),
-        component: isString(s.component) ? s.component : '',
+        component: isString(s.component) ? s.component : "",
         visible: isBoolean(s.visible) ? s.visible : true,
         layer,
         order,
@@ -62,24 +61,24 @@ function migrateSections(raw: unknown): SectionConfig[] | null {
       };
     });
 
-  // Assigner un order aux entrées qui n’en ont pas, par layer, selon l’ordre d’apparition
+  // attribuer des order manquants par layer
   const byLayer = new Map<number, (Partial<SectionConfig> & { id: string })[]>();
   for (const s of prelim) {
     const L = isNumber(s.layer) ? s.layer : 1;
     const arr = byLayer.get(L);
-    if (arr) arr.push(s); else byLayer.set(L, [s]);
+    if (arr) arr.push(s);
+    else byLayer.set(L, [s]);
   }
 
   for (const arr of byLayer.values()) {
     const needAssign = arr.some((s) => !isNumber(s.order));
     if (needAssign) {
       arr.forEach((s, idx) => {
-        if (!isNumber(s.order)) s.order = idx; // 0,1,2...
+        if (!isNumber(s.order)) s.order = idx;
       });
     }
   }
 
-  // Projection finale (width sera recalée par cleanup)
   return prelim.map((s) => ({
     id: s.id,
     name: s.name as string,
@@ -91,13 +90,14 @@ function migrateSections(raw: unknown): SectionConfig[] | null {
   })) as SectionConfig[];
 }
 
-/* ------------- Nettoyage “pur” des layers (préserve order) ------------- */
+/* ------------- Cleanup qui préserve l’ordre ------------- */
 function cleanupLayersPure(sections: SectionConfig[]): SectionConfig[] {
   const layerGroups = new Map<number, SectionConfig[]>();
   for (const section of sections) {
     const layer = section.layer ?? 1;
     const arr = layerGroups.get(layer);
-    if (arr) arr.push(section); else layerGroups.set(layer, [section]);
+    if (arr) arr.push(section);
+    else layerGroups.set(layer, [section]);
   }
 
   const sortedLayers = Array.from(layerGroups.keys()).sort((a, b) => a - b);
@@ -107,19 +107,18 @@ function cleanupLayersPure(sections: SectionConfig[]): SectionConfig[] {
     const newLayer = index + 1;
     const sectionsInLayer = layerGroups.get(oldLayer)!;
 
-    // ✅ respecter l’ordre existant (important pour SWAP)
     const sortedInLayer = [...sectionsInLayer].sort(
       (a, b) => (a.order ?? 0) - (b.order ?? 0)
     );
 
     const limited = sortedInLayer.slice(0, 2);
 
-    limited.forEach((section, i) => {
+    limited.forEach((section) => {
       result.push({
         ...section,
         layer: newLayer,
-        order: i, // normalise en 0/1
-        width: limited.length === 1 ? 'full' : 'half',
+        order: section.order ?? 0,
+        width: limited.length === 1 ? "full" : "half",
       });
     });
 
@@ -129,7 +128,7 @@ function cleanupLayersPure(sections: SectionConfig[]): SectionConfig[] {
           ...section,
           layer: sortedLayers.length + extraIndex + 1,
           order: 0,
-          width: 'full',
+          width: "full",
         });
       });
     }
@@ -138,7 +137,7 @@ function cleanupLayersPure(sections: SectionConfig[]): SectionConfig[] {
   return result;
 }
 
-/* ---------------- Lecture initiale (localStorage + migration) ---------------- */
+/* ---------------- Lecture initiale ---------------- */
 function loadInitialSections(): SectionConfig[] {
   const keysToTry = [STORAGE_KEY_V2, ...LEGACY_KEYS];
   for (const key of keysToTry) {
@@ -151,8 +150,7 @@ function loadInitialSections(): SectionConfig[] {
         return cleanupLayersPure(migrated);
       }
     } catch (e) {
-      // eslint-disable-next-line no-console
-      console.warn('[useCVSections] Échec lecture/migration localStorage:', e);
+      console.warn("[useCVSections] Échec lecture/migration localStorage:", e);
     }
   }
   return cleanupLayersPure(DEFAULT_SECTIONS);
@@ -162,35 +160,29 @@ function loadInitialSections(): SectionConfig[] {
 export const useCVSections = () => {
   const [sections, setSections] = useState<SectionConfig[]>(() => loadInitialSections());
 
-  /** Nettoyage public (à appeler après un vrai drag/drop uniquement) */
   const cleanupLayers = useCallback((arr: SectionConfig[]): SectionConfig[] => {
     return cleanupLayersPure(arr);
   }, []);
 
-  /** Écrit tel quel (ne nettoie pas ici pour ne pas écraser un SWAP) */
   const setSectionsOrder = useCallback((newOrder: SectionConfig[]) => {
     setSections(newOrder);
     try {
       localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(newOrder));
     } catch (e) {
-      // eslint-disable-next-line no-console
-      console.warn('[useCVSections] Échec écriture localStorage:', e);
+      console.warn("[useCVSections] Échec écriture localStorage:", e);
     }
   }, []);
 
-  /** Reset complet */
   const resetSectionsOrder = useCallback(() => {
     const clean = cleanupLayersPure(DEFAULT_SECTIONS);
     setSections(clean);
     try {
       localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(clean));
     } catch (e) {
-      // eslint-disable-next-line no-console
-      console.warn('[useCVSections] Échec écriture localStorage (reset):', e);
+      console.warn("[useCVSections] Échec écriture localStorage (reset):", e);
     }
   }, []);
 
-  /** Toggle visibilité (NE touche PAS aux layers/orders) */
   const toggleSectionVisibility = useCallback((sectionId: string) => {
     setSections((prev) => {
       const next = prev.map((s) =>
@@ -199,8 +191,35 @@ export const useCVSections = () => {
       try {
         localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(next));
       } catch (e) {
-        // eslint-disable-next-line no-console
-        console.warn('[useCVSections] Échec écriture localStorage (toggle):', e);
+        console.warn("[useCVSections] Échec écriture localStorage (toggle):", e);
+      }
+      return next;
+    });
+  }, []);
+
+  const expandSection = useCallback((id: string) => {
+    setSections((prev) => {
+      const next = prev.map((s) =>
+        s.id === id ? { ...s, width: "full" as const } : s
+      );
+      try {
+        localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(next));
+      } catch (e) {
+        console.warn("[useCVSections] Échec écriture localStorage (expand):", e);
+      }
+      return next;
+    });
+  }, []);
+
+  const contractSection = useCallback((id: string) => {
+    setSections((prev) => {
+      const next = prev.map((s) =>
+        s.id === id ? { ...s, width: "half" as const } : s
+      );
+      try {
+        localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(next));
+      } catch (e) {
+        console.warn("[useCVSections] Échec écriture localStorage (contract):", e);
       }
       return next;
     });
@@ -212,5 +231,7 @@ export const useCVSections = () => {
     cleanupLayers,
     resetSectionsOrder,
     toggleSectionVisibility,
+    expandSection,
+    contractSection,
   };
 };

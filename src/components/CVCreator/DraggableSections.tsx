@@ -17,7 +17,7 @@ import {
   sortableKeyboardCoordinates,
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
-import { RotateCcw, Move } from "lucide-react";
+import { RotateCcw, Move, Maximize2, Minimize2 } from "lucide-react";
 import { useCVSections } from "../../hooks/useCVSections";
 import {
   NameSection,
@@ -139,6 +139,84 @@ const InterLayerDropZone: React.FC<{ index: number; isDragging: boolean }> = ({
   );
 };
 
+/* ---------------- SectionDroppable ---------------- */
+
+const SectionDroppable: React.FC<{
+  section: SectionConfig;
+  isDragging: boolean;
+  activeSection: string | null;
+  children: React.ReactNode;
+  forceHalf?: boolean;
+  onContract?: (id: string) => void;
+}> = ({ section, isDragging, activeSection, children, forceHalf = false, onContract }) => {
+  const { setNodeRef, isOver } = useDroppable({ id: section.id });
+
+  const widthClass = forceHalf || section.width === "half" ? "w-1/2" : "w-full";
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`
+        ${widthClass}
+        relative rounded-md p-2 transition-colors border
+        ${isOver ? "border-violet-500 bg-violet-50" : "border-gray-200"}
+      `}
+      style={{
+        minHeight: "120px",
+        display: "flex",
+        flexDirection: "column",
+        opacity: isDragging && activeSection === section.id ? 0 : 1,
+      }}
+    >
+      {children}
+
+      {/* Bouton Contract si full */}
+      {section.width === "full" && onContract && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onContract(section.id);
+          }}
+          className="absolute top-2 right-2 p-1 rounded-full hover:bg-gray-100"
+          title="Revenir en deux colonnes"
+        >
+          <Minimize2 className="w-4 h-4 text-gray-500 hover:text-violet-600" />
+        </button>
+      )}
+    </div>
+  );
+};
+
+/* ---------------- EmptySlot ---------------- */
+
+const EmptySlot: React.FC<{ half?: boolean; onExpand?: () => void }> = ({
+  half = false,
+  onExpand,
+}) => {
+  return (
+    <div
+      className={`
+        ${half ? "w-1/2" : "w-full"}
+        min-h-[120px] rounded-md border-2 border-dashed border-gray-300
+        bg-gray-50 flex items-center justify-center
+        text-gray-400 text-xs italic relative
+      `}
+    >
+      Emplacement vide
+      {onExpand && (
+        <button
+          onClick={onExpand}
+          className="absolute top-2 right-2 p-1 rounded-full hover:bg-gray-100"
+
+          title="Étendre en pleine largeur"
+        >
+          <Maximize2 className="w-4 h-4 text-gray-500 hover:text-violet-600" />
+        </button>
+      )}
+    </div>
+  );
+};
+
 /* ---------------- Props ---------------- */
 
 interface DraggableSectionsProps {
@@ -198,7 +276,7 @@ export const DraggableSections: React.FC<DraggableSectionsProps> = ({
   isLoading,
   nameAlignment,
 }) => {
-  const { sections, setSectionsOrder, cleanupLayers } = useCVSections();
+  const { sections, setSectionsOrder, cleanupLayers, expandSection, contractSection } = useCVSections();
   const [isDragging, setIsDragging] = React.useState(false);
   const [activeSection, setActiveSection] = React.useState<string | null>(null);
 
@@ -283,11 +361,21 @@ export const DraggableSections: React.FC<DraggableSectionsProps> = ({
   };
 
   const visible = sections.filter((s) => s.visible);
-  const layersMap = new Map<number, SectionConfig[]>();
+  const layersMap = new Map<number, { capacity: number; sections: SectionConfig[] }>();
+
   visible.forEach((s) => {
     const key = s.layer ?? 1;
-    if (!layersMap.has(key)) layersMap.set(key, []);
-    layersMap.get(key)!.push(s);
+    if (!layersMap.has(key)) {
+      layersMap.set(key, { capacity: 2, sections: [] }); // par défaut 2 slots
+    }
+    layersMap.get(key)!.sections.push(s);
+  });
+
+  // déduction automatique de la capacité
+  layersMap.forEach((entry) => {
+    if (entry.sections.some((s) => s.width === "full")) {
+      entry.capacity = 1;
+    }
   });
 
   return (
@@ -312,7 +400,7 @@ export const DraggableSections: React.FC<DraggableSectionsProps> = ({
         <div className="space-y-1">
           {Array.from(layersMap.entries())
             .sort(([a], [b]) => a - b)
-            .map(([layer, layerSections], index, arr) => {
+            .map(([layer, { capacity, sections: layerSections }], index, arr) => {
               const sorted = [...layerSections].sort((a, b) => a.order - b.order);
 
               return (
@@ -320,10 +408,10 @@ export const DraggableSections: React.FC<DraggableSectionsProps> = ({
                   <LayerContainer
                     layer={layer}
                     isDragging={isDragging}
-                    disabled={sorted.length >= 2}
+                    disabled={sorted.length >= capacity}
                   >
                     <SortableContext items={sorted.map((s) => s.id)} strategy={rectSortingStrategy}>
-                      <div className={sorted.length > 1 ? "flex gap-3 items-stretch" : ""}>
+                      <div className={capacity === 2 ? "flex gap-3 items-stretch" : "flex"}>
                         {sorted.map((section) => {
                           const content = (() => {
                             switch (section.id) {
@@ -379,15 +467,13 @@ export const DraggableSections: React.FC<DraggableSectionsProps> = ({
                           })();
 
                           return (
-                            <div
+                            <SectionDroppable
                               key={section.id}
-                              className="flex-1 border border-gray-200 rounded-md p-2 transition-colors"
-                              style={{
-                                minHeight: "120px",
-                                display: "flex",
-                                flexDirection: "column",
-                                opacity: isDragging && activeSection === section.id ? 0 : 1,
-                              }}
+                              section={section}
+                              isDragging={isDragging}
+                              activeSection={activeSection}
+                              forceHalf={capacity === 2 && sorted.length === 1}
+                              onContract={contractSection}
                             >
                               <SectionWrapper
                                 id={section.id}
@@ -396,9 +482,16 @@ export const DraggableSections: React.FC<DraggableSectionsProps> = ({
                               >
                                 {content}
                               </SectionWrapper>
-                            </div>
+                            </SectionDroppable>
                           );
                         })}
+
+                        {/* slots vides */}
+                        {capacity === 2 && sorted.length === 0 && <EmptySlot />}
+                        {capacity === 2 && sorted.length === 1 && (
+                          <EmptySlot half onExpand={() => expandSection(sorted[0].id)} />
+                        )}
+                        {capacity === 1 && sorted.length === 0 && <EmptySlot />}
                       </div>
                     </SortableContext>
                   </LayerContainer>
