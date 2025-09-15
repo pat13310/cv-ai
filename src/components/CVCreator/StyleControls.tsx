@@ -1,6 +1,6 @@
 import React from 'react';
 import { CustomSelect } from './CustomSelect';
-import { Columns, RectangleVertical, AlignLeft, AlignCenter, AlignRight, Circle, Square } from 'lucide-react';
+import { Columns, RectangleVertical, AlignLeft, AlignCenter, AlignRight, Circle, Square, Plus, Minus, ZoomIn, ZoomOut, RotateCw, Move, RotateCcw } from 'lucide-react';
 
 interface StyleControlsProps {
   customFont: string;
@@ -19,11 +19,24 @@ interface StyleControlsProps {
   setPhotoSize?: (size: 'small' | 'medium' | 'large') => void;
   photoShape?: 'circle' | 'square' | 'rounded';
   setPhotoShape?: (shape: 'circle' | 'square' | 'rounded') => void;
+  nameFontSize?: number;
+  setNameFontSize?: (size: number) => void;
+  // Nouveaux props pour ajustements d'image
+  photoZoom?: number;
+  setPhotoZoom?: (zoom: number) => void;
+  photoPositionX?: number;
+  setPhotoPositionX?: (x: number) => void;
+  photoPositionY?: number;
+  setPhotoPositionY?: (y: number) => void;
+  photoRotation?: number;
+  setPhotoRotation?: (rotation: number) => void;
+  photoObjectFit?: 'contain' | 'cover';
+  setPhotoObjectFit?: (objectFit: 'contain' | 'cover') => void;
   availableFonts: string[];
   availableColors: Array<{ name: string; value: string; category: string }>;
   selectedSection?: string | null;
+  hasPhoto?: boolean;
 }
-
 
 export const StyleControls: React.FC<StyleControlsProps> = ({
   customFont,
@@ -42,130 +55,311 @@ export const StyleControls: React.FC<StyleControlsProps> = ({
   setPhotoSize,
   photoShape = 'circle',
   setPhotoShape,
+  nameFontSize = 18,
+  setNameFontSize,
+  photoZoom = 100,
+  setPhotoZoom,
+  photoPositionX = 0,
+  setPhotoPositionX,
+  photoPositionY = 0,
+  setPhotoPositionY,
+  photoRotation = 0,
+  setPhotoRotation,
+  photoObjectFit = 'contain',
+  setPhotoObjectFit,
   availableFonts,
   availableColors,
-  selectedSection
+  selectedSection,
+  hasPhoto
 }) => {
+  const handleResetAdjustments = () => {
+    setPhotoZoom?.(100);
+    setPhotoPositionX?.(0);
+    setPhotoPositionY?.(0);
+    setPhotoRotation?.(0);
+    // Réinitialise aussi la forme, taille et alignement
+    setPhotoShape?.('circle');
+    setPhotoSize?.('medium');
+    setPhotoAlignment?.('center');
+  };
+
   const fontOptions = availableFonts.map(font => ({ value: font, label: font }));
 
   // Si la section photo est sélectionnée, afficher seulement les contrôles photo
   if (selectedSection === 'photo') {
+    if (!hasPhoto) {
+      return (
+        <div className="bg-violet-50 rounded-lg shadow-sm p-4 mb-4 -mt-2 -ml-2 -mr-2 text-center text-sm text-gray-500">
+          Veuillez d'abord télécharger une photo pour voir les options de style.
+        </div>
+      );
+    }
     return (
       <div className="bg-violet-50 rounded-lg shadow-sm p-4 mb-4 -mt-2 -ml-2 -mr-2">
-        <div className="flex items-start gap-4">
+        {/* Première ligne de contrôles */}
+        <div className="flex items-start gap-4 mb-4">
           <div className="flex-shrink-0">
             <label className="block text-sm font-medium mb-2">Forme photo</label>
             <div className="flex gap-1">
               <button
                 onClick={() => setPhotoShape?.('circle')}
-                className={`p-1 rounded transition-all duration-200 ${
-                  photoShape === 'circle'
-                    ? 'bg-violet-500 text-white shadow-md'
-                    : 'bg-white text-gray-600 hover:bg-violet-100'
-                }`}
+                className={`p-1 rounded transition-all duration-200 ${photoShape === 'circle'
+                  ? 'bg-violet-500 text-white shadow-md'
+                  : 'bg-white text-gray-600 hover:bg-violet-100'
+                  }`}
                 title="Photo ronde"
               >
                 <Circle className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setPhotoShape?.('square')}
-                className={`p-1 rounded transition-all duration-200 ${
-                  photoShape === 'square'
-                    ? 'bg-violet-500 text-white shadow-md'
-                    : 'bg-white text-gray-600 hover:bg-violet-100'
-                }`}
+                className={`p-1 rounded transition-all duration-200 ${photoShape === 'square'
+                  ? 'bg-violet-500 text-white shadow-md'
+                  : 'bg-white text-gray-600 hover:bg-violet-100'
+                  }`}
                 title="Photo carrée"
               >
                 <Square className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setPhotoShape?.('rounded')}
-                className={`p-1 rounded transition-all duration-200 ${
-                  photoShape === 'rounded'
-                    ? 'bg-violet-500 text-white shadow-md'
-                    : 'bg-white text-gray-600 hover:bg-violet-100'
-                }`}
+                className={`p-1 rounded transition-all duration-200 ${photoShape === 'rounded'
+                  ? 'bg-violet-500 text-white shadow-md'
+                  : 'bg-white text-gray-600 hover:bg-violet-100'
+                  }`}
                 title="Photo arrondie"
               >
                 <div className="w-4 h-4 border border-current rounded" />
               </button>
             </div>
           </div>
-          
+
           <div className="flex-shrink-0">
             <label className="block text-sm font-medium mb-2">Taille photo</label>
             <div className="flex gap-1">
               <button
                 onClick={() => setPhotoSize?.('small')}
-                className={`px-2 py-1 rounded text-xs transition-all duration-200 ${
-                  photoSize === 'small'
-                    ? 'bg-violet-500 text-white shadow-md'
-                    : 'bg-white text-gray-600 hover:bg-violet-100'
-                }`}
+                className={`px-2 py-1 rounded text-xs transition-all duration-200 ${photoSize === 'small'
+                  ? 'bg-violet-500 text-white shadow-md'
+                  : 'bg-white text-gray-600 hover:bg-violet-100'
+                  }`}
                 title="Petite photo"
               >
                 S
               </button>
               <button
                 onClick={() => setPhotoSize?.('medium')}
-                className={`px-2 py-1 rounded text-xs transition-all duration-200 ${
-                  photoSize === 'medium'
-                    ? 'bg-violet-500 text-white shadow-md'
-                    : 'bg-white text-gray-600 hover:bg-violet-100'
-                }`}
+                className={`px-2 py-1 rounded text-xs transition-all duration-200 ${photoSize === 'medium'
+                  ? 'bg-violet-500 text-white shadow-md'
+                  : 'bg-white text-gray-600 hover:bg-violet-100'
+                  }`}
                 title="Photo moyenne"
               >
                 M
               </button>
               <button
                 onClick={() => setPhotoSize?.('large')}
-                className={`px-2 py-1 rounded text-xs transition-all duration-200 ${
-                  photoSize === 'large'
-                    ? 'bg-violet-500 text-white shadow-md'
-                    : 'bg-white text-gray-600 hover:bg-violet-100'
-                }`}
+                className={`px-2 py-1 rounded text-xs transition-all duration-200 ${photoSize === 'large'
+                  ? 'bg-violet-500 text-white shadow-md'
+                  : 'bg-white text-gray-600 hover:bg-violet-100'
+                  }`}
                 title="Grande photo"
               >
                 L
               </button>
             </div>
           </div>
-          
+
           <div className="flex-shrink-0">
             <label className="block text-sm font-medium mb-2">Alignement photo</label>
             <div className="flex gap-1">
               <button
                 onClick={() => setPhotoAlignment?.('left')}
-                className={`p-1 rounded transition-all duration-200 ${
-                  photoAlignment === 'left'
-                    ? 'bg-violet-500 text-white shadow-md'
-                    : 'bg-white text-gray-600 hover:bg-violet-100'
-                }`}
+                className={`p-1 rounded transition-all duration-200 ${photoAlignment === 'left'
+                  ? 'bg-violet-500 text-white shadow-md'
+                  : 'bg-white text-gray-600 hover:bg-violet-100'
+                  }`}
                 title="Photo à gauche"
               >
                 <AlignLeft className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setPhotoAlignment?.('center')}
-                className={`p-1 rounded transition-all duration-200 ${
-                  photoAlignment === 'center'
-                    ? 'bg-violet-500 text-white shadow-md'
-                    : 'bg-white text-gray-600 hover:bg-violet-100'
-                }`}
+                className={`p-1 rounded transition-all duration-200 ${photoAlignment === 'center'
+                  ? 'bg-violet-500 text-white shadow-md'
+                  : 'bg-white text-gray-600 hover:bg-violet-100'
+                  }`}
                 title="Photo centrée"
               >
                 <AlignCenter className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setPhotoAlignment?.('right')}
-                className={`p-1 rounded transition-all duration-200 ${
-                  photoAlignment === 'right'
-                    ? 'bg-violet-500 text-white shadow-md'
-                    : 'bg-white text-gray-600 hover:bg-violet-100'
-                }`}
+                className={`p-1 rounded transition-all duration-200 ${photoAlignment === 'right'
+                  ? 'bg-violet-500 text-white shadow-md'
+                  : 'bg-white text-gray-600 hover:bg-violet-100'
+                  }`}
                 title="Photo à droite"
               >
                 <AlignRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Deuxième ligne - Ajustements d'image */}
+        <div className="flex items-start gap-4 pt-4 border-t border-violet-200">
+          <div className="flex-shrink-0">
+            <label className="block text-sm font-medium mb-2">Zoom ({photoZoom}%)</label>
+            <div className="flex gap-1">
+              <button
+                onClick={() => setPhotoZoom?.(Math.max((photoZoom || 100) - 10, 50))}
+                className="p-1 rounded transition-all duration-200 bg-white text-gray-600 hover:bg-violet-100 hover:text-violet-700"
+                title="Dézoomer"
+              >
+                <ZoomOut className="w-4 h-4" />
+              </button>
+              <input
+                type="range"
+                min="50"
+                max="200"
+                value={photoZoom}
+                onChange={(e) => setPhotoZoom?.(parseInt(e.target.value))}
+                className="w-16 h-6"
+                title="Ajuster le zoom"
+              />
+              <button
+                onClick={() => setPhotoZoom?.(Math.min((photoZoom || 100) + 10, 200))}
+                className="p-1 rounded transition-all duration-200 bg-white text-gray-600 hover:bg-violet-100 hover:text-violet-700"
+                title="Zoomer"
+              >
+                <ZoomIn className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          <div className="flex-shrink-0">
+            <label className="block text-sm font-medium mb-2">Position X ({photoPositionX}px)</label>
+            <div className="flex gap-1">
+              <button
+                onClick={() => setPhotoPositionX?.((photoPositionX || 0) - 5)}
+                className="p-1 rounded transition-all duration-200 bg-white text-gray-600 hover:bg-violet-100 hover:text-violet-700"
+                title="Déplacer à gauche"
+              >
+                <Move className="w-4 h-4 transform -rotate-90" />
+              </button>
+              <input
+                type="range"
+                min="-50"
+                max="50"
+                value={photoPositionX}
+                onChange={(e) => setPhotoPositionX?.(parseInt(e.target.value))}
+                className="w-16 h-6"
+                title="Ajuster position horizontale"
+              />
+              <button
+                onClick={() => setPhotoPositionX?.((photoPositionX || 0) + 5)}
+                className="p-1 rounded transition-all duration-200 bg-white text-gray-600 hover:bg-violet-100 hover:text-violet-700"
+                title="Déplacer à droite"
+              >
+                <Move className="w-4 h-4 transform rotate-90" />
+              </button>
+            </div>
+          </div>
+
+          <div className="flex-shrink-0">
+            <label className="block text-sm font-medium mb-2">Position Y ({photoPositionY}px)</label>
+            <div className="flex gap-1">
+              <button
+                onClick={() => setPhotoPositionY?.((photoPositionY || 0) - 5)}
+                className="p-1 rounded transition-all duration-200 bg-white text-gray-600 hover:bg-violet-100 hover:text-violet-700"
+                title="Déplacer vers le haut"
+              >
+                <Move className="w-4 h-4" />
+              </button>
+              <input
+                type="range"
+                min="-50"
+                max="50"
+                value={photoPositionY}
+                onChange={(e) => setPhotoPositionY?.(parseInt(e.target.value))}
+                className="w-16 h-6"
+                title="Ajuster position verticale"
+              />
+              <button
+                onClick={() => setPhotoPositionY?.((photoPositionY || 0) + 5)}
+                className="p-1 rounded transition-all duration-200 bg-white text-gray-600 hover:bg-violet-100 hover:text-violet-700"
+                title="Déplacer vers le bas"
+              >
+                <Move className="w-4 h-4 transform rotate-180" />
+              </button>
+            </div>
+          </div>
+
+          <div className="flex-shrink-0">
+            <label className="block text-sm font-medium mb-2">Rotation ({photoRotation}°)</label>
+            <div className="flex gap-1">
+              <button
+                onClick={() => setPhotoRotation?.((photoRotation || 0) - 15)}
+                className="p-1 rounded transition-all duration-200 bg-white text-gray-600 hover:bg-violet-100 hover:text-violet-700"
+                title="Rotation gauche"
+              >
+                <RotateCw className="w-4 h-4 transform scale-x-[-1]" />
+              </button>
+              <input
+                type="range"
+                min="-180"
+                max="180"
+                value={photoRotation}
+                onChange={(e) => setPhotoRotation?.(parseInt(e.target.value))}
+                className="w-16 h-6"
+                title="Ajuster la rotation"
+              />
+              <button
+                onClick={() => setPhotoRotation?.((photoRotation || 0) + 15)}
+                className="p-1 rounded transition-all duration-200 bg-white text-gray-600 hover:bg-violet-100 hover:text-violet-700"
+                title="Rotation droite"
+              >
+                <RotateCw className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          <div className="flex-shrink-0">
+            <label className="block text-sm font-medium mb-2">Ajustement</label>
+            <div className="flex gap-1">
+              <button
+                onClick={() => setPhotoObjectFit?.('contain')}
+                className={`px-2 py-1 rounded text-xs transition-all duration-200 ${photoObjectFit === 'contain'
+                  ? 'bg-violet-500 text-white shadow-md'
+                  : 'bg-white text-gray-600 hover:bg-violet-100'
+                  }`}
+                title="Contenir l'image (image complète visible)"
+              >
+                Contenir
+              </button>
+              <button
+                onClick={() => setPhotoObjectFit?.('cover')}
+                className={`px-2 py-1 rounded text-xs transition-all duration-200 ${photoObjectFit === 'cover'
+                  ? 'bg-violet-500 text-white shadow-md'
+                  : 'bg-white text-gray-600 hover:bg-violet-100'
+                  }`}
+                title="Couvrir l'image (remplir l'espace)"
+              >
+                Couvrir
+              </button>
+            </div>
+          </div>
+
+          <div className="flex-shrink-0">
+            <label className="block text-sm font-medium mb-2">Réinitialiser</label>
+            <div className="flex gap-1">
+              <button
+                onClick={handleResetAdjustments}
+                className="p-1 rounded transition-all duration-200 bg-white text-gray-600 hover:bg-violet-100 hover:text-violet-700"
+                title="Réinitialiser les styles de la photo"
+              >
+                <RotateCcw className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -193,7 +387,7 @@ export const StyleControls: React.FC<StyleControlsProps> = ({
             />
           </div>
         </div>
-        
+
         <div className="flex-shrink-0">
           <label className="block text-sm font-medium mb-2">Mise en page</label>
           <div className="flex items-center justify-start h-[32px]">
@@ -210,48 +404,72 @@ export const StyleControls: React.FC<StyleControlsProps> = ({
             </button>
           </div>
         </div>
-        
+
         {showNameAlignment && (
-          <div className="flex-shrink-0">
-            <label className="block text-sm font-medium mb-2">Alignement nom</label>
-            <div className="flex gap-1">
-              <button
-                onClick={() => setNameAlignment?.('left')}
-                className={`p-1 rounded transition-all duration-200 ${
-                  nameAlignment === 'left'
+          <>
+            <div className="flex-shrink-0">
+              <label className="block text-sm font-medium mb-2">Alignement nom</label>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setNameAlignment?.('left')}
+                  className={`p-1 rounded transition-all duration-200 ${nameAlignment === 'left'
                     ? 'bg-violet-500 text-white shadow-md'
                     : 'bg-white text-gray-600 hover:bg-violet-100'
-                }`}
-                title="Aligner à gauche"
-              >
-                <AlignLeft className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setNameAlignment?.('center')}
-                className={`p-1 rounded transition-all duration-200 ${
-                  nameAlignment === 'center'
+                    }`}
+                  title="Aligner à gauche"
+                >
+                  <AlignLeft className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setNameAlignment?.('center')}
+                  className={`p-1 rounded transition-all duration-200 ${nameAlignment === 'center'
                     ? 'bg-violet-500 text-white shadow-md'
                     : 'bg-white text-gray-600 hover:bg-violet-100'
-                }`}
-                title="Centrer"
-              >
-                <AlignCenter className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setNameAlignment?.('right')}
-                className={`p-1 rounded transition-all duration-200 ${
-                  nameAlignment === 'right'
+                    }`}
+                  title="Centrer"
+                >
+                  <AlignCenter className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setNameAlignment?.('right')}
+                  className={`p-1 rounded transition-all duration-200 ${nameAlignment === 'right'
                     ? 'bg-violet-500 text-white shadow-md'
                     : 'bg-white text-gray-600 hover:bg-violet-100'
-                }`}
-                title="Aligner à droite"
-              >
-                <AlignRight className="w-4 h-4" />
-              </button>
+                    }`}
+                  title="Aligner à droite"
+                >
+                  <AlignRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
-          </div>
+
+            {selectedSection === 'name' && (
+              <div className="flex-shrink-0">
+                <label className="block text-sm font-medium mb-2">Taille police nom</label>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => setNameFontSize?.(Math.max((nameFontSize || 18) - 2, 12))}
+                    className="p-1 rounded transition-all duration-200 bg-white text-gray-600 hover:bg-violet-100 hover:text-violet-700"
+                    title="Diminuer la taille"
+                  >
+                    <Minus className="w-4 h-4" />
+                  </button>
+                  <span className="px-2 py-1 text-xs bg-white rounded border text-gray-700 min-w-[32px] text-center">
+                    {nameFontSize || 18}
+                  </span>
+                  <button
+                    onClick={() => setNameFontSize?.(Math.min((nameFontSize || 18) + 2, 36))}
+                    className="p-1 rounded transition-all duration-200 bg-white text-gray-600 hover:bg-violet-100 hover:text-violet-700"
+                    title="Augmenter la taille"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
-        
+
         <div className="flex-shrink-0">
           <label className="block text-sm font-medium mb-2">Couleur titres</label>
           <div className="flex gap-1">
@@ -264,18 +482,17 @@ export const StyleControls: React.FC<StyleControlsProps> = ({
               <button
                 key={color.category}
                 onClick={() => setTitleColor(color.value)}
-                className={`w-6 h-6 rounded-full border-2 transition-all duration-200 hover:scale-110 ${
-                  titleColor === color.value
-                    ? 'border-violet-500 shadow-lg ring-2 ring-violet-200'
-                    : 'border-gray-300 hover:border-gray-400'
-                }`}
+                className={`w-6 h-6 rounded-full border-2 transition-all duration-200 hover:scale-110 ${titleColor === color.value
+                  ? 'border-violet-500 shadow-lg ring-2 ring-violet-200'
+                  : 'border-gray-300 hover:border-gray-400'
+                  }`}
                 style={{ backgroundColor: `#${color.value}` }}
                 title={color.name}
               />
             ))}
           </div>
         </div>
-        
+
         {showTextColor && (
           <div className="flex-shrink-0">
             <label className="block text-sm font-medium mb-2">Couleur texte</label>
@@ -289,11 +506,10 @@ export const StyleControls: React.FC<StyleControlsProps> = ({
                 <button
                   key={color.category}
                   onClick={() => setCustomColor(color.value)}
-                  className={`w-6 h-6 rounded-full border-2 transition-all duration-200 hover:scale-110 ${
-                    customColor === color.value
-                      ? 'border-violet-500 shadow-lg ring-2 ring-violet-200'
-                      : 'border-gray-300 hover:border-gray-400'
-                  }`}
+                  className={`w-6 h-6 rounded-full border-2 transition-all duration-200 hover:scale-110 ${customColor === color.value
+                    ? 'border-violet-500 shadow-lg ring-2 ring-violet-200'
+                    : 'border-gray-300 hover:border-gray-400'
+                    }`}
                   style={{ backgroundColor: `#${color.value}` }}
                   title={color.name}
                 />
