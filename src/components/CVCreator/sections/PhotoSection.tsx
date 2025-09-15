@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Camera, Upload, Trash2, User } from 'lucide-react';
+import { Camera, Upload, Trash, User } from 'lucide-react';
 import type { CVContent } from '../types';
 
 interface PhotoSectionProps {
@@ -13,6 +13,7 @@ interface PhotoSectionProps {
   photoPositionX?: number;
   photoPositionY?: number;
   photoRotation?: number;
+  photoObjectFit?: 'contain' | 'cover';
 }
 
 export const PhotoSection: React.FC<PhotoSectionProps> = ({
@@ -24,12 +25,12 @@ export const PhotoSection: React.FC<PhotoSectionProps> = ({
   photoZoom = 100,
   photoPositionX = 0,
   photoPositionY = 0,
-  photoRotation = 0
+  photoRotation = 0,
+  photoObjectFit = 'contain'
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   // Tailles disponibles
   const sizes = {
@@ -127,19 +128,14 @@ export const PhotoSection: React.FC<PhotoSectionProps> = ({
     fileInputRef.current?.click();
   };
 
-  const handleConfirmRemove = () => {
-    removePhoto();
-    setShowConfirmModal(false);
-  };
-
   return (
     <>
-      <div className={`mt-4 flex ${alignmentClasses[photoAlignment]}`}>
-        <div className="relative">
+      <div className={`mt-0 flex ${alignmentClasses[photoAlignment]}`}>
+        <div className="relative group">
           {/* Zone d'upload/preview */}
           <div
             className={`
-              group relative border-2 border-dashed transition-all duration-200 cursor-pointer
+              relative border-2 border-dashed transition-all duration-200 cursor-pointer
               ${dragOver ? 'border-violet-400 bg-violet-50' : 'border-gray-300 hover:border-violet-400'}
               ${shapeClasses[photoShape]}
               ${isLoading ? 'opacity-50 pointer-events-none' : ''}
@@ -169,7 +165,9 @@ export const PhotoSection: React.FC<PhotoSectionProps> = ({
                   <img
                     src={editableContent.photo}
                     alt="Photo de profil"
-                    className="w-full h-full object-contain transition-transform duration-200"
+                    className={`w-full h-full transition-transform duration-200 ${
+                      photoObjectFit === 'cover' ? 'object-cover' : 'object-contain'
+                    }`}
                     style={{
                       transform: `
                         scale(${photoZoom / 100}) 
@@ -209,14 +207,11 @@ export const PhotoSection: React.FC<PhotoSectionProps> = ({
                 onClick={(e) => {
                   e.stopPropagation();
                   removePhoto();
-                  setShowConfirmModal(true);
                 }}
-                className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-colors shadow-lg z-10"
-                className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg z-10 opacity-0 group-hover:opacity-100 transform scale-75 group-hover:scale-100 transition-all duration-200 ease-out"
+                className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-lg z-10 opacity-0 group-hover:opacity-100"
                 title="Supprimer la photo"
               >
-                <X className="w-3 h-3" />
-                <Trash2 className="w-3 h-3" />
+                <Trash className="w-3 h-3" />
               </button>
             )}
           </div>
@@ -232,46 +227,12 @@ export const PhotoSection: React.FC<PhotoSectionProps> = ({
         </div>
       </div>
 
-      {/* Instructions */}
-      <div className="mt-2 text-xs text-gray-500 text-center">
-        Formats acceptés : JPG, PNG, GIF • Taille max : 5MB
-      </div>
-
-      {/* Modale de confirmation */}
-      <div
-        className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-200
-          ${showConfirmModal ? 'bg-black bg-opacity-50 opacity-100' : 'opacity-0 pointer-events-none'}`
-        }
-        onClick={() => setShowConfirmModal(false)}
-        aria-modal="true"
-        role="dialog"
-      >
-        <div
-          className={`bg-white rounded-lg p-6 shadow-xl transform transition-all duration-200
-            ${showConfirmModal ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`
-          }
-          onClick={(e) => e.stopPropagation()}
-        >
-          <h3 className="text-lg font-medium text-gray-900">Confirmer la suppression</h3>
-          <p className="mt-2 text-sm text-gray-600">
-            Êtes-vous sûr de vouloir supprimer cette photo ? Cette action est irréversible.
-          </p>
-          <div className="mt-5 flex justify-end space-x-3">
-            <button
-              onClick={() => setShowConfirmModal(false)}
-              className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400"
-            >
-              Annuler
-            </button>
-            <button
-              onClick={handleConfirmRemove}
-              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
-            >
-              Supprimer
-            </button>
-          </div>
+      {/* Instructions - seulement si pas de photo */}
+      {!editableContent.photo && (
+        <div className="mt-2 text-xs text-gray-500 text-center">
+          Formats acceptés : JPG, PNG, GIF • Taille max : 5MB
         </div>
-      </div>
+      )}
     </>
   );
 };

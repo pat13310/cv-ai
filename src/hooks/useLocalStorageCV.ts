@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import type { CVContent, CVExperience, CVSkill, CVLanguage, CVEducation } from '../components/CVCreator/types';
+import type { CVContent, CVExperience, CVSkill, CVLanguage, CVEducation, SectionConfig } from '../components/CVCreator/types';
 
 interface CVData {
   editableContent: CVContent;
@@ -12,6 +12,11 @@ interface CVData {
   titleColor: string;
   layoutColumns: number;
   nameAlignment: 'left' | 'center' | 'right';
+  photoAlignment?: 'left' | 'center' | 'right';
+  photoSize?: 'small' | 'medium' | 'large';
+  photoShape?: 'circle' | 'square' | 'rounded';
+  nameFontSize?: number;
+  sections: SectionConfig[];
   lastSaved: string;
 }
 

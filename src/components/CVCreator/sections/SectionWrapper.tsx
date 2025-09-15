@@ -47,21 +47,22 @@ export const SectionWrapper: React.FC<SectionWrapperProps> = ({
         onSectionClick?.(id);
       }}
     >
-      {/* Poignée de drag positionnée selon l'alignement */}
+      {/* Poignée de drag positionnée au niveau du titre */}
       <div
         {...attributes}
         {...listeners}
         data-drag-handle
-        className={`absolute top-0 p-2 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10 bg-white/80 rounded-md shadow-sm ${
+        className={`absolute top-0 p-1 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10 bg-white/80 rounded-md shadow-sm ${
           position === 'right' ? 'right-0' : 'left-0'
         }`}
         title={`Déplacer la section ${title}`}
+        style={{ top: '1px' }}
       >
-        <GripVertical className="w-4 h-4 text-gray-500" />
+        <GripVertical className="w-3 h-3 text-gray-500" />
       </div>
       
       {/* Contenu de la section */}
-      <div className={position === 'right' ? 'pr-2' : 'pl-2'}>
+      <div className={`${position === 'right' ? 'pr-2' : 'pl-2'} pt-1`}>
         {children}
       </div>
     </div>

@@ -88,15 +88,21 @@ function moveToLayer(
 const preferSectionsCollision: CollisionDetection = (args) => {
   const collisions = rectIntersection(args);
 
-  // On exclut seulement layers & inter-layers
+  // On exclut seulement layers (mais on garde inter-layers pour permettre le drop entre layers)
   const targets = collisions.filter((c) => {
     const id = String(c.id);
-    return !id.startsWith("layer-") && !id.startsWith("inter-layer-");
+    return !id.startsWith("layer-");
   });
 
-  // Priorité aux vraies sections ; sinon, on laisse passer les empty-*
+  // Priorité absolue aux inter-layers (pour créer de nouveaux layers)
+  const interLayerTargets = targets.filter((c) => String(c.id).startsWith("inter-layer-"));
+  if (interLayerTargets.length > 0) {
+    return interLayerTargets;
+  }
+
+  // Ensuite priorité aux vraies sections
   const sectionsOnly = targets.filter((c) => !String(c.id).startsWith("empty-"));
-  return sectionsOnly.length ? sectionsOnly : targets;
+  return sectionsOnly.length > 0 ? sectionsOnly : targets;
 };
 
 /* ---------------- Containers droppables ---------------- */
@@ -106,29 +112,53 @@ interface LayerContainerProps {
   isDragging: boolean;
   children: React.ReactNode;
   disabled?: boolean;
+  sections?: SectionConfig[];
+  onContract?: (id: string) => void;
 }
 const LayerContainer: React.FC<LayerContainerProps> = ({
   layer,
   isDragging,
   children,
   disabled = false,
+  sections = [],
+  onContract,
 }) => {
   const { setNodeRef, isOver } = useDroppable({ id: `layer-${layer}`, disabled });
+  
+  // Vérifier s'il y a une section en pleine largeur dans ce layer
+  const hasFullWidthSection = sections.some(s => s.width === "full");
+  const fullWidthSection = sections.find(s => s.width === "full");
 
   return (
     <div
       ref={setNodeRef}
       className={`
-        group relative w-full rounded-lg p-2 transition-all duration-200
+        group relative w-full rounded-lg p-0 transition-all duration-200
         ${isDragging && !disabled && isOver
           ? "border-2 border-green-400 border-dashed bg-green-50"
           : isDragging
             ? "border border-gray-200"
             : "hover:border-2 hover:border-violet-500 hover:border-dashed"}
       `}
-      style={{ minHeight: "140px" }}
+      style={{ minHeight: "100px" }}
     >
       {children}
+      
+      {/* Bouton contract en bas du layer */}
+      {hasFullWidthSection && fullWidthSection && onContract && (
+        <div className="flex justify-end mt-2 pb-2 pr-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onContract(fullWidthSection.id);
+            }}
+            className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 rounded-full hover:bg-gray-100 pointer-events-auto"
+            title="Revenir en deux colonnes"
+          >
+            <Minimize2 className="w-4 h-4 text-gray-500 hover:text-violet-600" />
+          </button>
+        </div>
+      )}
     </div>
   );
 };
@@ -139,11 +169,27 @@ const InterLayerDropZone: React.FC<{ index: number; isDragging: boolean }> = ({ 
     <div
       ref={setNodeRef}
       className={`
-        h-2 w-full my-1 transition-all duration-200 rounded
-        ${isDragging ? "opacity-100" : "opacity-0"}
-        ${isOver ? "bg-violet-400 scale-y-150" : "bg-gray-300"}
+        w-full my-2 transition-all duration-300 ease-in-out relative
+        ${isDragging ? "opacity-100" : "opacity-0 hover:opacity-50"}
+        ${isDragging ? "h-4" : "h-1"}
       `}
-    />
+    >
+      <div
+        className={`
+          w-full h-full rounded-full transition-all duration-300
+          ${isOver 
+            ? "bg-gradient-to-r from-violet-400 to-purple-400 scale-y-200 shadow-md" 
+            : "bg-gray-400 hover:bg-violet-300"}
+          ${isDragging ? "animate-pulse" : ""}
+        `}
+      />
+      {/* Indicateur textuel lors du hover */}
+      {isOver && isDragging && (
+        <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-violet-600 text-white text-xs px-1 py-0.5 rounded shadow-md whitespace-nowrap z-50">
+          Déposer ici pour créer un nouveau layer
+        </div>
+      )} 
+    </div>
   );
 };
 
@@ -155,7 +201,6 @@ interface SectionDroppableProps {
   activeSection: string | null;
   children: React.ReactNode;
   forceHalf?: boolean;
-  onContract?: (id: string) => void;
 }
 const SectionDroppable: React.FC<SectionDroppableProps> = ({
   section,
@@ -163,7 +208,6 @@ const SectionDroppable: React.FC<SectionDroppableProps> = ({
   activeSection,
   children,
   forceHalf = false,
-  onContract,
 }) => {
   const { setNodeRef, isOver } = useDroppable({ id: section.id });
 
@@ -174,11 +218,11 @@ const SectionDroppable: React.FC<SectionDroppableProps> = ({
       ref={setNodeRef}
       className={`
         ${widthClass}
-        relative rounded-md p-2 transition-colors border
-        ${isOver ? "border-violet-500 bg-violet-50" : "border-gray-200"}
+        relative transition-colors
+        ${isOver ? "bg-violet-50" : ""}
       `}
       style={{
-        minHeight: "120px",
+        minHeight: "80px",
         display: "flex",
         flexDirection: "column",
         opacity: isDragging && activeSection === section.id ? 0 : 1,
@@ -186,18 +230,6 @@ const SectionDroppable: React.FC<SectionDroppableProps> = ({
     >
       {children}
 
-      {section.width === "full" && onContract && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onContract(section.id);
-          }}
-          className="absolute bottom-2 right-2 z-20 p-1 rounded-full hover:bg-gray-100 pointer-events-auto"
-          title="Revenir en deux colonnes"
-        >
-          <Minimize2 className="w-4 h-4 text-gray-500 hover:text-violet-600" />
-        </button>
-      )}
     </div>
   );
 };
@@ -223,7 +255,7 @@ const EmptySlot: React.FC<EmptySlotProps> = ({
       ref={setNodeRef}
       className={`
         ${half ? "w-1/2" : "w-full"}
-        min-h-[120px] rounded-md border-2 border-dashed 
+        min-h-[60px] rounded-md border-2 border-dashed 
         flex items-center justify-center text-gray-400 text-xs italic relative
         transition-colors
         ${isOver ? "border-violet-500 bg-violet-50" : "border-gray-300 bg-gray-50"}
@@ -234,7 +266,7 @@ const EmptySlot: React.FC<EmptySlotProps> = ({
       {onExpand && (
         <button
           onClick={onExpand}
-          className="absolute bottom-2 right-2 z-20 p-1 rounded-full hover:bg-gray-100 pointer-events-auto"
+          className="absolute bottom-2 right-0 z-20 p-1 rounded-full hover:bg-gray-100 pointer-events-auto"
           title="Étendre en pleine largeur"
         >
           <Maximize2 className="w-4 h-4 text-gray-500 hover:text-violet-600" />
@@ -275,6 +307,13 @@ interface DraggableSectionsProps {
   photoAlignment?: "left" | "center" | "right";
   photoSize?: "small" | "medium" | "large";
   photoShape?: "circle" | "square" | "rounded";
+  nameFontSize?: number;
+  // Nouveaux props pour les ajustements d'image
+  photoZoom?: number;
+  photoPositionX?: number;
+  photoPositionY?: number;
+  photoRotation?: number;
+  photoObjectFit?: 'contain' | 'cover';
   setSelectedSection?: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
@@ -309,6 +348,13 @@ export const DraggableSections: React.FC<DraggableSectionsProps> = ({
   photoAlignment,
   photoSize,
   photoShape,
+  nameFontSize,
+  // Props pour les ajustements d'image
+  photoZoom,
+  photoPositionX,
+  photoPositionY,
+  photoRotation,
+  photoObjectFit,
   setSelectedSection,
 }) => {
   const {
@@ -341,11 +387,21 @@ export const DraggableSections: React.FC<DraggableSectionsProps> = ({
     let next: SectionConfig[] = [];
 
     if (typeof over.id === "string" && over.id.startsWith("inter-layer-")) {
-      // drop entre 2 layers → crée un nouveau layer + full
+      // drop entre 2 layers → crée un nouveau layer pour cette section seulement
       const idx = parseInt(over.id.replace("inter-layer-", ""), 10);
-      next = sections.map((s) =>
-        s.id === active.id ? { ...s, layer: idx + 1, order: 0, width: "full" } : s
-      );
+      
+      // Créer un nouveau layer spécifiquement pour cette section
+      next = sections.map((s) => {
+        if (s.id === active.id) {
+          // La section draggée va dans le nouveau layer
+          return { ...s, layer: idx + 1, order: 0, width: "full" };
+        }
+        // Décaler les autres layers vers le bas
+        else if (s.layer > idx) {
+          return { ...s, layer: s.layer + 1 };
+        }
+        return s;
+      });
 
     } else if (typeof over.id === "string" && over.id.startsWith("layer-")) {
       // drop dans un layer sans slot précis
@@ -421,11 +477,11 @@ export const DraggableSections: React.FC<DraggableSectionsProps> = ({
     if (!section) return null;
     return (
       <div
-        className="bg-white border-2 border-violet-500 rounded-lg p-3 shadow-lg flex items-center gap-2 flex-1"
-        style={{ minHeight: "120px" }}
+        className="bg-white border-2 border-violet-500 rounded-lg p-2 shadow-lg flex items-center gap-2"
+        style={{ minHeight: "30px", maxWidth: "120px" }}
       >
-        <Move className="w-4 h-4 text-violet-600" />
-        <span className="font-medium text-gray-800 text-sm whitespace-nowrap">
+        <Move className="w-3 h-3 text-violet-600" />
+        <span className="font-medium text-gray-800 text-xs whitespace-nowrap">
           {section.name}
         </span>
       </div>
@@ -449,7 +505,7 @@ export const DraggableSections: React.FC<DraggableSectionsProps> = ({
   // utilitaire de rendu de contenu
   const renderContent = (id: string) => {
     switch (id) {
-      case "name": return <NameSection {...commonSectionProps} nameAlignment={nameAlignment} />;
+      case "name": return <NameSection {...commonSectionProps} nameAlignment={nameAlignment} nameFontSize={nameFontSize} />;
       case "photo": return (
         <PhotoSection
           editableContent={editableContent}
@@ -457,6 +513,12 @@ export const DraggableSections: React.FC<DraggableSectionsProps> = ({
           photoAlignment={photoAlignment}
           photoSize={photoSize}
           photoShape={photoShape}
+          // Props pour les ajustements d'image
+          photoZoom={photoZoom}
+          photoPositionX={photoPositionX}
+          photoPositionY={photoPositionY}
+          photoRotation={photoRotation}
+          photoObjectFit={photoObjectFit}
         />
       );
       case "profile": return <ProfileSection {...commonSectionProps} />;
@@ -532,10 +594,12 @@ export const DraggableSections: React.FC<DraggableSectionsProps> = ({
                     layer={layer}
                     isDragging={isDragging}
                     disabled={sorted.length >= capacity}
+                    sections={sorted}
+                    onContract={contractSection}
                   >
                     <SortableContext items={sorted.map((s) => s.id)} strategy={rectSortingStrategy}>
                       {capacity === 2 ? (
-                        <div className="flex gap-3 items-stretch">
+                        <div className="flex items-stretch">
                           {(() => {
                             const left = sorted.find((s) => s.order === 0);
                             const right = sorted.find((s) => s.order === 1);
@@ -548,7 +612,6 @@ export const DraggableSections: React.FC<DraggableSectionsProps> = ({
                                 isDragging={isDragging}
                                 activeSection={activeSection}
                                 forceHalf={!right}
-                                onContract={contractSection}
                               >
                                 <SectionWrapper id={left.id} title={left.name} position="left" onSectionClick={handleSectionClick}>
                                   {renderContent(left.id)}
@@ -572,7 +635,6 @@ export const DraggableSections: React.FC<DraggableSectionsProps> = ({
                                 isDragging={isDragging}
                                 activeSection={activeSection}
                                 forceHalf={!left}
-                                onContract={contractSection}
                               >
                                 <SectionWrapper id={right.id} title={right.name} position="right" onSectionClick={handleSectionClick}>
                                   {renderContent(right.id)}
@@ -605,7 +667,6 @@ export const DraggableSections: React.FC<DraggableSectionsProps> = ({
                               section={section}
                               isDragging={isDragging}
                               activeSection={activeSection}
-                              onContract={contractSection}
                             >
                               <SectionWrapper
                                 id={section.id}

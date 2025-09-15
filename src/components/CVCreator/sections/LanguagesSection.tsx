@@ -62,7 +62,7 @@ export const LanguagesSection: React.FC<LanguagesSectionProps> = ({
   const [titleHovered, setTitleHovered] = React.useState(false);
   const [hoveredLangId, setHoveredLangId] = React.useState<number | null>(null);
   return (
-    <div className="mt-4">
+    <div className="mt-0">
       {editingField === 'languagesTitle' ? (
         <div className="flex items-center gap-2">
           <input

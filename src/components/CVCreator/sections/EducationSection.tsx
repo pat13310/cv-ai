@@ -62,7 +62,7 @@ export const EducationSection: React.FC<EducationSectionProps> = ({
   const [titleHovered, setTitleHovered] = React.useState(false);
   const [hoveredEduId, setHoveredEduId] = React.useState<number | null>(null);
   return (
-    <div className="mt-4">
+    <div className="mt-0">
         {editingField === 'educationTitle' ? (
           <div className="flex items-center gap-2">
             <input

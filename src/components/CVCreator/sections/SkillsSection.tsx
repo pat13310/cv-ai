@@ -320,7 +320,7 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
   return (
     <>
       <div
-        className="mt-4"
+        className="mt-0"
         onClick={() => setSelectedSkillId(null)}
       >
         {editingField === 'skillsTitle' ? (

@@ -5,13 +5,11 @@ import type { CVContent } from '../types';
 interface NameSectionProps {
   editableContent: CVContent;
   setEditableContent: React.Dispatch<React.SetStateAction<CVContent>>;
-  editingField: string | null;
-  setEditingField: React.Dispatch<React.SetStateAction<string | null>>;
-  customColor: string;
   titleColor: string;
   generateWithAI: (field: string, content?: string) => Promise<void>;
   isLoading: boolean;
-  nameAlignment: 'left' | 'center' | 'right';
+  nameAlignment?: 'left' | 'center' | 'right';
+  nameFontSize?: number;
 }
 
 const AIButton: React.FC<{
@@ -45,43 +43,36 @@ const AIButton: React.FC<{
 export const NameSection: React.FC<NameSectionProps> = ({
   editableContent,
   setEditableContent,
-  editingField,
-  setEditingField,
   titleColor,
   generateWithAI,
   isLoading,
-  nameAlignment
+  nameAlignment,
+  nameFontSize = 18
 }) => {
   return (
-    <div className={`mt-4 ${nameAlignment === 'left' ? 'text-left' : nameAlignment === 'right' ? 'text-right' : 'text-center'}`}>
-      {editingField === 'name' ? (
+    <div className={`mt-0 ${nameAlignment === 'left' ? 'text-left' : nameAlignment === 'right' ? 'text-right' : 'text-center'}`}>
+      <div className={`group flex items-center gap-2 relative ${nameAlignment === 'left' ? 'justify-start' : nameAlignment === 'right' ? 'justify-end' : 'justify-center'}`}>
         <input
           type="text"
           value={editableContent.name}
           onChange={(e) => setEditableContent(prev => ({ ...prev, name: e.target.value }))}
-          onBlur={() => setEditingField(null)}
-          onKeyDown={(e) => e.key === 'Enter' && setEditingField(null)}
-          className={`text-lg font-bold w-full border-b border-gray-400 focus:outline-none focus:border-violet-500 bg-transparent ${nameAlignment === 'left' ? 'text-left' : nameAlignment === 'right' ? 'text-right' : 'text-center'}`}
-          autoFocus
+          placeholder="Votre nom et prénom"
+          className={`font-bold border-b border-transparent hover:border-gray-300 focus:border-violet-500 focus:outline-none bg-transparent transition-colors duration-200 ${nameAlignment === 'left' ? 'text-left' : nameAlignment === 'right' ? 'text-right' : 'text-center'}`}
+          style={{ 
+            color: `#${titleColor}`, 
+            fontSize: `${nameFontSize}px`,
+            minWidth: '320px',
+            width: `${Math.max(editableContent.name.length * 12 + 40, 200)}px`
+          }}
         />
-      ) : (
-        <div className={`group flex items-center gap-2 relative ${nameAlignment === 'left' ? 'justify-start' : nameAlignment === 'right' ? 'justify-end' : 'justify-center'}`}>
-          <h3
-            className="text-lg font-bold cursor-pointer hover:bg-gray-100 p-1 rounded transition-colors duration-200"
-            onClick={() => setEditingField('name')}
-            style={{ color: `#${titleColor}` }}
-          >
-            {editableContent.name}
-          </h3>
-          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-            <AIButton
-              isLoading={isLoading}
-              onClick={() => generateWithAI('name', editableContent.name)}
-              title="Modifier avec IA"
-            />
-          </div>
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <AIButton
+            isLoading={isLoading}
+            onClick={() => generateWithAI('name', editableContent.name)}
+            title="Modifier avec IA"
+          />
         </div>
-      )}
+      </div>
     </div>
   );
 };

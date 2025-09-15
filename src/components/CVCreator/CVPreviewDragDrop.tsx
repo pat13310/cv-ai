@@ -33,6 +33,19 @@ export const CVPreviewDragDrop: React.FC<CVPreviewProps> = ({
   setPhotoSize,
   photoShape = 'circle',
   setPhotoShape,
+  nameFontSize = 18,
+  setNameFontSize,
+  // Nouveaux props pour les ajustements d'image
+  photoZoom = 100,
+  setPhotoZoom,
+  photoPositionX = 0,
+  setPhotoPositionX,
+  photoPositionY = 0,
+  setPhotoPositionY,
+  photoRotation = 0,
+  setPhotoRotation,
+  photoObjectFit = 'contain',
+  setPhotoObjectFit,
   selectedSection,
   setSelectedSection,
   availableFonts = ['Calibri', 'Georgia', 'Helvetica', 'Consolas', 'Times New Roman', 'Arial'],
@@ -97,12 +110,25 @@ export const CVPreviewDragDrop: React.FC<CVPreviewProps> = ({
             setPhotoSize={setPhotoSize}
             photoShape={photoShape}
             setPhotoShape={setPhotoShape}
+            nameFontSize={nameFontSize}
+            setNameFontSize={setNameFontSize}
+            // Props pour les ajustements d'image
+            photoZoom={photoZoom}
+            setPhotoZoom={setPhotoZoom}
+            photoPositionX={photoPositionX}
+            setPhotoPositionX={setPhotoPositionX}
+            photoPositionY={photoPositionY}
+            setPhotoPositionY={setPhotoPositionY}
+            photoRotation={photoRotation}
+            setPhotoRotation={setPhotoRotation}
+            photoObjectFit={photoObjectFit}
+            setPhotoObjectFit={setPhotoObjectFit}
             selectedSection={selectedSection}
             availableFonts={availableFonts}
             availableColors={availableColors}
+            hasPhoto={!!editableContent.photo}
           />
         )}
-
 
         {/* Affichage des erreurs avec auto-hide */}
         {(error || openAIError) && showError && (
@@ -119,7 +145,6 @@ export const CVPreviewDragDrop: React.FC<CVPreviewProps> = ({
             </button>
           </div>
         )}
-
 
         {/* Sections déplaçables */}
         <DraggableSections
@@ -151,6 +176,13 @@ export const CVPreviewDragDrop: React.FC<CVPreviewProps> = ({
           photoAlignment={photoAlignment}
           photoSize={photoSize}
           photoShape={photoShape}
+          nameFontSize={nameFontSize}
+          // Props pour les ajustements d'image
+          photoZoom={photoZoom}
+          photoPositionX={photoPositionX}
+          photoPositionY={photoPositionY}
+          photoRotation={photoRotation}
+          photoObjectFit={photoObjectFit}
           setSelectedSection={setSelectedSection}
         />
       </div>

@@ -86,6 +86,13 @@ export const CVCreator: React.FC = () => {
   const [photoSize, setPhotoSize] = useState<'small' | 'medium' | 'large'>('medium');
   const [photoShape, setPhotoShape] = useState<'circle' | 'square' | 'rounded'>('circle');
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
+  const [nameFontSize, setNameFontSize] = useState<number>(18);
+  // États pour les ajustements d'image
+  const [photoZoom, setPhotoZoom] = useState<number>(100);
+  const [photoPositionX, setPhotoPositionX] = useState<number>(0);
+  const [photoPositionY, setPhotoPositionY] = useState<number>(0);
+  const [photoRotation, setPhotoRotation] = useState<number>(0);
+  const [photoObjectFit, setPhotoObjectFit] = useState<'contain' | 'cover'>('contain');
   const [error, setError] = useState<string | null>(null);
   const [setSectionsOrderFunc, setSectionsOrderFuncSetter] = useState<((sections: SectionConfig[]) => void) | null>(null);
   const [editableContent, setEditableContent] = useState<CVContent>({
@@ -264,7 +271,7 @@ export const CVCreator: React.FC = () => {
   useEffect(() => {
     const savedData = loadFromLocalStorage();
     if (savedData && !profile && !profileLoading) {
-      console.log('Chargement des données CV depuis localStorage');
+      console.log('Chargement des données CV depuis localStorage', savedData);
       
       if (savedData.editableContent) {
         setEditableContent(savedData.editableContent);
@@ -296,12 +303,42 @@ export const CVCreator: React.FC = () => {
       if (savedData.nameAlignment) {
         setNameAlignment(savedData.nameAlignment);
       }
+      if (savedData.photoAlignment) {
+        setPhotoAlignment(savedData.photoAlignment);
+      }
+      if (savedData.photoSize) {
+        setPhotoSize(savedData.photoSize);
+      }
+      if (savedData.photoShape) {
+        setPhotoShape(savedData.photoShape);
+      }
+      if (savedData.nameFontSize) {
+        setNameFontSize(savedData.nameFontSize);
+      }
+      // Restaurer les sections et layers dans le hook useCVSections
+      if (savedData.sections && Array.isArray(savedData.sections)) {
+        console.log('Restauration des sections:', savedData.sections);
+        localStorage.setItem('cvSectionsOrder', JSON.stringify(savedData.sections));
+        // Forcer le rechargement du composant DraggableSections
+        window.dispatchEvent(new Event('cvSectionsUpdated'));
+      }
     }
   }, [loadFromLocalStorage, profile, profileLoading]);
 
   // Effet pour sauvegarder automatiquement les modifications
   useEffect(() => {
     if (autoSaveEnabled) {
+      // Récupérer les sections actuelles depuis useCVSections
+      const savedSectionsData = localStorage.getItem('cvSectionsOrder');
+      let currentSections = [];
+      if (savedSectionsData) {
+        try {
+          currentSections = JSON.parse(savedSectionsData);
+        } catch (e) {
+          console.warn('Erreur lors de la lecture des sections:', e);
+        }
+      }
+
       const dataToSave = {
         editableContent,
         experiences,
@@ -312,7 +349,12 @@ export const CVCreator: React.FC = () => {
         customColor,
         titleColor,
         layoutColumns,
-        nameAlignment
+        nameAlignment,
+        photoAlignment,
+        photoSize,
+        photoShape,
+        nameFontSize,
+        sections: currentSections
       };
       
       saveToLocalStorage(dataToSave);
@@ -328,6 +370,10 @@ export const CVCreator: React.FC = () => {
     titleColor,
     layoutColumns,
     nameAlignment,
+    photoAlignment,
+    photoSize,
+    photoShape,
+    nameFontSize,
     saveToLocalStorage,
     autoSaveEnabled
   ]);
@@ -810,6 +856,19 @@ export const CVCreator: React.FC = () => {
             setPhotoSize={setPhotoSize}
             photoShape={photoShape}
             setPhotoShape={setPhotoShape}
+            nameFontSize={nameFontSize}
+            setNameFontSize={setNameFontSize}
+            // Nouveaux props pour les ajustements d'image
+            photoZoom={photoZoom}
+            setPhotoZoom={setPhotoZoom}
+            photoPositionX={photoPositionX}
+            setPhotoPositionX={setPhotoPositionX}
+            photoPositionY={photoPositionY}
+            setPhotoPositionY={setPhotoPositionY}
+            photoRotation={photoRotation}
+            setPhotoRotation={setPhotoRotation}
+            photoObjectFit={photoObjectFit}
+            setPhotoObjectFit={setPhotoObjectFit}
             selectedSection={selectedSection}
             setSelectedSection={setSelectedSection}
             availableFonts={availableFonts}

@@ -81,6 +81,19 @@ export interface CVPreviewProps {
   setPhotoSize?: React.Dispatch<React.SetStateAction<'small' | 'medium' | 'large'>>;
   photoShape?: 'circle' | 'square' | 'rounded';
   setPhotoShape?: React.Dispatch<React.SetStateAction<'circle' | 'square' | 'rounded'>>;
+  nameFontSize?: number;
+  setNameFontSize?: React.Dispatch<React.SetStateAction<number>>;
+  // Nouveaux props pour les ajustements d'image
+  photoZoom?: number;
+  setPhotoZoom?: React.Dispatch<React.SetStateAction<number>>;
+  photoPositionX?: number;
+  setPhotoPositionX?: React.Dispatch<React.SetStateAction<number>>;
+  photoPositionY?: number;
+  setPhotoPositionY?: React.Dispatch<React.SetStateAction<number>>;
+  photoRotation?: number;
+  setPhotoRotation?: React.Dispatch<React.SetStateAction<number>>;
+  photoObjectFit?: 'contain' | 'cover';
+  setPhotoObjectFit?: React.Dispatch<React.SetStateAction<'contain' | 'cover'>>;
   selectedSection?: string | null;
   setSelectedSection?: React.Dispatch<React.SetStateAction<string | null>>;
   availableFonts?: string[];

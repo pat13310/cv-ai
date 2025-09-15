@@ -52,7 +52,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
   isLoading
 }) => {
   return (
-    <div className="mt-4">
+    <div className="mt-0">
       {editingField === 'profileTitle' ? (
         <input
           type="text"
