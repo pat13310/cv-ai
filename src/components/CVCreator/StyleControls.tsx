@@ -1,6 +1,6 @@
 import React from 'react';
 import { CustomSelect } from './CustomSelect';
-import { Columns, RectangleVertical, AlignLeft, AlignCenter, AlignRight, Circle, Square, Plus, Minus, ZoomIn, ZoomOut, RotateCw, Move, RotateCcw } from 'lucide-react';
+import { Columns, RectangleVertical, AlignLeft, AlignCenter, AlignRight, Circle, Square, Plus, Minus, ZoomIn, ZoomOut, RotateCw, Move, RotateCcw, Maximize, Frame } from 'lucide-react';
 
 interface StyleControlsProps {
   customFont: string;
@@ -329,24 +329,21 @@ export const StyleControls: React.FC<StyleControlsProps> = ({
             <label className="block text-sm font-medium mb-2">Ajustement</label>
             <div className="flex gap-1">
               <button
-                onClick={() => setPhotoObjectFit?.('contain')}
-                className={`px-2 py-1 rounded text-xs transition-all duration-200 ${photoObjectFit === 'contain'
-                  ? 'bg-violet-500 text-white shadow-md'
-                  : 'bg-white text-gray-600 hover:bg-violet-100'
+                onClick={() => setPhotoObjectFit?.(photoObjectFit === 'contain' ? 'cover' : 'contain')}
+                className={`p-1 rounded transition-all duration-200 ${photoObjectFit === 'contain'
+                  ? 'bg-green-50 text-white shadow-md hover:bg-green-100 '
+                  : 'bg-violet-50 text-gray-600 hover:bg-violet-100'
                   }`}
-                title="Contenir l'image (image complète visible)"
+                title={photoObjectFit === 'contain' 
+                  ? "Basculer vers mode couvrir (remplir l'espace)" 
+                  : "Basculer vers mode contenir (image complète visible)"
+                }
               >
-                Contenir
-              </button>
-              <button
-                onClick={() => setPhotoObjectFit?.('cover')}
-                className={`px-2 py-1 rounded text-xs transition-all duration-200 ${photoObjectFit === 'cover'
-                  ? 'bg-violet-500 text-white shadow-md'
-                  : 'bg-white text-gray-600 hover:bg-violet-100'
-                  }`}
-                title="Couvrir l'image (remplir l'espace)"
-              >
-                Couvrir
+                {photoObjectFit === 'contain' ? (
+                  <Frame className="w-4 h-4" />
+                ) : (
+                  <Maximize className="w-4 h-4" />
+                )}
               </button>
             </div>
           </div>
