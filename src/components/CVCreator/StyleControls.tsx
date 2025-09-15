@@ -229,6 +229,7 @@ export const StyleControls: React.FC<StyleControlsProps> = ({
             </div>
           </div>
         </div>
+        
 
         {/* Deuxième ligne - Ajustements d'image */}
         <div className="flex items-start gap-4 pt-4 border-t border-violet-200">
