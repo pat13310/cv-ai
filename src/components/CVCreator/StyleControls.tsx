@@ -205,6 +205,29 @@ export const StyleControls: React.FC<StyleControlsProps> = ({
               </button>
             </div>
           </div>
+
+          <div className="flex-shrink-0">
+            <label className="block text-sm font-medium mb-2">Ajustement</label>
+            <div className="flex gap-1">
+              <button
+                onClick={() => setPhotoObjectFit?.(photoObjectFit === 'contain' ? 'cover' : 'contain')}
+                className={`p-1 rounded transition-all duration-200 ${photoObjectFit === 'contain'
+                  ? 'bg-violet-500 text-white shadow-md'
+                  : 'bg-white text-gray-600 hover:bg-violet-100'
+                  }`}
+                title={photoObjectFit === 'contain' 
+                  ? "Basculer vers mode couvrir (remplir l'espace)" 
+                  : "Basculer vers mode contenir (image complète visible)"
+                }
+              >
+                {photoObjectFit === 'contain' ? (
+                  <Frame className="w-4 h-4" />
+                ) : (
+                  <Maximize className="w-4 h-4" />
+                )}
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Deuxième ligne - Ajustements d'image */}
@@ -325,28 +348,6 @@ export const StyleControls: React.FC<StyleControlsProps> = ({
             </div>
           </div>
 
-          <div className="flex-shrink-0">
-            <label className="block text-sm font-medium mb-2">Ajustement</label>
-            <div className="flex gap-1">
-              <button
-                onClick={() => setPhotoObjectFit?.(photoObjectFit === 'contain' ? 'cover' : 'contain')}
-                className={`p-1 rounded transition-all duration-200 ${photoObjectFit === 'contain'
-                  ? 'bg-green-50 text-white shadow-md hover:bg-green-100 '
-                  : 'bg-violet-50 text-gray-600 hover:bg-violet-100'
-                  }`}
-                title={photoObjectFit === 'contain' 
-                  ? "Basculer vers mode couvrir (remplir l'espace)" 
-                  : "Basculer vers mode contenir (image complète visible)"
-                }
-              >
-                {photoObjectFit === 'contain' ? (
-                  <Frame className="w-4 h-4" />
-                ) : (
-                  <Maximize className="w-4 h-4" />
-                )}
-              </button>
-            </div>
-          </div>
 
           <div className="flex-shrink-0">
             <label className="block text-sm font-medium mb-2">Réinitialiser</label>
