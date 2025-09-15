@@ -33,6 +33,8 @@ export const CVPreviewDragDrop: React.FC<CVPreviewProps> = ({
   setPhotoSize,
   photoShape = 'circle',
   setPhotoShape,
+  selectedSection,
+  setSelectedSection,
   availableFonts = ['Calibri', 'Georgia', 'Helvetica', 'Consolas', 'Times New Roman', 'Arial'],
   availableColors = [
     { name: 'Noir', value: '000000', category: 'Neutres' },
@@ -95,6 +97,7 @@ export const CVPreviewDragDrop: React.FC<CVPreviewProps> = ({
             setPhotoSize={setPhotoSize}
             photoShape={photoShape}
             setPhotoShape={setPhotoShape}
+            selectedSection={selectedSection}
             availableFonts={availableFonts}
             availableColors={availableColors}
           />
@@ -148,6 +151,7 @@ export const CVPreviewDragDrop: React.FC<CVPreviewProps> = ({
           photoAlignment={photoAlignment}
           photoSize={photoSize}
           photoShape={photoShape}
+          setSelectedSection={setSelectedSection}
         />
       </div>
     </div>

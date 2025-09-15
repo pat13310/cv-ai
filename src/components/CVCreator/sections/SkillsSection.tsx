@@ -16,7 +16,6 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { SectionWrapper } from './SectionWrapper';
 import type { CVContent, CVSkill } from '../types';
 import { useSkills, type Skill } from '../../../hooks/useSkills';
 
@@ -319,7 +318,7 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
   }, [loadSkillsByCategory, selectedCategory, showSkillsLibrary]);
 
   return (
-    <SectionWrapper id="skills" title="Compétences">
+    <>
       <div
         className="mt-4"
         onClick={() => setSelectedSkillId(null)}
@@ -586,6 +585,6 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
         </div>
       )}
     </div>
-  </SectionWrapper>
+  </>
 );
 };

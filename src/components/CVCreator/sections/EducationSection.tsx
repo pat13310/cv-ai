@@ -1,6 +1,5 @@
 import React from 'react';
 import { Sparkles, Plus, Minus } from 'lucide-react';
-import { SectionWrapper } from './SectionWrapper';
 import type { CVContent, CVEducation } from '../types';
 
 interface EducationSectionProps {
@@ -63,8 +62,7 @@ export const EducationSection: React.FC<EducationSectionProps> = ({
   const [titleHovered, setTitleHovered] = React.useState(false);
   const [hoveredEduId, setHoveredEduId] = React.useState<number | null>(null);
   return (
-    <SectionWrapper id="education" title="Formation">
-      <div className="mt-4">
+    <div className="mt-4">
         {editingField === 'educationTitle' ? (
           <div className="flex items-center gap-2">
             <input
@@ -229,7 +227,6 @@ export const EducationSection: React.FC<EducationSectionProps> = ({
             </div>
           </div>
         ))}
-      </div>
-    </SectionWrapper>
+    </div>
   );
 };

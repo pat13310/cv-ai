@@ -1,6 +1,5 @@
 import React, { useRef, useState } from 'react';
 import { Camera, Upload, X, User } from 'lucide-react';
-import { SectionWrapper } from './SectionWrapper';
 import type { CVContent } from '../types';
 
 interface PhotoSectionProps {
@@ -119,7 +118,7 @@ export const PhotoSection: React.FC<PhotoSectionProps> = ({
   };
 
   return (
-    <SectionWrapper id="photo" title="Photo">
+    <>
       <div className={`mt-4 flex ${alignmentClasses[photoAlignment]}`}>
         <div className="relative">
           {/* Zone d'upload/preview */}
@@ -209,6 +208,6 @@ export const PhotoSection: React.FC<PhotoSectionProps> = ({
       <div className="mt-2 text-xs text-gray-500 text-center">
         Formats acceptés : JPG, PNG, GIF • Taille max : 5MB
       </div>
-    </SectionWrapper>
+    </>
   );
 };

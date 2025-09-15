@@ -275,6 +275,7 @@ interface DraggableSectionsProps {
   photoAlignment?: "left" | "center" | "right";
   photoSize?: "small" | "medium" | "large";
   photoShape?: "circle" | "square" | "rounded";
+  setSelectedSection?: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
 /* ---------------- Composant principal ---------------- */
@@ -308,6 +309,7 @@ export const DraggableSections: React.FC<DraggableSectionsProps> = ({
   photoAlignment,
   photoSize,
   photoShape,
+  setSelectedSection,
 }) => {
   const {
     sections,
@@ -406,6 +408,11 @@ export const DraggableSections: React.FC<DraggableSectionsProps> = ({
     titleColor,
     generateWithAI,
     isLoading,
+  };
+
+  // Fonction de callback pour la sélection de section
+  const handleSectionClick = (sectionId: string) => {
+    setSelectedSection?.(sectionId);
   };
 
   const DragOverlayContent = () => {
@@ -543,7 +550,7 @@ export const DraggableSections: React.FC<DraggableSectionsProps> = ({
                                 forceHalf={!right}
                                 onContract={contractSection}
                               >
-                                <SectionWrapper id={left.id} title={left.name} position="left">
+                                <SectionWrapper id={left.id} title={left.name} position="left" onSectionClick={handleSectionClick}>
                                   {renderContent(left.id)}
                                 </SectionWrapper>
                               </SectionDroppable>
@@ -567,7 +574,7 @@ export const DraggableSections: React.FC<DraggableSectionsProps> = ({
                                 forceHalf={!left}
                                 onContract={contractSection}
                               >
-                                <SectionWrapper id={right.id} title={right.name} position="right">
+                                <SectionWrapper id={right.id} title={right.name} position="right" onSectionClick={handleSectionClick}>
                                   {renderContent(right.id)}
                                 </SectionWrapper>
                               </SectionDroppable>
@@ -603,7 +610,8 @@ export const DraggableSections: React.FC<DraggableSectionsProps> = ({
                               <SectionWrapper
                                 id={section.id}
                                 title={section.name}
-                                position={section.order === 0 ? "left" : "right"}
+                                position="left"
+                                onSectionClick={handleSectionClick}
                               >
                                 {renderContent(section.id)}
                               </SectionWrapper>

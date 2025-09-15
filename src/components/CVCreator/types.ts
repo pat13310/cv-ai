@@ -81,6 +81,8 @@ export interface CVPreviewProps {
   setPhotoSize?: React.Dispatch<React.SetStateAction<'small' | 'medium' | 'large'>>;
   photoShape?: 'circle' | 'square' | 'rounded';
   setPhotoShape?: React.Dispatch<React.SetStateAction<'circle' | 'square' | 'rounded'>>;
+  selectedSection?: string | null;
+  setSelectedSection?: React.Dispatch<React.SetStateAction<string | null>>;
   availableFonts?: string[];
   availableColors?: Array<{
     name: string;

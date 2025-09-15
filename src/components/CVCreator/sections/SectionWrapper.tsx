@@ -9,6 +9,7 @@ interface SectionWrapperProps {
   children: React.ReactNode;
   className?: string;
   position?: 'left' | 'right';
+  onSectionClick?: (sectionId: string) => void;
 }
 
 export const SectionWrapper: React.FC<SectionWrapperProps> = ({
@@ -16,7 +17,8 @@ export const SectionWrapper: React.FC<SectionWrapperProps> = ({
   title,
   children,
   className = "",
-  position
+  position,
+  onSectionClick
 }) => {
   const {
     attributes,
@@ -36,12 +38,20 @@ export const SectionWrapper: React.FC<SectionWrapperProps> = ({
     <div
       ref={setNodeRef}
       style={style}
-      className={`relative group ${isDragging ? 'opacity-50' : ''} ${className}`}
+      className={`relative group ${isDragging ? 'opacity-50' : ''} ${className} cursor-pointer hover:bg-violet-50 hover:border hover:border-violet-200 rounded transition-all duration-200`}
+      onClick={(e) => {
+        // Ne pas déclencher si on clique sur la poignée de drag
+        if ((e.target as HTMLElement).closest('[data-drag-handle]')) {
+          return;
+        }
+        onSectionClick?.(id);
+      }}
     >
       {/* Poignée de drag positionnée selon l'alignement */}
       <div
         {...attributes}
         {...listeners}
+        data-drag-handle
         className={`absolute top-0 p-2 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10 bg-white/80 rounded-md shadow-sm ${
           position === 'right' ? 'right-0' : 'left-0'
         }`}

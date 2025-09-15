@@ -85,6 +85,7 @@ export const CVCreator: React.FC = () => {
   const [photoAlignment, setPhotoAlignment] = useState<'left' | 'center' | 'right'>('center');
   const [photoSize, setPhotoSize] = useState<'small' | 'medium' | 'large'>('medium');
   const [photoShape, setPhotoShape] = useState<'circle' | 'square' | 'rounded'>('circle');
+  const [selectedSection, setSelectedSection] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [setSectionsOrderFunc, setSectionsOrderFuncSetter] = useState<((sections: SectionConfig[]) => void) | null>(null);
   const [editableContent, setEditableContent] = useState<CVContent>({
@@ -809,6 +810,8 @@ export const CVCreator: React.FC = () => {
             setPhotoSize={setPhotoSize}
             photoShape={photoShape}
             setPhotoShape={setPhotoShape}
+            selectedSection={selectedSection}
+            setSelectedSection={setSelectedSection}
             availableFonts={availableFonts}
             availableColors={availableColors}
             addExperience={addExperience}
