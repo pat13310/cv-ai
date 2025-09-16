@@ -1,17 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { CheckCircle, AlertTriangle, XCircle, Brain, Target, Award, Download, RefreshCw, Loader2, ChevronDown } from 'lucide-react';
 import { CVAnalysisResponse } from '../../hooks/useOpenAI';
+import { DocumentType } from './CVAnalysis';
 import html2pdf from 'html2pdf.js';
 
 interface AnalysisResultsProps {
   results: CVAnalysisResponse;
   fileName: string;
   originalContent?: string;
+  documentType?: DocumentType;
   onOptimize?: () => void;
   isOptimizing?: boolean;
 }
 
-export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ results, fileName, originalContent, onOptimize, isOptimizing = false }) => {
+export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ results, fileName, originalContent, documentType = 'cv', onOptimize, isOptimizing = false }) => {
   const [showExportMenu, setShowExportMenu] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
 
@@ -47,10 +49,11 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ results, fileN
     const blob = new Blob([reportHTML], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     
+    const documentLabel = documentType === 'cv' ? 'CV' : 'Lettre';
     // Créer un lien de téléchargement
     const link = document.createElement('a');
     link.href = url;
-    link.download = `Rapport_Analyse_CV_${fileName.replace(/\.[^/.]+$/, '')}.html`;
+    link.download = `Rapport_Analyse_${documentLabel}_${fileName.replace(/\.[^/.]+$/, '')}.html`;
     
     // Déclencher le téléchargement
     document.body.appendChild(link);
@@ -76,10 +79,11 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ results, fileN
     element.style.margin = '0';
     element.style.backgroundColor = 'white';
     
+    const documentLabel = documentType === 'cv' ? 'CV' : 'Lettre';
     // Options pour html2pdf
     const options = {
       margin: 0,
-      filename: `Rapport_Analyse_CV_${fileName.replace(/\.[^/.]+$/, '')}.pdf`,
+      filename: `Rapport_Analyse_${documentLabel}_${fileName.replace(/\.[^/.]+$/, '')}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: {
         scale: 2,
@@ -148,7 +152,7 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ results, fileN
               </div>
             </div>
           </div>
-          <h1 style="font-size: 24px; font-weight: bold; color: #1f2937; margin: 0 0 10px 0;">Rapport d'Analyse CV</h1>
+          <h1 style="font-size: 24px; font-weight: bold; color: #1f2937; margin: 0 0 10px 0;">Rapport d'Analyse ${documentType === 'cv' ? 'CV' : 'Lettre de motivation'}</h1>
           <h2 style="font-size: 18px; color: #6b7280; margin: 0 0 15px 0;">${fileName}</h2>
           <p style="color: #6b7280; margin: 0; font-size: 14px;">Analyse générée par IA OpenAI avec recommandations pour optimiser la compatibilité ATS</p>
         </div>
@@ -660,7 +664,10 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ results, fileN
           
           <h3 className="text-xl font-bold text-gray-800 mb-2">Analyse Complète - <span  className=" text-xl text-gray-600">{fileName}</span></h3>
           <p className="text-gray-500 mb-6">
-            Votre CV a été analysé par notre IA OpenAI avec des recommandations précises pour optimiser votre passage des filtres ATS
+            {documentType === 'cv' 
+              ? 'Votre CV a été analysé par notre IA OpenAI avec des recommandations précises pour optimiser votre passage des filtres ATS'
+              : 'Votre lettre de motivation a été analysée par notre IA OpenAI avec des recommandations pour maximiser son impact auprès des recruteurs'
+            }
           </p>
           
           <div className="flex justify-center space-x-4">
@@ -851,7 +858,7 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ results, fileN
         <button className="bg-gradient-to-br from-emerald-500 to-teal-500 text-white p-6 rounded-2xl hover:from-emerald-600 hover:to-teal-600 transition-all duration-200 hover:scale-105 text-left">
           <Award className="w-8 h-8 mb-3" />
           <h4 className="font-semibold mb-2">Créer Version Optimisée</h4>
-          <p className="text-sm text-white/90">Générer un nouveau CV amélioré</p>
+          <p className="text-sm text-white/90">Générer un nouveau {documentType === 'cv' ? 'CV' : 'lettre'} amélioré</p>
         </button>
       </div>
     </div>

@@ -55,10 +55,14 @@ export const Header: React.FC<HeaderProps> = ({ user, onSettingsClick, onLogout,
           
           <div className="flex items-center space-x-4">
             {indicator && (
-              <div className={`flex items-center space-x-2 px-3 py-2 ${indicator.bgColor} border ${indicator.borderColor} rounded-lg`}>
+              <button
+                onClick={onSettingsClick}
+                className={`flex items-center space-x-2 px-3 py-2 ${indicator.bgColor} border ${indicator.borderColor} rounded-lg hover:shadow-md transition-all duration-200 hover:scale-105`}
+                title="Cliquez pour configurer votre clé API"
+              >
                 <AlertTriangle className={`w-4 h-4 ${indicator.iconColor}`} />
                 <span className={`text-sm ${indicator.textColor} font-medium`}>{indicator.text}</span>
-              </div>
+              </button>
             )}
             
             <div className="flex items-center space-x-3 bg-gray-50/80 rounded-full px-4 py-2">

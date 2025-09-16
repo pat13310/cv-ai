@@ -6,6 +6,7 @@ import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { ChatBubble } from './ChatBubble';
+import { LettreForm } from './LettreForm';
 
 export interface ChatMessage {
   id?: string;
@@ -17,6 +18,9 @@ export interface ChatMessage {
 interface ChatProps {
   onBack: () => void;
   voiceEnabled?: boolean;
+  mode?: 'general' | 'lettre';
+  title?: string;
+  description?: string;
 }
 
 const clsx = (...tokens: Array<string | false | null | undefined>) => tokens.filter(Boolean).join(" ");
@@ -26,8 +30,16 @@ const VisuallyHidden: React.FC<{ children: React.ReactNode }> = ({ children }) =
 );
 
 // ---------- HEADER ----------
-const ChatHeader: React.FC<{ onBack: () => void; speechSupported: boolean; isListening: boolean; voiceEnabled: boolean; isSpeaking: boolean; onCancelSpeak: () => void; }>
-  = ({ onBack, speechSupported, isListening, voiceEnabled, isSpeaking, onCancelSpeak }) => (
+const ChatHeader: React.FC<{ 
+  onBack: () => void; 
+  speechSupported: boolean; 
+  isListening: boolean; 
+  voiceEnabled: boolean; 
+  isSpeaking: boolean; 
+  onCancelSpeak: () => void;
+  title: string;
+  description: string;
+}> = ({ onBack, speechSupported, isListening, voiceEnabled, isSpeaking, onCancelSpeak, title, description }) => (
     <header className="flex items-center justify-between p-4 border-b border-violet-100 bg-white/70 backdrop-blur-sm">
       <button
         onClick={onBack}
@@ -39,8 +51,8 @@ const ChatHeader: React.FC<{ onBack: () => void; speechSupported: boolean; isLis
       </button>
 
       <div className="text-center">
-        <h2 className="text-lg font-bold text-gray-800">Coach de Carrière IA</h2>
-        <p className="text-sm text-gray-500">Votre assistant personnel pour des conseils</p>
+        <h2 className="text-lg font-bold text-gray-800">{title}</h2>
+        <p className="text-sm text-gray-500">{description}</p>
       </div>
 
       <div className="flex items-center gap-2 w-36 justify-end">
@@ -448,10 +460,18 @@ const ErrorBanner: React.FC<{ error?: string | null }> = ({ error }) => {
   );
 };
 
+
 // ---------- CHAT PRINCIPAL ----------
-export const AIChat: React.FC<ChatProps> = ({ onBack, voiceEnabled = true }) => {
+export const AIChat: React.FC<ChatProps> = ({ 
+  onBack, 
+  voiceEnabled = true, 
+  mode = 'general',
+  title = "Coach de Carrière IA",
+  description = "Votre assistant personnel pour des conseils"
+}) => {
   const { editCVField, isLoading, error } = useOpenAI();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [showForm, setShowForm] = useState(mode === 'lettre');
 
   const sendMessage = useCallback(async (text: string) => {
     const userMsg: ChatMessage = { role: "user", text, createdAt: new Date() };
@@ -468,6 +488,37 @@ export const AIChat: React.FC<ChatProps> = ({ onBack, voiceEnabled = true }) => 
     }
   }, [editCVField]);
 
+  const handleFormSubmit = (contextPrompt: string) => {
+    setShowForm(false);
+    sendMessage(contextPrompt);
+  };
+
+
+  if (showForm) {
+    return (
+      <div className="flex flex-col h-full w-full bg-gradient-to-br from-violet-50 via-pink-50 to-blue-50 p-6">
+        <div className="flex items-center justify-between mb-6">
+          <button
+            onClick={onBack}
+            className="border rounded-lg border-transparent p-2 flex items-center space-x-2 text-violet-600 hover:text-violet-700 font-medium transition-colors hover:border-violet-400"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Retour</span>
+          </button>
+          
+          <div className="absolute left-1/2 transform -translate-x-1/2">
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-pink-400 bg-clip-text text-transparent">
+              {title}
+            </h1>
+          </div>
+          
+          <div className="w-20"></div> {/* Spacer pour équilibrer */}
+        </div>
+        <LettreForm onStartConversation={handleFormSubmit} />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full w-full bg-white/50 rounded-2xl border border-violet-200 shadow-lg overflow-hidden">
       <ChatHeader
@@ -477,12 +528,14 @@ export const AIChat: React.FC<ChatProps> = ({ onBack, voiceEnabled = true }) => 
         voiceEnabled={!!voiceEnabled}
         isSpeaking={false}
         onCancelSpeak={() => { }}
+        title={title}
+        description={description}
       />
 
       <ChatMessages
         messages={messages}
         isLoading={isLoading}
-        initialGreeting={true}
+        initialGreeting={!showForm}
         sendMessage={sendMessage}
       />
 

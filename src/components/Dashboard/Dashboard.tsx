@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileText, TrendingUp, Users, CheckCircle } from 'lucide-react';
+import { FileText, TrendingUp, Users, CheckCircle, PlusCircle, MessageSquare, FileEdit, Search } from 'lucide-react';
 import { useSupabase } from '../../hooks/useSupabase';
 import { useProfile } from '../../hooks/useProfile';
 import { MetricCard } from './MetricCard';
@@ -159,25 +159,69 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
   return (
     <div className="space-y-8">
-      {/* Welcome Section */}
+      {/* Welcome Section with Quick Actions */}
       <div className="bg-gradient-to-br from-indigo-900 via-purple-900 to-violet-900 rounded-3xl p-8 text-white relative overflow-hidden">
         <div className="absolute inset-0 bg-black/10 rounded-3xl" />
         <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
         
-        <div className="relative z-10">
+        <div className="relative z-2">
           <h1 className="text-3xl font-bold mb-2">Bienvenue {userName} ! 👋</h1>
-          <p className="text-white/90 text-sm mb-6">
+          <p className="text-white/90 text-lg mb-8">
             Optimisez vos CV avec notre IA avancée et maximisez vos chances de succès.
           </p>
-          <button 
-            onClick={() => onNavigate?.('analyze')}
-            className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 hover:scale-105"
-          >
-            Analyser un nouveau CV
-          </button>
+          
+          {/* Actions Rapides intégrées */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            {/* Bouton Créer un CV */}
+            <button
+              onClick={() => onNavigate?.('creator')}
+              className="group flex flex-col items-center p-5 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white rounded-2xl border border-white/20 transition-all duration-300 hover:scale-105 hover:shadow-xl"
+            >
+              <PlusCircle className="h-7 w-7 mb-3 text-white/90 group-hover:text-white group-hover:scale-110 transition-all duration-300" />
+              <span className="font-semibold text-sm">Créer un CV</span>
+              <span className="text-xs text-white/70 mt-1">Assistant IA</span>
+            </button>
+
+            {/* Bouton Lettre de motivation */}
+            <button
+              onClick={() => onNavigate?.('chat')}
+              className="group flex flex-col items-center p-5 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white rounded-2xl border border-white/20 transition-all duration-300 hover:scale-105 hover:shadow-xl"
+            >
+              <FileEdit className="h-7 w-7 mb-3 text-white/90 group-hover:text-white group-hover:scale-110 transition-all duration-300" />
+              <span className="font-semibold text-sm">Lettre de motivation</span>
+              <span className="text-xs text-white/70 mt-1">Génération IA</span>
+            </button>
+
+            {/* Bouton Chat IA */}
+            <button
+              onClick={() => onNavigate?.('chat')}
+              className="group flex flex-col items-center p-5 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white rounded-2xl border border-white/20 transition-all duration-300 hover:scale-105 hover:shadow-xl"
+            >
+              <MessageSquare className="h-7 w-7 mb-3 text-white/90 group-hover:text-white group-hover:scale-110 transition-all duration-300" />
+              <span className="font-semibold text-sm">Chat IA</span>
+              <span className="text-xs text-white/70 mt-1">Assistant virtuel</span>
+            </button>
+
+            {/* Bouton Analyser CV */}
+            <button
+              onClick={() => onNavigate?.('analyze')}
+              className="group flex flex-col items-center p-5 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white rounded-2xl border border-white/20 transition-all duration-300 hover:scale-105 hover:shadow-xl"
+            >
+              <Search className="h-7 w-7 mb-3 text-white/90 group-hover:text-white group-hover:scale-110 transition-all duration-300" />
+              <span className="font-semibold text-sm">Analyser CV</span>
+              <span className="text-xs text-white/70 mt-1">Score ATS</span>
+            </button>
+          </div>
+          
+          <div className="text-center">
+            <p className="text-white/80 text-sm">
+              Choisissez une action pour commencer votre optimisation professionnelle
+            </p>
+          </div>
         </div>
       </div>
+
 
       {/* Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 ">

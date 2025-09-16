@@ -13,7 +13,6 @@ import { CVLibrary } from './components/CVLibrary/CVLibrary';
 import { Models } from './components/Models/Models';
 import { Templates } from './components/Templates/Templates';
 import { Settings } from './components/Settings/Settings';
-import { Coaching } from './components/Coaching/Coaching';
 import { AIChat } from './components/Chat/AIChat';
 import { CVCreatorDemo } from './components/CVCreator/CVCreatorDemo';
 
@@ -90,13 +89,25 @@ const SupabaseAppContent: React.FC = () => {
       case 'dashboard':
         return <Dashboard onNavigate={handleTabChange} />;
       case 'analyze':
-        return <CVAnalysis />;
+        return (
+          <CVAnalysis 
+            documentType="cv" 
+            title="Analyse CV" 
+            description="Uploadez votre CV pour une analyse ATS complète" 
+          />
+        );
       case 'creator':
         return <CVCreator />;
       case 'templates':
         return <Templates />;
-      case 'coaching':
-        return <Coaching onNavigate={handleTabChange} />;
+      case 'lettre-analyze':
+        return (
+          <CVAnalysis 
+            documentType="lettre" 
+            title="Analyse Lettre de motivation" 
+            description="Uploadez votre lettre de motivation pour une analyse détaillée" 
+          />
+        );
       case 'library':
         return <CVLibrary />;
       case 'models':
@@ -104,7 +115,15 @@ const SupabaseAppContent: React.FC = () => {
       case 'settings':
         return <Settings onBack={handleBackToDashboard} onApiKeyStatusChange={setApiKeyStatus} />;
       case 'chat':
-        return <AIChat onBack={handleBackToDashboard} voiceEnabled={voiceEnabled}   />;
+        return (
+          <AIChat 
+            onBack={handleBackToDashboard} 
+            voiceEnabled={voiceEnabled}
+            mode="lettre"
+            title="Assistant Lettre de Motivation IA"
+            description="Créez une lettre de motivation professionnelle et personnalisée"
+          />
+        );
       default:
         return <Dashboard />;
     }
@@ -247,13 +266,25 @@ const MockAppContent: React.FC = () => {
       case 'dashboard':
         return <Dashboard onNavigate={handleTabChange} />;
       case 'analyze':
-        return <CVAnalysis />;
+        return (
+          <CVAnalysis 
+            documentType="cv" 
+            title="Analyse CV" 
+            description="Uploadez votre CV pour une analyse ATS complète" 
+          />
+        );
       case 'creator':
         return <CVCreator />;
       case 'templates':
         return <Templates />;
-      case 'coaching':
-        return <Coaching onNavigate={handleTabChange} />;
+      case 'lettre-analyze':
+        return (
+          <CVAnalysis 
+            documentType="lettre" 
+            title="Analyse Lettre de motivation" 
+            description="Uploadez votre lettre de motivation pour une analyse détaillée" 
+          />
+        );
       case 'library':
         return <CVLibrary />;
       case 'models':
@@ -261,7 +292,15 @@ const MockAppContent: React.FC = () => {
       case 'settings':
         return <Settings onBack={handleBackToDashboard} />;
       case 'chat':
-        return <AIChat onBack={handleBackToDashboard} voiceEnabled={voiceEnabled}  />;
+        return (
+          <AIChat 
+            onBack={handleBackToDashboard} 
+            voiceEnabled={voiceEnabled}
+            mode="lettre"
+            title="Assistant Lettre de Motivation IA"
+            description="Créez une lettre de motivation professionnelle et personnalisée"
+          />
+        );
       default:
         return <Dashboard />;
     }

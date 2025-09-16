@@ -2,12 +2,19 @@ import React, { useState, useCallback } from 'react';
 import { Upload, FileText, AlertCircle, CheckCircle, Settings } from 'lucide-react';
 import { useOpenAI } from '../../hooks/useOpenAI';
 import { DocumentViewer } from '../DocumentViewer/DocumentViewer';
+import { DocumentType } from './CVAnalysis';
 
 interface CVUploadProps {
   onFileUpload: (file: File) => void;
+  documentType?: DocumentType;
+  uploadDescription?: string;
 }
 
-export const CVUpload: React.FC<CVUploadProps> = ({ onFileUpload }) => {
+export const CVUpload: React.FC<CVUploadProps> = ({ 
+  onFileUpload, 
+  documentType = 'cv',
+  uploadDescription 
+}) => {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
   const [previewFile, setPreviewFile] = useState<File | null>(null);
@@ -91,7 +98,7 @@ export const CVUpload: React.FC<CVUploadProps> = ({ onFileUpload }) => {
             className="bg-gradient-to-r from-violet-600 to-pink-600 text-white px-6 py-3 rounded-xl font-medium hover:from-violet-700 hover:to-pink-700 transition-all duration-200 hover:scale-105 flex items-center space-x-2"
           >
             <FileText className="w-5 h-5" />
-            <span>Analyser le CV</span>
+            <span>Analyser {documentType === 'cv' ? 'le CV' : 'la lettre'}</span>
           </button>
         </div>
         
@@ -102,16 +109,33 @@ export const CVUpload: React.FC<CVUploadProps> = ({ onFileUpload }) => {
       </div>
     );
   }
+  // Configuration des textes selon le type de document
+  const getUploadConfig = () => {
+    if (documentType === 'cv') {
+      return {
+        title: 'Analysez votre CV',
+        description: 'Obtenez une évaluation complète de votre CV avec des recommandations personnalisées pour optimiser votre compatibilité ATS.',
+        uploadTitle: 'Téléchargez votre CV',
+        uploadDescription: uploadDescription || 'Glissez-déposez votre fichier ici ou cliquez pour sélectionner',
+        buttonText: 'Choisir un fichier',
+        successMessage: 'CV téléchargé avec succès !'
+      };
+    } else {
+      return {
+        title: 'Analysez votre lettre de motivation',
+        description: 'Obtenez une évaluation détaillée de votre lettre avec des recommandations pour maximiser son impact.',
+        uploadTitle: 'Téléchargez votre lettre',
+        uploadDescription: uploadDescription || 'Glissez-déposez votre fichier ici ou cliquez pour sélectionner',
+        buttonText: 'Choisir un fichier',
+        successMessage: 'Lettre téléchargée avec succès !'
+      };
+    }
+  };
+
+  const config = getUploadConfig();
+
   return (
     <div className="space-y-6">
-      <div className="text-center">
-        <h2 className="heading-gradient">
-          Analysez votre CV
-        </h2>
-        <p className="text-gray-600">
-          Obtenez une évaluation complète de votre CV avec des recommandations personnalisées pour optimiser votre compatibilité ATS.
-        </p>
-      </div>
 
       <div
         onDragOver={handleDragOver}
@@ -138,7 +162,7 @@ export const CVUpload: React.FC<CVUploadProps> = ({ onFileUpload }) => {
               <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-full flex items-center justify-center mb-4">
                 <CheckCircle className="w-8 h-8 text-white" />
               </div>
-              <p className="text-emerald-600 font-medium">CV téléchargé avec succès !</p>
+              <p className="text-emerald-600 font-medium">{config.successMessage}</p>
             </div>
           ) : uploadStatus === 'error' ? (
             <div className="flex flex-col items-center">
@@ -155,9 +179,9 @@ export const CVUpload: React.FC<CVUploadProps> = ({ onFileUpload }) => {
               </div>
               
               <div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">Téléchargez votre CV</h3>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">{config.uploadTitle}</h3>
                 <p className="text-gray-600 mb-4">
-                  Glissez-déposez votre fichier ici ou cliquez pour sélectionner
+                  {config.uploadDescription}
                 </p>
               </div>
               
@@ -173,7 +197,7 @@ export const CVUpload: React.FC<CVUploadProps> = ({ onFileUpload }) => {
                 className="inline-flex items-center space-x-2 bg-gradient-to-r from-violet-600 to-pink-600 text-white px-6 py-3 rounded-xl font-medium hover:from-violet-700 hover:to-pink-700 transition-all duration-200 cursor-pointer hover:scale-105"
               >
                 <FileText className="w-5 h-5" />
-                <span>Choisir un fichier</span>
+                <span>{config.buttonText}</span>
               </label>
             </>
           )}

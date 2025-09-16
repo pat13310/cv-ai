@@ -8,7 +8,21 @@ import { useSupabase } from '../../hooks/useSupabase';
 import {  ArrowLeft } from 'lucide-react';
 import GradientSpinLoader from '../loader/GradientSpinLoader';
 
-export const CVAnalysis: React.FC = () => {
+export type DocumentType = 'cv' | 'lettre';
+
+interface CVAnalysisProps {
+  documentType?: DocumentType;
+  title?: string;
+  description?: string;
+  uploadDescription?: string;
+}
+
+export const CVAnalysis: React.FC<CVAnalysisProps> = ({
+  documentType = 'cv',
+  title,
+  description,
+  uploadDescription
+}) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResults, setAnalysisResults] = useState<CVAnalysisResponse | null>(null);
   const [showDetailedAnalysis, setShowDetailedAnalysis] = useState(false);
@@ -42,9 +56,10 @@ export const CVAnalysis: React.FC = () => {
         
         // Ajouter l'activité à Supabase (optionnel - ne pas bloquer l'analyse si ça échoue)
         try {
+          const documentLabel = documentType === 'cv' ? 'CV' : 'Lettre de motivation';
           await addActivity({
             type: 'analysis',
-            title: `CV Analysé - ${file.name}`,
+            title: `${documentLabel} Analysé - ${file.name}`,
             description: `Analyse complète avec score ATS de ${results.overallScore}%`,
             score: results.overallScore,
             status: results.overallScore >= 80 ? 'success' : results.overallScore >= 60 ? 'warning' : 'error',
@@ -52,6 +67,7 @@ export const CVAnalysis: React.FC = () => {
               fileName: file.name,
               fileSize: file.size,
               fileType: file.type,
+              documentType: documentType,
               analysisTime: new Date().toISOString()
             }
           });
@@ -95,10 +111,11 @@ export const CVAnalysis: React.FC = () => {
       // Ajouter l'activité d'optimisation
       if (analysisResults && uploadedFile) {
         const newScore = Math.min(analysisResults.overallScore + 8, 98);
+        const documentLabel = documentType === 'cv' ? 'CV' : 'Lettre de motivation';
         
         await addActivity({
           type: 'optimization',
-          title: `CV optimisé - ${uploadedFile.name}`,
+          title: `${documentLabel} optimisé - ${uploadedFile.name}`,
           description: `Score ATS amélioré de ${analysisResults.overallScore}% à ${newScore}%`,
           score: newScore,
           status: 'success',
@@ -106,6 +123,7 @@ export const CVAnalysis: React.FC = () => {
             fileName: uploadedFile.name,
             originalScore: analysisResults.overallScore,
             newScore: newScore,
+            documentType: documentType,
             improvements: analysisResults.improvements.length
           }
         });
@@ -134,7 +152,10 @@ export const CVAnalysis: React.FC = () => {
             Analyse IA en cours
           </h3>
           <p className="text-gray-600 mb-6">
-            Notre intelligence artificielle analyse votre CV et génère des recommandations personnalisées pour optimiser votre compatibilité ATS
+            {documentType === 'cv' 
+              ? 'Notre intelligence artificielle analyse votre CV et génère des recommandations personnalisées pour optimiser votre compatibilité ATS'
+              : 'Notre intelligence artificielle analyse votre lettre de motivation et génère des recommandations personnalisées pour maximiser son impact'
+            }
           </p>
           
           <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 border border-gray-200/30">
@@ -148,7 +169,12 @@ export const CVAnalysis: React.FC = () => {
                   />
                 ))}
               </div>
-              <span>Analyse des mots-clés, structure et optimisation ATS...</span>
+              <span>
+                {documentType === 'cv' 
+                  ? 'Analyse des mots-clés, structure et optimisation ATS...'
+                  : 'Analyse du contenu, ton et cohérence de la lettre...'
+                }
+              </span>
             </div>
           </div>
         </div>
@@ -204,8 +230,9 @@ export const CVAnalysis: React.FC = () => {
         
         <AnalysisResults 
           results={analysisResults} 
-          fileName={uploadedFile?.name || 'CV'}
+          fileName={uploadedFile?.name || (documentType === 'cv' ? 'CV' : 'Lettre')}
           originalContent={originalContent}
+          documentType={documentType}
           onOptimize={handleOptimize}
           isOptimizing={isOptimizing}
         />
@@ -213,9 +240,42 @@ export const CVAnalysis: React.FC = () => {
     );
   }
 
+  // Configuration des textes selon le type de document
+  const getDocumentConfig = () => {
+    if (documentType === 'cv') {
+      return {
+        title: title || 'Analyse CV',
+        description: description || 'Uploadez votre CV pour une analyse ATS complète',
+        uploadDescription: uploadDescription || 'Glissez-déposez votre CV ou cliquez pour sélectionner'
+      };
+    } else {
+      return {
+        title: title || 'Analyse Lettre de motivation',
+        description: description || 'Uploadez votre lettre de motivation pour une analyse détaillée',
+        uploadDescription: uploadDescription || 'Glissez-déposez votre lettre ou cliquez pour sélectionner'
+      };
+    }
+  };
+
+  const config = getDocumentConfig();
+
   return (
     <div className="space-y-6">
-      <CVUpload onFileUpload={handleFileUpload} />
+      {/* En-tête avec titre et description */}
+      <div className="text-center mb-8">
+        <h2 className="text-2xl font-bold bg-gradient-to-r from-violet-600 via-pink-600 to-blue-600 bg-clip-text text-transparent mb-2">
+          {config.title}
+        </h2>
+        <p className="text-gray-600 max-w-2xl mx-auto">
+          {config.description}
+        </p>
+      </div>
+
+      <CVUpload 
+        onFileUpload={handleFileUpload}
+        documentType={documentType}
+        uploadDescription={config.uploadDescription}
+      />
       
       {/* Affichage des erreurs */}
       {error && (
