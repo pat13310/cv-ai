@@ -5,6 +5,7 @@ import { useProfile } from '../../hooks/useProfile';
 import { ProfileForm } from '../Profile/ProfileForm';
 import { ProfileTest } from '../Profile/ProfileTest';
 import { SupabaseConfigModal } from '../Auth/SupabaseConfigModal';
+import { useAuthStore } from '../../store/useAuthStore';
 
 interface SettingsProps {
   onBack: () => void;
@@ -65,7 +66,10 @@ export const Settings: React.FC<SettingsProps> = ({ onBack, onApiKeyStatusChange
   const [activeSection, setActiveSection] = useState('ai');
   const [authError, setAuthError] = useState<string | null>(null);
   const [showConfigModal, setShowConfigModal] = useState(false);
-  const { profile, profileLoading, saveOpenAIKey, removeOpenAIKey } = useSupabase();
+  const { profile: supaProfile, saveOpenAIKey, removeOpenAIKey } = useSupabase();
+  const storeProfile = useAuthStore(s => s.profile);
+  const currentProfile = storeProfile ?? supaProfile;
+
   const {
     getFullName,
     getInitials,
@@ -137,9 +141,10 @@ export const Settings: React.FC<SettingsProps> = ({ onBack, onApiKeyStatusChange
 
   const [settings, setSettings] = useState<SettingsType>(getInitialSettings());
 
-  // Charger les données du profil depuis Supabase
+  // Charger les données du profil depuis le store (hydraté par AuthBoundary)
   useEffect(() => {
-    if (profile && !profileLoading) {
+    const profile = storeProfile ?? supaProfile; // fallback temporaire
+    if (profile) {
       setSettings(prev => ({
         ...prev,
         ai: {
@@ -165,7 +170,7 @@ export const Settings: React.FC<SettingsProps> = ({ onBack, onApiKeyStatusChange
         }
       }));
     }
-  }, [profile, profileLoading]);
+  }, [storeProfile, supaProfile]);
 
   const sections = [
     { id: 'ai', label: 'Intelligence Artificielle', icon: Bot },
@@ -453,10 +458,10 @@ export const Settings: React.FC<SettingsProps> = ({ onBack, onApiKeyStatusChange
                     <div className="flex items-center space-x-2">
                       <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                       <span className="text-xs font-medium text-blue-900">
-                        {profile?.openai_api_key ? 'Stockée dans votre profil' : 'Stockée localement'}
+                        {currentProfile?.openai_api_key ? 'Stockée dans votre profil' : 'Stockée localement'}
                       </span>
                     </div>
-                    {profile?.openai_api_key && (
+                    {currentProfile?.openai_api_key && (
                       <button
                         onClick={async () => {
                           if (confirm('Êtes-vous sûr de vouloir supprimer la clé API de votre profil ?')) {
@@ -656,7 +661,7 @@ export const Settings: React.FC<SettingsProps> = ({ onBack, onApiKeyStatusChange
           <span>Profil utilisateur</span>
         </h3>
         
-        {profile && (
+        {currentProfile && (
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-gradient-to-r from-violet-600 to-pink-600 rounded-full flex items-center justify-center text-white font-semibold">
               {getInitials()}
@@ -672,7 +677,7 @@ export const Settings: React.FC<SettingsProps> = ({ onBack, onApiKeyStatusChange
       </div>
 
       {/* Statut du profil */}
-      {profile && (
+      {currentProfile && (
         <div className={`p-4 rounded-xl border ${
           isProfileComplete()
             ? 'bg-emerald-50 border-emerald-200 text-emerald-800'

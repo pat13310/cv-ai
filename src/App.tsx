@@ -16,16 +16,28 @@ import { Settings } from './components/Settings/Settings';
 import { AIChat } from './components/Chat/AIChat';
 import { CVCreatorDemo } from './components/CVCreator/CVCreatorDemo';
 import { LetterEditor } from './components/LetterEditor/LetterEditor';
+import { useAppStore } from './store/useAppStore';
+import { AuthBoundary } from './components/Auth/AuthBoundary';
+import { useAuthStore } from './store/useAuthStore';
 
 // Composant pour l'authentification Supabase
 const SupabaseAppContent: React.FC = () => {
-  const { user, profile, isAuthenticated, isLoading, signOut } = useAuth();
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [showSettings, setShowSettings] = useState(false);
-  const [showChat, setShowChat] = useState(false);
-  const [voiceEnabled] = useState(true);
-  const [showCVCreatorDemo, setShowCVCreatorDemo] = useState(false);
-  const [apiKeyStatus, setApiKeyStatus] = useState<'valid' | 'invalid' | 'missing'>('missing');
+  const { signOut } = useAuth();
+  const user = useAuthStore(s => s.user);
+  const profile = useAuthStore(s => s.profile);
+  const isLoading = useAuthStore(s => s.loading);
+  const isAuthenticated = !!user;
+  const activeTab = useAppStore(s => s.activeTab);
+  const setActiveTab = useAppStore(s => s.setActiveTab);
+  const showSettings = useAppStore(s => s.showSettings);
+  const setShowSettings = useAppStore(s => s.setShowSettings);
+  const showChat = useAppStore(s => s.showChat);
+  const setShowChat = useAppStore(s => s.setShowChat);
+  const voiceEnabled = useAppStore(s => s.voiceEnabled);
+  const showCVCreatorDemo = useAppStore(s => s.showCVCreatorDemo);
+  const setShowCVCreatorDemo = useAppStore(s => s.setShowCVCreatorDemo);
+  const apiKeyStatus = useAppStore(s => s.apiKeyStatus);
+  const setApiKeyStatus = useAppStore(s => s.setApiKeyStatus);
 
   // Fonction pour vérifier le statut de la clé API
   const checkApiKeyStatus = () => {
@@ -223,13 +235,18 @@ const SupabaseAppContent: React.FC = () => {
 // Composant pour l'authentification mock (fallback)
 const MockAppContent: React.FC = () => {
   const { user, isAuthenticated, isLoading, logout } = useMockAuth();
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [showSettings, setShowSettings] = useState(false);
-  const [showChat, setShowChat] = useState(false);
-  const [voiceEnabled] = useState(true);
+  const activeTab = useAppStore(s => s.activeTab);
+  const setActiveTab = useAppStore(s => s.setActiveTab);
+  const showSettings = useAppStore(s => s.showSettings);
+  const setShowSettings = useAppStore(s => s.setShowSettings);
+  const showChat = useAppStore(s => s.showChat);
+  const setShowChat = useAppStore(s => s.setShowChat);
+  const voiceEnabled = useAppStore(s => s.voiceEnabled);
   const [demoMode, setDemoMode] = useState(false);
-  const [showCVCreatorDemo, setShowCVCreatorDemo] = useState(false);
-  const [apiKeyStatus, setApiKeyStatus] = useState<'valid' | 'invalid' | 'missing'>('missing');
+  const showCVCreatorDemo = useAppStore(s => s.showCVCreatorDemo);
+  const setShowCVCreatorDemo = useAppStore(s => s.setShowCVCreatorDemo);
+  const apiKeyStatus = useAppStore(s => s.apiKeyStatus);
+  const setApiKeyStatus = useAppStore(s => s.setApiKeyStatus);
 
   // Fonction pour vérifier le statut de la clé API
   const checkApiKeyStatus = () => {
@@ -435,7 +452,9 @@ const App: React.FC = () => {
   if (isConfigured) {
     return (
       <SupabaseAuthProvider>
-        <SupabaseAppContent />
+        <AuthBoundary>
+          <SupabaseAppContent />
+        </AuthBoundary>
       </SupabaseAuthProvider>
     );
   }
