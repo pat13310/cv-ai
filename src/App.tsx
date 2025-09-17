@@ -15,6 +15,7 @@ import { Templates } from './components/Templates/Templates';
 import { Settings } from './components/Settings/Settings';
 import { AIChat } from './components/Chat/AIChat';
 import { CVCreatorDemo } from './components/CVCreator/CVCreatorDemo';
+import { LetterEditor } from './components/LetterEditor/LetterEditor';
 
 // Composant pour l'authentification Supabase
 const SupabaseAppContent: React.FC = () => {
@@ -124,6 +125,33 @@ const SupabaseAppContent: React.FC = () => {
             description="Créez une lettre de motivation professionnelle et personnalisée"
           />
         );
+      case 'chat-cv':
+        return (
+          <AIChat 
+            onBack={handleBackToDashboard} 
+            voiceEnabled={voiceEnabled}
+            mode="general"
+            title="Coach CV IA"
+            description="Votre assistant personnel pour améliorer votre CV"
+          />
+        );
+      case 'chat-general':
+        return (
+          <AIChat 
+            onBack={handleBackToDashboard} 
+            voiceEnabled={voiceEnabled}
+            mode="general"
+            title="Coach de Carrière IA"
+            description="Votre assistant personnel pour des conseils de carrière"
+          />
+        );
+      case 'letter-editor':
+        return (
+          <LetterEditor 
+            onSave={(content) => console.log('Letter saved:', content)}
+            onExport={(content, format) => console.log('Letter exported:', format, content)}
+          />
+        );
       default:
         return <Dashboard />;
     }
@@ -138,7 +166,7 @@ const SupabaseAppContent: React.FC = () => {
     if (tab !== 'settings') {
       setShowSettings(false);
     }
-    if (tab === 'chat') {
+    if (tab === 'chat' || tab === 'chat-cv' || tab === 'chat-general') {
       setShowChat(true);
     } else {
       setShowChat(false);
@@ -301,6 +329,33 @@ const MockAppContent: React.FC = () => {
             description="Créez une lettre de motivation professionnelle et personnalisée"
           />
         );
+      case 'chat-cv':
+        return (
+          <AIChat 
+            onBack={handleBackToDashboard} 
+            voiceEnabled={voiceEnabled}
+            mode="general"
+            title="Coach CV IA"
+            description="Votre assistant personnel pour améliorer votre CV"
+          />
+        );
+      case 'chat-general':
+        return (
+          <AIChat 
+            onBack={handleBackToDashboard} 
+            voiceEnabled={voiceEnabled}
+            mode="general"
+            title="Coach de Carrière IA"
+            description="Votre assistant personnel pour des conseils de carrière"
+          />
+        );
+      case 'letter-editor':
+        return (
+          <LetterEditor 
+            onSave={(content) => console.log('Letter saved:', content)}
+            onExport={(content, format) => console.log('Letter exported:', format, content)}
+          />
+        );
       default:
         return <Dashboard />;
     }
@@ -315,7 +370,7 @@ const MockAppContent: React.FC = () => {
     if (tab !== 'settings') {
       setShowSettings(false);
     }
-    if (tab === 'chat') {
+    if (tab === 'chat' || tab === 'chat-cv' || tab === 'chat-general') {
       setShowChat(true);
     } else {
       setShowChat(false);

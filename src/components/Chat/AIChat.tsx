@@ -1,11 +1,10 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useImperativeHandle } from "react";
-import { ArrowLeft, Send, User, Bot, Loader2, AlertCircle, Mic, Volume2, VolumeX, CheckCircle2, Copy, Sparkles } from "lucide-react";
+import { ArrowLeft, Send, User, Bot, Loader2, AlertCircle, Mic, Volume2, VolumeX, CheckCircle2, Copy, Sparkles, ChevronRight } from "lucide-react";
 import { useOpenAI } from "../../hooks/useOpenAI";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { ChatBubble } from './ChatBubble';
 import { LettreForm } from './LettreForm';
 
 export interface ChatMessage {
@@ -98,8 +97,144 @@ type CodeProps = {
   children?: React.ReactNode;
 };
 
+// Composant pour les éléments de liste interactifs
+const InteractiveListItem: React.FC<{
+  children: React.ReactNode;
+  itemText: string;
+  isUser: boolean;
+  onCopy: (text: string) => void;
+  onAskAI: (text: string) => void;
+}> = ({ children, itemText, isUser, onCopy, onAskAI }) => {
+  const [showActions, setShowActions] = useState(false);
+  const [copied, setCopied] = useState(false);
+  
+  const handleCopy = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    e.nativeEvent.stopImmediatePropagation();
+    try {
+      await navigator.clipboard.writeText(itemText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      onCopy(itemText);
+    } catch (err) {
+      console.error('Erreur lors de la copie:', err);
+      // Fallback pour les navigateurs plus anciens
+      const textArea = document.createElement('textarea');
+      textArea.value = itemText;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      onCopy(itemText);
+    }
+  };
+  
+  const handleAskAI = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    e.nativeEvent.stopImmediatePropagation();
+    onAskAI(itemText); // Envoyer juste le texte, sans préfixe
+  };
+
+  return (
+    <li 
+      className={`
+        relative group transition-all duration-300 ease-out cursor-pointer
+        ${isUser ? 'text-gray-100' : 'text-gray-700 dark:text-gray-500'}
+        hover:scale-[1.02] hover:shadow-lg
+        ${isUser 
+          ? 'hover:bg-white/10 hover:backdrop-blur-sm' 
+          : 'hover:bg-violet-50/80 hover:shadow-violet-100/50'
+        }
+        rounded-xl p-3 -m-3 mb-1
+        before:absolute before:inset-0 before:rounded-xl before:bg-gradient-to-r
+        ${isUser
+          ? 'before:from-white/5 before:to-white/10'
+          : 'before:from-violet-500/5 before:to-pink-500/5'
+        }
+        before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-300
+      `}
+      onMouseEnter={() => setShowActions(true)}
+      onMouseLeave={() => setShowActions(false)}
+    >
+      <div className="flex items-start justify-between">
+        <span className="text-sm leading-relaxed flex-1">{children}</span>
+        
+        {/* Actions pour chaque élément de liste */}
+        <div 
+          className={`
+            flex items-center gap-1 ml-2 
+            transition-all duration-300 ease-out
+            ${showActions ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2'}
+          `}
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            e.nativeEvent.stopImmediatePropagation();
+          }}
+        >
+          <button
+            onClick={handleCopy}
+            className={`
+              relative p-2 rounded-lg transition-all duration-300 ease-out
+              transform hover:scale-110 hover:-translate-y-0.5
+              ${copied
+                ? (isUser 
+                    ? 'bg-green-500/30 text-green-200 shadow-lg shadow-green-500/20' 
+                    : 'bg-green-100 text-green-600 shadow-lg shadow-green-500/20')
+                : (isUser 
+                    ? 'hover:bg-white/20 text-white/60 hover:text-white hover:shadow-lg hover:shadow-white/10' 
+                    : 'hover:bg-violet-100 text-gray-400 hover:text-violet-600 hover:shadow-lg hover:shadow-violet-500/20')
+              }
+              before:absolute before:inset-0 before:rounded-lg before:bg-gradient-to-r
+              ${copied
+                ? (isUser ? 'before:from-green-400/20 before:to-green-500/20' : 'before:from-green-400/10 before:to-green-500/10')
+                : (isUser ? 'before:from-white/10 before:to-white/5' : 'before:from-violet-500/10 before:to-pink-500/10')
+              }
+              before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-300
+            `}
+            title={copied ? "Copié !" : "Copier cet élément"}
+          >
+            <div className="relative z-10">
+              {copied ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+            </div>
+          </button>
+          
+          <button
+            onClick={handleAskAI}
+            className={`
+              relative p-2 rounded-lg transition-all duration-300 ease-out
+              transform hover:scale-110 hover:-translate-y-0.5
+              ${isUser 
+                ? 'hover:bg-white/20 text-white/60 hover:text-white hover:shadow-lg hover:shadow-white/10' 
+                : 'hover:bg-violet-100 text-gray-400 hover:text-violet-600 hover:shadow-lg hover:shadow-violet-500/20'
+              }
+              before:absolute before:inset-0 before:rounded-lg before:bg-gradient-to-r
+              ${isUser ? 'before:from-white/10 before:to-white/5' : 'before:from-violet-500/10 before:to-pink-500/10'}
+              before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-300
+            `}
+            title="Demander plus de détails à l'IA"
+          >
+            <div className="relative z-10">
+              <ChevronRight className="w-3.5 h-3.5" />
+            </div>
+          </button>
+        </div>
+      </div>
+    </li>
+  );
+};
+
 // Composant pour rendre le Markdown
-const MarkdownContent: React.FC<{ content: string; isUser: boolean }> = ({ content, isUser }) => {
+const MarkdownContent: React.FC<{ 
+  content: string; 
+  isUser: boolean; 
+  onCopyItem?: (text: string) => void;
+  onAskAI?: (text: string) => void;
+}> = ({ content, isUser, onCopyItem, onAskAI }) => {
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
@@ -151,14 +286,52 @@ const MarkdownContent: React.FC<{ content: string; isUser: boolean }> = ({ conte
           <p className="text-sm leading-relaxed mb-3 last:mb-0 text-gray-800 dark:text-gray-500" style={{ color: 'var(--tw-text-gray-800)' }}>{children}</p>
         ),
         ul: ({ children }) => (
-          <ul className={`list-disc list-inside mb-3 space-y-2 ml-4 ${isUser ? 'text-gray-100' : 'text-gray-700 dark:text-gray-500'} [&>li]:marker:text-purple-500 [&>li]:marker:font-semibold`}>{children}</ul>
+          <ul className={`list-none mb-3 space-y-1 ml-0 ${isUser ? 'text-gray-100' : 'text-gray-700 dark:text-gray-500'}`}>{children}</ul>
         ),
         ol: ({ children }) => (
-          <ol className={`list-decimal list-inside mb-3 space-y-2 ml-4 ${isUser ? 'text-gray-200' : 'text-black dark:text-gray-500'} [&>li]:marker:text-violet-600 [&>li]:marker:font-semibold`}>{children}</ol>
+          <ol className={`list-none mb-3 space-y-1 ml-0 ${isUser ? 'text-gray-200' : 'text-black dark:text-gray-500'}`}>{children}</ol>
         ),
-        li: ({ children }) => (
-          <li className="text-sm leading-relaxed">{children}</li>
-        ),
+        li: ({ children }) => {
+          // Fonction pour extraire le texte proprement des éléments React
+          const extractTextFromChildren = (children: React.ReactNode): string => {
+            if (typeof children === 'string') {
+              return children;
+            }
+            if (typeof children === 'number') {
+              return children.toString();
+            }
+            if (React.isValidElement(children)) {
+              return extractTextFromChildren(children.props.children);
+            }
+            if (Array.isArray(children)) {
+              return children.map(child => extractTextFromChildren(child)).join('');
+            }
+            return '';
+          };
+
+          const itemText = extractTextFromChildren(children).trim();
+
+          return onCopyItem && onAskAI ? (
+            <InteractiveListItem
+              itemText={itemText}
+              isUser={isUser}
+              onCopy={onCopyItem}
+              onAskAI={onAskAI}
+            >
+              <span className={`inline-flex items-center ${isUser ? 'text-white/90' : 'text-violet-600'}`}>
+                <span className="w-1.5 h-1.5 bg-current rounded-full mr-3 flex-shrink-0"></span>
+                {children}
+              </span>
+            </InteractiveListItem>
+          ) : (
+            <li className="text-sm leading-relaxed flex items-start">
+              <span className={`inline-flex items-center ${isUser ? 'text-white/90' : 'text-violet-600'}`}>
+                <span className="w-1.5 h-1.5 bg-current rounded-full mr-3 flex-shrink-0 mt-2"></span>
+                {children}
+              </span>
+            </li>
+          );
+        },
         blockquote: ({ children }) => (
           <blockquote className="border-l-4 border-violet-400 pl-4 pr-4 py-2 my-2 bg-violet-50 rounded-r-lg italic">
             {children}
@@ -213,7 +386,11 @@ const MarkdownContent: React.FC<{ content: string; isUser: boolean }> = ({ conte
   );
 };
 
-const ChatMessageBubble = React.memo<BubbleProps>(({ message, onSpeak, canSpeak }) => {
+const ChatMessageBubble = React.memo<BubbleProps & { 
+  onCopyItem?: (text: string) => void; 
+  onAskAI?: (text: string) => void;
+  onClearInput?: () => void;
+}>(({ message, onSpeak, canSpeak, onCopyItem, onAskAI, onClearInput }) => {
   const isUser = message.role === "user";
 
   const timeLabel = useMemo(() => {
@@ -225,6 +402,12 @@ const ChatMessageBubble = React.memo<BubbleProps>(({ message, onSpeak, canSpeak 
       return null;
     }
   }, [message.createdAt]);
+
+  const handleCopyItem = useCallback((text: string) => {
+    navigator.clipboard.writeText(text);
+    onCopyItem?.(text);
+    onClearInput?.(); // Vider la barre de saisie après copie
+  }, [onCopyItem, onClearInput]);
 
   return (
     <div className={clsx("flex items-start gap-3 group", isUser && "justify-end")}>
@@ -262,7 +445,15 @@ const ChatMessageBubble = React.memo<BubbleProps>(({ message, onSpeak, canSpeak 
             )}
 
             <div className={clsx("prose", "prose-sm max-w-none", isUser ? "prose-invert" : "")}>
-              <MarkdownContent content={message.text} isUser={isUser} />
+              <MarkdownContent 
+                content={message.text} 
+                isUser={isUser} 
+                onCopyItem={handleCopyItem}
+                onAskAI={(text) => {
+                  onAskAI?.(text);
+                  onClearInput?.(); // Vider la barre de saisie après envoi à l'IA
+                }}
+              />
             </div>
 
             {/* Sparkle effect for bot messages */}
@@ -310,7 +501,8 @@ const ChatMessages: React.FC<{
   isLoading: boolean;
   initialGreeting?: boolean;
   sendMessage: (text: string) => void;
-}> = ({ messages, isLoading, initialGreeting, sendMessage }) => {
+  onClearInput?: () => void;
+}> = ({ messages, isLoading, initialGreeting, sendMessage, onClearInput }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -325,36 +517,33 @@ const ChatMessages: React.FC<{
   return (
     <section ref={containerRef} className="flex-1 p-6 overflow-y-auto space-y-6">
       {initialGreeting && (
-        <ChatBubble
-          message="Bonjour ! Je suis votre coach de carrière IA. Comment puis-je vous aider à améliorer votre CV ou à vous préparer pour un entretien aujourd'hui ?"
-          type="assistant"
-          timestamp={new Date()}
-          onCopy={() => console.log('Message copié')}
-          onLike={() => console.log('Message aimé')}
-          onDislike={() => console.log('Message non aimé')}
-          onListItemClick={(itemId: string, itemText: string) => {
-            // Envoyer automatiquement la question détaillée
-            const detailQuestion = `Peux-tu me donner plus de détails sur : ${itemText}`;
-            sendMessage(detailQuestion);
+        <ChatMessageBubble
+          message={{
+            role: "model" as const,
+            text: "Bonjour ! Je suis votre coach de carrière IA. Comment puis-je vous aider à améliorer votre CV ou à vous préparer pour un entretien aujourd'hui ?",
+            createdAt: new Date()
           }}
+          onCopyItem={(text: string) => {
+            console.log('Élément copié:', text);
+          }}
+          onAskAI={(question: string) => {
+            sendMessage(question);
+          }}
+          onClearInput={onClearInput}
         />
       )}
 
       {messages.map((msg, idx) => (
-        <ChatBubble
+        <ChatMessageBubble
           key={msg.id ?? `${msg.role}-${idx}`}
-          message={msg.text}
-          type={msg.role === "user" ? "user" : "assistant"}
-          timestamp={msg.createdAt ? new Date(msg.createdAt) : new Date()}
-          userName={msg.role === "user" ? "Vous" : undefined}
-          onCopy={() => console.log('Message copié')}
-          onLike={() => console.log('Message aimé')}
-          onDislike={() => console.log('Message non aimé')}
-          onListItemClick={(itemId: string, itemText: string) => {
-            // Envoyer automatiquement une question de suivi
-            const followUpQuestion = `Peux-tu me donner plus de détails sur : ${itemText}`;
-            sendMessage(followUpQuestion);
+          message={msg}
+          onCopyItem={(text: string) => {
+            console.log('Élément copié:', text);
           }}
+          onAskAI={(question: string) => {
+            sendMessage(question);
+          }}
+          onClearInput={onClearInput}
         />
       ))}
 
@@ -383,6 +572,7 @@ const DRAFT_KEY = "chat_draft_input_v1";
 export type ChatComposerHandle = {
   setDraft: (text: string) => void;
   focus: () => void;
+  clearInput: () => void;
 };
 
 const ChatComposer = React.memo(
@@ -404,10 +594,16 @@ const ChatComposer = React.memo(
       localStorage.removeItem(DRAFT_KEY);
     }, [input, onSend]);
 
+    const clearInput = useCallback(() => {
+      setInput("");
+      localStorage.removeItem(DRAFT_KEY);
+    }, []);
+
     useImperativeHandle(ref, () => ({
       setDraft: (text: string) => setInput(text),
-      focus: () => { }
-    }), []);
+      focus: () => { },
+      clearInput: clearInput
+    }), [clearInput]);
 
     return (
       <footer className="p-4 border-t border-violet-100 bg-white/70 backdrop-blur-sm">
@@ -472,6 +668,7 @@ export const AIChat: React.FC<ChatProps> = ({
   const { editCVField, isLoading, error } = useOpenAI();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [showForm, setShowForm] = useState(mode === 'lettre');
+  const composerRef = useRef<ChatComposerHandle>(null);
 
   const sendMessage = useCallback(async (text: string) => {
     const userMsg: ChatMessage = { role: "user", text, createdAt: new Date() };
@@ -537,11 +734,13 @@ export const AIChat: React.FC<ChatProps> = ({
         isLoading={isLoading}
         initialGreeting={!showForm}
         sendMessage={sendMessage}
+        onClearInput={() => composerRef.current?.clearInput()}
       />
 
       {error && <ErrorBanner error={error} />}
 
       <ChatComposer
+        ref={composerRef}
         onSend={sendMessage}
         disabled={isLoading}
       />

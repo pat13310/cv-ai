@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileText, TrendingUp, Users, CheckCircle, PlusCircle, MessageSquare, FileEdit, Search } from 'lucide-react';
+import { FileText, TrendingUp, Users, CheckCircle, PlusCircle, MessageSquare, FileEdit, Search, Edit3 } from 'lucide-react';
 import { useSupabase } from '../../hooks/useSupabase';
 import { useProfile } from '../../hooks/useProfile';
 import { MetricCard } from './MetricCard';
@@ -172,7 +172,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           </p>
           
           {/* Actions Rapides intégrées */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
             {/* Bouton Créer un CV */}
             <button
               onClick={() => onNavigate?.('creator')}
@@ -193,13 +193,23 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               <span className="text-xs text-white/70 mt-1">Génération IA</span>
             </button>
 
+            {/* Bouton Éditeur de Lettres */}
+            <button
+              onClick={() => onNavigate?.('letter-editor')}
+              className="group flex flex-col items-center p-5 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white rounded-2xl border border-white/20 transition-all duration-300 hover:scale-105 hover:shadow-xl"
+            >
+              <Edit3 className="h-7 w-7 mb-3 text-white/90 group-hover:text-white group-hover:scale-110 transition-all duration-300" />
+              <span className="font-semibold text-sm">Éditeur de Lettres</span>
+              <span className="text-xs text-white/70 mt-1">Demo Editor</span>
+            </button>
+
             {/* Bouton Chat IA */}
             <button
-              onClick={() => onNavigate?.('chat')}
+              onClick={() => onNavigate?.('chat-cv')}
               className="group flex flex-col items-center p-5 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white rounded-2xl border border-white/20 transition-all duration-300 hover:scale-105 hover:shadow-xl"
             >
               <MessageSquare className="h-7 w-7 mb-3 text-white/90 group-hover:text-white group-hover:scale-110 transition-all duration-300" />
-              <span className="font-semibold text-sm">Chat IA</span>
+              <span className="font-semibold text-sm">Coach IA</span>
               <span className="text-xs text-white/70 mt-1">Assistant virtuel</span>
             </button>
 

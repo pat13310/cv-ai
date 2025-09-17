@@ -41,7 +41,15 @@ const navItems: NavItem[] = [
     ]
   },
   { id: 'templates', label: 'Templates', icon: FileText },
-  { id: 'chat', label: 'Chat IA', icon: MessageSquare },
+  { 
+    id: 'coach', 
+    label: 'Coach IA', 
+    icon: MessageSquare,
+    dropdown: [
+      { id: 'chat-cv', label: 'Coach CV', icon: FileText },
+      { id: 'chat-general', label: 'Coach Carrière', icon: Brain },
+    ]
+  },
   { id: 'library', label: 'Bibliothèque', icon: FolderOpen },
   { id: 'models', label: 'Modèles', icon: BookOpen },
 ];

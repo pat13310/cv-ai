@@ -87,104 +87,78 @@ export const CVPreviewDragDrop: React.FC<CVPreviewProps> = ({
   }, [error, openAIError]);
 
   return (
-    <div className="w-full" style={{ aspectRatio: '1 / 1.414' }}>
-      <div className="border border-violet-500 rounded-lg p-4 bg-gray-50 h-full overflow-auto shadow-md" style={{
-        fontFamily: customFont,
-        boxSizing: 'border-box'
-      }}>
-        {setCustomFont && setCustomColor && setTitleColor && (
-          <StyleControls
-            customFont={customFont}
-            setCustomFont={setCustomFont}
-            customColor={customColor}
-            setCustomColor={setCustomColor}
-            titleColor={titleColor}
-            setTitleColor={setTitleColor}
-            layoutColumns={layoutColumns}
-            setLayoutColumns={setLayoutColumns}
-            nameAlignment={nameAlignment}
-            setNameAlignment={setNameAlignment}
-            photoAlignment={photoAlignment}
-            setPhotoAlignment={setPhotoAlignment}
-            photoSize={photoSize}
-            setPhotoSize={setPhotoSize}
-            photoShape={photoShape}
-            setPhotoShape={setPhotoShape}
-            nameFontSize={nameFontSize}
-            setNameFontSize={setNameFontSize}
-            // Props pour les ajustements d'image
-            photoZoom={photoZoom}
-            setPhotoZoom={setPhotoZoom}
-            photoPositionX={photoPositionX}
-            setPhotoPositionX={setPhotoPositionX}
-            photoPositionY={photoPositionY}
-            setPhotoPositionY={setPhotoPositionY}
-            photoRotation={photoRotation}
-            setPhotoRotation={setPhotoRotation}
-            photoObjectFit={photoObjectFit}
-            setPhotoObjectFit={setPhotoObjectFit}
-            selectedSection={selectedSection}
-            availableFonts={availableFonts}
-            availableColors={availableColors}
-            hasPhoto={!!editableContent.photo}
-          />
-        )}
+    <div className="w-full flex justify-center">
+      <div className="relative w-full max-w-lg">
+        {/* Dégradés décoratifs discrets autour du CV */}
+        <div className="absolute -inset-4 bg-gradient-to-br from-gray-100 via-slate-50 to-gray-100 rounded-2xl opacity-40 blur-sm"></div>
+        <div className="absolute -inset-2 bg-gradient-to-tr from-violet-50 via-gray-50 to-violet-50 rounded-xl opacity-30 blur-xs"></div>
+        
+        {/* CV au format A4 */}
+        <div className="relative border border-violet-500 rounded-lg bg-white shadow-xl flex flex-col" style={{
+          fontFamily: customFont,
+          boxSizing: 'border-box',
+          minHeight: 'fit-content'
+        }}>
 
-        {/* Affichage des erreurs avec auto-hide */}
-        {(error || openAIError) && showError && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 pr-12 rounded relative mt-4 transition-opacity duration-300" role="alert">
-            <strong className="font-bold">Erreur : </strong>
-            <span className="block sm:inline">{error || openAIError}</span>
-            <button
-              onClick={() => setShowError(false)}
-              className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-red-700 hover:text-red-900 hover:bg-red-200 rounded-full text-lg font-bold transition-colors duration-200"
-              aria-label="Fermer"
-              title="Fermer le message"
-            >
-              ×
-            </button>
+          {/* Zone de contenu CV sans scroll */}
+          <div className="flex-1 p-4 overflow-visible">
+            {/* Affichage des erreurs avec auto-hide */}
+            {(error || openAIError) && showError && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 pr-12 rounded relative mb-4 transition-opacity duration-300" role="alert">
+                <strong className="font-bold">Erreur : </strong>
+                <span className="block sm:inline">{error || openAIError}</span>
+                <button
+                  onClick={() => setShowError(false)}
+                  className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-red-700 hover:text-red-900 hover:bg-red-200 rounded-full text-lg font-bold transition-colors duration-200"
+                  aria-label="Fermer"
+                  title="Fermer le message"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+
+              {/* Sections déplaçables */}
+            <DraggableSections
+              editableContent={editableContent}
+              setEditableContent={setEditableContent}
+              experiences={experiences}
+              setExperiences={setExperiences}
+              skills={skills}
+              setSkills={setSkills}
+              languages={languages}
+              setLanguages={setLanguages}
+              educations={educations}
+              setEducations={setEducations}
+              editingField={editingField}
+              setEditingField={setEditingField}
+              customColor={customColor}
+              titleColor={titleColor}
+              addExperience={addExperience}
+              removeExperience={removeExperience}
+              addSkill={addSkill}
+              removeSkill={removeSkill}
+              addLanguage={addLanguage}
+              removeLanguage={removeLanguage}
+              addEducation={addEducation}
+              removeEducation={removeEducation}
+              generateWithAI={generateWithAI}
+              isLoading={isLoading}
+              nameAlignment={nameAlignment}
+              photoAlignment={photoAlignment}
+              photoSize={photoSize}
+              photoShape={photoShape}
+              nameFontSize={nameFontSize}
+              // Props pour les ajustements d'image
+              photoZoom={photoZoom}
+              photoPositionX={photoPositionX}
+              photoPositionY={photoPositionY}
+              photoRotation={photoRotation}
+              photoObjectFit={photoObjectFit}
+              setSelectedSection={setSelectedSection}
+            />
           </div>
-        )}
-
-        {/* Sections déplaçables */}
-        <DraggableSections
-          editableContent={editableContent}
-          setEditableContent={setEditableContent}
-          experiences={experiences}
-          setExperiences={setExperiences}
-          skills={skills}
-          setSkills={setSkills}
-          languages={languages}
-          setLanguages={setLanguages}
-          educations={educations}
-          setEducations={setEducations}
-          editingField={editingField}
-          setEditingField={setEditingField}
-          customColor={customColor}
-          titleColor={titleColor}
-          addExperience={addExperience}
-          removeExperience={removeExperience}
-          addSkill={addSkill}
-          removeSkill={removeSkill}
-          addLanguage={addLanguage}
-          removeLanguage={removeLanguage}
-          addEducation={addEducation}
-          removeEducation={removeEducation}
-          generateWithAI={generateWithAI}
-          isLoading={isLoading}
-          nameAlignment={nameAlignment}
-          photoAlignment={photoAlignment}
-          photoSize={photoSize}
-          photoShape={photoShape}
-          nameFontSize={nameFontSize}
-          // Props pour les ajustements d'image
-          photoZoom={photoZoom}
-          photoPositionX={photoPositionX}
-          photoPositionY={photoPositionY}
-          photoRotation={photoRotation}
-          photoObjectFit={photoObjectFit}
-          setSelectedSection={setSelectedSection}
-        />
+        </div>
       </div>
     </div>
   );

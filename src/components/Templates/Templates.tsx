@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Download, Eye, Star, FileText, Award, TrendingUp, Users, Search, Sparkles } from 'lucide-react';
+import { Eye, Star, Search, Award, Users, TrendingUp, Sparkles, FileText } from 'lucide-react';
 import { useSupabase } from '../../hooks/useSupabase';
 
 interface Template {
@@ -17,10 +17,195 @@ interface Template {
   industry: string;
 }
 
+// Types forts pour les profils utilisés dans les aperçus/exports
+interface Experience {
+  title: string;
+  company: string;
+  period: string;
+  achievements: string[];
+}
+
+interface Profile {
+  name: string;
+  title: string;
+  email: string;
+  phone: string;
+  location: string;
+  profile: string;
+  experiences: Experience[];
+  skills: string[];
+  education: string;
+  languages: string;
+}
+
+// Données de profils centralisées (source de vérité unique pour l'aperçu et l'export)
+// Désormais chaque domaine possède plusieurs profils pour varier l'aperçu entre templates.
+const profilesData: Record<string, Profile[]> = {
+  Tech: [{
+    name: 'ALEXANDRE MARTIN',
+    title: 'Développeur Full Stack Senior',
+    email: 'alexandre.martin@email.com',
+    phone: '+33 6 45 78 92 13',
+    location: 'Lyon, France',
+    profile: 'Développeur Full Stack avec 6 ans d\'expérience dans le développement d\'applications web modernes. Expert en React, Node.js et architectures cloud. Passionné par les technologies émergentes et l\'optimisation des performances.',
+    experiences: [
+      { title: 'Lead Developer Full Stack', company: 'TechInnovate', period: '2021-2024', achievements: ['• Développement d\'une plateforme SaaS utilisée par 50k+ utilisateurs', '• Réduction de 40% du temps de chargement via optimisation React', '• Management d\'une équipe de 4 développeurs'] },
+      { title: 'Développeur Full Stack', company: 'StartupLab', period: '2019-2021', achievements: ['• Création de 15+ APIs REST avec Node.js et Express', '• Intégration de solutions de paiement (Stripe, PayPal)', '• Migration vers architecture microservices'] },
+      { title: 'Développeur Frontend', company: 'WebAgency', period: '2018-2019', achievements: ['• Développement de 20+ sites web responsive', '• Amélioration SEO technique (+60% trafic organique)', '• Formation équipe aux bonnes pratiques React'] }
+    ],
+    skills: ['JavaScript ES6+', 'React/Redux', 'Node.js', 'TypeScript', 'MongoDB', 'PostgreSQL', 'AWS', 'Docker', 'Git', 'Jest/Cypress'],
+    education: 'Master Informatique - École Supérieure d\'Informatique',
+    languages: 'Français (Natif), Anglais (Courant), Espagnol (Intermédiaire)'
+  }],
+  Marketing: [{
+    name: 'SOPHIE BERNARD',
+    title: 'Chef de Projet Marketing Digital',
+    email: 'sophie.bernard@email.com',
+    phone: '+33 6 78 45 92 36',
+    location: 'Paris, France',
+    profile: 'Experte en marketing digital avec 7 ans d\'expérience dans la croissance d\'entreprises B2B et B2C. Spécialisée en SEO/SEA, analytics et automation marketing. Résultats prouvés : +150% de leads qualifiés.',
+    experiences: [
+      { title: 'Chef de Projet Marketing Digital', company: 'GrowthCorp', period: '2020-2024', achievements: ['• Augmentation de 180% du trafic organique en 2 ans', '• Gestion budget publicitaire 500k€/an (Google Ads, Facebook)', '• Mise en place CRM et parcours automation (HubSpot)'] },
+      { title: 'Spécialiste SEO/SEA', company: 'DigitalBoost', period: '2018-2020', achievements: ['• Optimisation SEO pour 25+ clients (secteurs variés)', '• ROI moyen campagnes Google Ads : 320%', '• Formation équipes internes aux outils analytics'] },
+      { title: 'Chargée de Marketing Digital', company: 'StartupMedia', period: '2017-2018', achievements: ['• Lancement stratégie social media (Instagram, LinkedIn)', '• Création contenu : blog, newsletters, vidéos', '• Analyse performance : Google Analytics, Data Studio'] }
+    ],
+    skills: ['Google Ads', 'Facebook Ads', 'SEO/SEM', 'Google Analytics', 'HubSpot', 'Mailchimp', 'Canva', 'WordPress', 'A/B Testing', 'Data Studio'],
+    education: 'Master Marketing Digital - ESSEC Business School',
+    languages: 'Français (Natif), Anglais (Courant), Italien (Notions)'
+  }],
+  Executive: [{
+    name: 'PHILIPPE DUBOIS',
+    title: 'Directeur Général',
+    email: 'philippe.dubois@email.com',
+    phone: '+33 6 12 89 45 67',
+    location: 'Paris, France',
+    profile: 'Leader expérimenté avec 15 ans d\'expérience en direction d\'entreprises technologiques. Expert en transformation digitale, développement international et management d\'équipes. Croissance moyenne : +45% CA annuel.',
+    experiences: [
+      { title: 'Directeur Général', company: 'TechGlobal SAS', period: '2019-2024', achievements: ['• Croissance CA de 12M€ à 35M€ en 5 ans', '• Expansion internationale : 8 nouveaux pays', '• Management direct de 150+ collaborateurs'] },
+      { title: 'Directeur des Opérations', company: 'InnovCorp', period: '2015-2019', achievements: ['• Transformation digitale complète de l\'entreprise', '• Réduction coûts opérationnels de 25%', '• Mise en place processus qualité ISO 9001'] },
+      { title: 'Directeur Commercial', company: 'SalesForce Europe', period: '2012-2015', achievements: ['• Développement réseau partenaires (50+ revendeurs)', '• Augmentation pipeline commercial de 200%', '• Formation et encadrement équipe 25 commerciaux'] }
+    ],
+    skills: ['Leadership', 'Stratégie d\'entreprise', 'Transformation digitale', 'Développement international', 'Négociation', 'Budget & Finance', 'Management', 'Innovation', 'Partenariats', 'M&A'],
+    education: 'MBA - HEC Paris, Ingénieur - École Centrale',
+    languages: 'Français (Natif), Anglais (Bilingue), Allemand (Courant)'
+  }],
+  Designer: [{
+    name: 'CAMILLE ROUSSEAU',
+    title: 'UX/UI Designer Senior',
+    email: 'camille.rousseau@email.com',
+    phone: '+33 6 34 67 89 12',
+    location: 'Bordeaux, France',
+    profile: 'Designer UX/UI passionnée avec 5 ans d\'expérience dans la création d\'expériences digitales innovantes. Expertise en design thinking, prototypage et recherche utilisateur. Portfolio : 30+ projets, 2M+ utilisateurs impactés.',
+    experiences: [
+      { title: 'Senior UX/UI Designer', company: 'DesignStudio Pro', period: '2021-2024', achievements: ['• Refonte UX app mobile : +85% satisfaction utilisateur', '• Design system pour 15+ produits digitaux', '• Recherche utilisateur : 200+ interviews, tests A/B'] },
+      { title: 'UX/UI Designer', company: 'CreativeAgency', period: '2019-2021', achievements: ['• Conception interfaces pour startups et PME', '• Prototypage interactif avec Figma et Principle', '• Collaboration étroite équipes dev (Agile/Scrum)'] },
+      { title: 'Designer Graphique', company: 'BrandFactory', period: '2018-2019', achievements: ['• Création identités visuelles pour 40+ marques', '• Design supports print et digital', '• Formation clients aux outils Adobe Creative Suite'] }
+    ],
+    skills: ['Figma', 'Sketch', 'Adobe XD', 'Photoshop', 'Illustrator', 'Principle', 'InVision', 'Miro', 'User Research', 'Prototyping'],
+    education: 'Master Design Interactif - École Supérieure d\'Art et Design',
+    languages: 'Français (Natif), Anglais (Courant), Japonais (Notions)'
+  }],
+  Data: [
+  {
+    name: 'THOMAS LEROY',
+    title: 'Data Scientist Senior',
+    email: 'thomas.leroy@email.com',
+    phone: '+33 6 56 78 34 91',
+    location: 'Toulouse, France',
+    profile: 'Data Scientist avec 6 ans d\'expérience en machine learning et analyse prédictive. Expert en Python, R et déploiement de modèles en production. Projets réalisés : +50 modèles ML, économies générées : 2M€+.',
+    experiences: [
+      { title: 'Senior Data Scientist', company: 'DataCorp Analytics', period: '2020-2024', achievements: ['• Développement modèles prédictifs (churn, pricing, demand)', '• Mise en production 15+ modèles ML (AWS, Docker)', '• Économies générées : 2.5M€ via optimisation pricing'] },
+      { title: 'Data Scientist', company: 'AI Solutions', period: '2018-2020', achievements: ['• Analyse de données clients (10M+ records)', '• Création dashboards interactifs (Tableau, Power BI)', '• Modèles de recommandation : +25% conversion'] },
+      { title: 'Analyste Data', company: 'TechAnalytics', period: '2017-2018', achievements: ['• ETL et nettoyage de données massives', '• Rapports automatisés avec Python et SQL', '• Formation équipes métier aux outils BI'] }
+    ],
+    skills: ['Python', 'R', 'SQL', 'Machine Learning', 'TensorFlow', 'Scikit-learn', 'Pandas', 'AWS', 'Docker', 'Tableau'],
+    education: 'Master Data Science - Université Paris-Saclay',
+    languages: 'Français (Natif), Anglais (Courant), Chinois (Notions)'
+  },
+  {
+    name: 'NATHALIE DURAND',
+    title: 'Senior Data Analyst',
+    email: 'nathalie.durand@email.com',
+    phone: '+33 6 22 44 66 88',
+    location: 'Nantes, France',
+    profile: 'Data Analyst senior spécialisée BI/Analytics avec 7 ans d\'expérience. Expertise en modélisation de données, visualisation et optimisation des tableaux de bord orientés KPIs.',
+    experiences: [
+      { title: 'Senior Data Analyst', company: 'InsightWorks', period: '2021-2024', achievements: ['• Déploiement d\'un data warehouse (Snowflake) multi-source', '• Industrialisation de dashboards Power BI (300+ utilisateurs)', '• Standardisation KPIs groupe et gouvernance des données'] },
+      { title: 'Data Analyst', company: 'RetailChain', period: '2018-2021', achievements: ['• Optimisation des analyses ventes et stocks', '• Mise en place d\'alertes automatiques (anomalies, seuils)', '• Formation des équipes métiers aux outils BI'] },
+      { title: 'BI Consultant', company: 'ConsultingData', period: '2016-2018', achievements: ['• Projets BI pour 10+ clients', '• Automatisation reporting hebdomadaire', '• Migration rapports Excel vers Power BI'] }
+    ],
+    skills: ['SQL', 'Power BI', 'Tableau', 'Python', 'DAX', 'ETL', 'Snowflake', 'Data Modeling', 'KPIs'],
+    education: 'Master Statistiques et Décisionnel - Université de Nantes',
+    languages: 'Français (Natif), Anglais (Courant)'
+  }
+  ],
+  Finance: [{
+    name: 'JULIEN MOREAU',
+    title: 'Contrôleur de Gestion Senior',
+    email: 'julien.moreau@email.com',
+    phone: '+33 6 87 34 56 21',
+    location: 'Marseille, France',
+    profile: 'Contrôleur de gestion avec 9 ans d\'expérience en pilotage financier et optimisation des performances. Expert en budgets, reporting et analyse de rentabilité. Économies réalisées : 3M€+, amélioration marge : +12%.',
+    experiences: [
+      { title: 'Contrôleur de Gestion Senior', company: 'ManufacturingGroup', period: '2020-2024', achievements: ['• Pilotage budgétaire de 5 filiales (CA 80M€)', '• Mise en place tableaux de bord KPI temps réel', '• Optimisation processus : économies 1.2M€/an'] },
+      { title: 'Contrôleur de Gestion', company: 'RetailChain SA', period: '2017-2020', achievements: ['• Analyse rentabilité par magasin (150 points de vente)', '• Reporting mensuel direction générale', '• Projet ERP : migration SAP réussie en 8 mois'] },
+      { title: 'Analyste Financier Junior', company: 'AuditFirm', period: '2015-2017', achievements: ['• Contrôle interne et audit opérationnel', '• Analyse écarts budgétaires et recommandations', '• Formation utilisateurs outils de gestion'] }
+    ],
+    skills: ['Contrôle de gestion', 'SAP/ERP', 'Excel avancé', 'Power BI', 'Budgets & Prévisions', 'Analyse financière', 'KPI Management', 'Audit interne', 'Consolidation', 'Reporting'],
+    education: 'Master Contrôle de Gestion - IAE Aix-Marseille',
+    languages: 'Français (Natif), Anglais (Courant), Espagnol (Courant)'
+  }]
+};
+
+
+// (Déplacé après generateRealisticHTML pour éviter les problèmes de portée)
+
+type ProfileKey = keyof typeof profilesData;
+
+const getProfileKey = (templateName: string): ProfileKey => {
+  let key: ProfileKey = 'Tech';
+  if (templateName.includes('Marketing')) key = 'Marketing';
+  else if (templateName.includes('Executive')) key = 'Executive';
+  else if (templateName.includes('Designer')) key = 'Designer';
+  else if (templateName.includes('Data')) key = 'Data';
+  else if (templateName.includes('Finance')) key = 'Finance';
+  return key;
+};
+
+const getProfileColor = (profileKey: ProfileKey): string => {
+  return profileKey === 'Tech' ? '#3B82F6'
+    : profileKey === 'Marketing' ? '#EC4899'
+    : profileKey === 'Executive' ? '#6B7280'
+    : profileKey === 'Designer' ? '#8B5CF6'
+    : profileKey === 'Data' ? '#10B981'
+    : '#F59E0B';
+};
+
+// Sélection déterministe d'un profil parmi plusieurs en fonction de l'id du template
+const hashString = (s: string): number => {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  }
+  return h;
+};
+
+const pickProfile = (profileKey: ProfileKey, seed: string): Profile | undefined => {
+  const list = profilesData[profileKey];
+  if (!list || list.length === 0) return undefined;
+  const s = seed && seed.trim().length > 0 ? seed : String(Math.random());
+  const idx = list.length === 1 ? 0 : hashString(s) % list.length;
+  return list[idx];
+};
+
 export const Templates: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('Tous');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('popular');
+  // État pour la modale d'aperçu A4
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState<string>('');
+  const [previewTitle, setPreviewTitle] = useState<string>('');
   
   const { templates, loading, error } = useSupabase();
 
@@ -153,8 +338,26 @@ export const Templates: React.FC = () => {
       wordFile: 'cv-consultant-senior.docx',
       isPremium: true,
       industry: 'Conseil'
+    },
+    {
+      id: '9',
+      name: 'CV Product Manager Moderne',
+      category: 'Produit',
+      description: 'Style moderne et professionnel avec mise en avant des impacts et KPIs produits',
+      preview: 'bg-gradient-to-br from-slate-100 to-sky-100',
+      atsScore: 95,
+      downloads: '2.4k',
+      rating: 4.8,
+      tags: ['Product', 'KPIs', 'Roadmap', 'Leadership'],
+      wordFile: 'cv-product-manager-moderne.docx',
+      isPremium: true,
+      industry: 'Produit'
     }
   ], []);
+ 
+  // Ajout d'un template supplémentaire professionnel et visuellement soigné
+  // Remarque: ce template apparaît via les données de secours (fallback)
+  // lorsqu'il n'y a pas encore de données Supabase.
 
   // Utiliser les templates Supabase ou fallback
   const displayTemplates = adaptedTemplates.length > 0 ? adaptedTemplates : fallbackTemplates;
@@ -229,35 +432,133 @@ export const Templates: React.FC = () => {
      </div>
    );
  }
+ 
+ 
+ const generateRealisticHTML = (template: Template, seed?: string) => {
+  // Utiliser les données centralisées
+  const profileKey = getProfileKey(template.name);
+  const profile = pickProfile(profileKey, seed ?? template.id)!;
+  const color = getProfileColor(profileKey);
+  
+  // Analyser dynamiquement le template pour détecter les émojis et styles
+  const templatePreview = (() => {
+    return (
+      <>
+        {/* Header */}
+        <div className="text-center mb-2 pb-2 border-b border-gray-200">
+          <div className="font-bold text-sm mb-1" style={{ color }}>{profile.name}</div>
+          <div className="text-xs text-gray-600 font-medium">{profile.title}</div>
+          <div className="text-xs text-gray-500 mt-1">
+            📧 {profile.email} | 📱 {profile.phone}
+          </div>
+          <div className="text-xs text-gray-500">📍 {profile.location}</div>
+        </div>
+      </>
+    );
+  })();
 
- const handleDownloadFormat = (template: Template, format: 'word' | 'html' | 'txt' | 'pdf') => {
-    try {
-      let content = '';
-      let filename = '';
-      let mimeType = '';
+  // Convertir le JSX en string pour analyser le contenu
+  const templateString = JSON.stringify(templatePreview);
+  
+  // Détecter la présence d'émojis dans le template
+  const hasEmojis = /📧|📱|📍|💼|🎯|⚡|🚀|💡|🔧|🎨|📊|💰/.test(templateString);
+  
+  return { profile, color, hasEmojis };
+};
 
-      // Contenu de base adapté selon la catégorie
-      const getSkillsByCategory = (category: string) => {
-        switch (category) {
-          case 'Développement':
-            return ['JavaScript', 'React', 'Node.js', 'TypeScript', 'Python', 'SQL', 'Git', 'Docker'];
-          case 'Marketing':
-            return ['Google Analytics', 'SEO/SEM', 'Social Media', 'Content Marketing', 'Email Marketing', 'CRM'];
-          case 'Management':
-            return ['Leadership', 'Gestion d\'équipe', 'Planification stratégique', 'Budget', 'Négociation'];
-          case 'Data Science':
-            return ['Python', 'R', 'Machine Learning', 'SQL', 'Tableau', 'TensorFlow', 'Statistics'];
-          case 'Finance':
-            return ['Excel avancé', 'Modélisation financière', 'Analyse de risque', 'Bloomberg', 'SAP'];
-          default:
-            return ['Communication', 'Travail d\'équipe', 'Résolution de problèmes', 'Adaptabilité'];
-        }
-      };
+// Génère un HTML autonome stylé au format A4 pour l'aperçu/export
+const buildA4Html = (template: Template, seed?: string): string => {
+  const { profile, color, hasEmojis } = generateRealisticHTML(template, seed);
+  return `
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>${template.name} — A4</title>
+      <style>
+        @page { size: A4; margin: 0; }
+        html, body { height: 100%; overflow: hidden; }
+        body { margin: 0; background: #ffffff; font-family: Arial, sans-serif; color: #333; }
+        .page { width: 210mm; height: 297mm; overflow: hidden; margin: 0 auto; background: #fff; padding: 18mm 18mm 20mm 18mm; box-sizing: border-box; }
+        .header { text-align: ${template.name.toLowerCase().includes('minimalist') || template.name.toLowerCase().includes('minimaliste') ? 'left' : 'center'}; margin-bottom: 14px; }
+        .name { font-size: 20pt; font-weight: bold; color: ${color}; margin-bottom: 6px; }
+        .contact { font-size: 10pt; color: #666; }
+        .section { margin: 14px 0; }
+        .section-title { font-size: 11pt; font-weight: bold; color: ${color}; margin-bottom: 8px; text-transform: uppercase; }
+        .job-title { font-size: 10.5pt; font-weight: 600; color: #333; margin-bottom: 2px; }
+        .company { font-size: 10pt; color: #666; margin-bottom: 6px; }
+        .date { color: #888; }
+        ul { margin: 6px 0 0 18px; padding: 0; }
+        li { margin-bottom: 4px; font-size: 10pt; }
+        .skills { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+        .skill { background: #f3f4f6; padding: 5px 10px; border-radius: 14px; font-size: 10pt; color: #333; }
+        @media print { body { background: #fff; } .page { box-shadow: none; margin: 0; } }
+      </style>
+    </head>
+    <body>
+      <div class="page">
+        <div class="header">
+          <div class="name">${profile.name}</div>
+          <div class="contact">${hasEmojis ? '📧 ' : ''}${profile.email}${hasEmojis ? ' | 📱 ' : ' • '}${profile.phone}</div>
+          ${hasEmojis
+            ? `<div class="contact">📍 ${profile.location}</div>`
+            : `<div class="contact">${profile.location}</div>`}
+        </div>
+        <div class="section">
+          <div class="section-title">PROFIL PROFESSIONNEL</div>
+          <p style="margin:0; font-size:10.5pt; line-height:1.45;">${profile.profile}</p>
+        </div>
+        <div class="section">
+          <div class="section-title">EXPÉRIENCE PROFESSIONNELLE</div>
+          ${profile.experiences.map((exp: Experience) => `
+            <div style=\"margin-bottom:10px;\">
+              <div class=\"job-title\">${exp.title}</div>
+              <div class=\"company\">${exp.company} • <span class=\"date\">${exp.period}</span></div>
+              <ul>
+                ${exp.achievements.map((ach: string) => `<li>${ach}</li>`).join('')}
+              </ul>
+            </div>
+          `).join('')}
+        </div>
+        <div class="section">
+          <div class="section-title">COMPÉTENCES TECHNIQUES</div>
+          <div class="skills">
+            ${profile.skills.map((skill: string) => `<span class="skill">${skill}</span>`).join(' ')}
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-title">FORMATION</div>
+          <div class="job-title">${profile.education}</div>
+        </div>
+        <div class="section">
+          <div class="section-title">LANGUES</div>
+          <p style="margin:0; font-size:10.5pt;">${profile.languages}</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+};
 
-      const skills = getSkillsByCategory(template.category);
-      const templateName = template.name.replace(/\s+/g, '_').toLowerCase();
+// Ouvre un nouvel onglet avec l'export HTML A4 (aperçu imprimable)
+const handlePreviewHtmlA4 = (template: Template, seed?: string) => {
+  const html = buildA4Html(template, seed);
+  const win = window.open('', '_blank');
+  if (!win) return;
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+};
 
-      switch (format) {
+const handleDownloadFormat = (template: Template, format: 'word' | 'html' | 'txt' | 'pdf') => {
+   try {
+     const { profile, color, hasEmojis } = generateRealisticHTML(template);
+     let content = '';
+     let filename = '';
+     let mimeType = '';
+
+     switch (format) {
         case 'word':
           content = `
             <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
@@ -266,88 +567,68 @@ export const Templates: React.FC = () => {
               <title>${template.name}</title>
               <style>
                 body { font-family: 'Calibri', sans-serif; margin: 40px; line-height: 1.6; color: #333; }
-                .header { text-align: ${template.name.toLowerCase().includes('minimalist') || template.name.toLowerCase().includes('minimaliste') ? 'left' : 'center'}; border-bottom: 3px solid #6366f1; padding-bottom: 20px; margin-bottom: 30px; }
-                .name { font-size: 28px; font-weight: bold; color: #6366f1; margin-bottom: 10px; }
+                .header { text-align: ${template.name.toLowerCase().includes('minimalist') || template.name.toLowerCase().includes('minimaliste') ? 'left' : 'center'}; margin-bottom: 30px; }
+                .name { font-size: 28px; font-weight: bold; color: ${color}; margin-bottom: 10px; }
                 .contact { font-size: 14px; color: #666; }
                 .section { margin-bottom: 25px; }
-                .section-title { font-size: 18px; font-weight: bold; color: #6366f1; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px; margin-bottom: 15px; }
-                .job-title { font-wegight: bold; color: #374151; }
-                .company { color: #6366f1; font-style: italic; }
-                .date { color: #6b7280; font-size: 14px; }
-                .skills { display: flex; flex-wrap: wrap; gap: 8px; }
-                .skill { background: #f3f4f6; padding: 4px 12px; border-radius: 20px; font-size: 14px; }
-                ul { padding-left: 20px; }
-                li { margin-bottom: 5px; }
+                .section-title { font-size: 16px; font-weight: bold; color: ${color}; margin-bottom: 15px; text-transform: uppercase; }
+                .job-title { font-size: 14px; font-weight: bold; color: #333; margin-bottom: 5px; }
+                .company { font-size: 13px; color: #666; margin-bottom: 10px; }
+                .date { color: #888; }
+                ul { margin: 10px 0; padding-left: 20px; }
+                li { margin-bottom: 5px; font-size: 13px; }
+                .skills { margin: 10px 0; }
+                .skill { background: #f3f4f6; padding: 4px 8px; font-size: 12px; color: #333; margin-right: 5px; }
               </style>
             </head>
             <body>
               <div class="header">
-                <div class="name">[VOTRE NOM]</div>
-                <div class="contact">
-                  [Votre Email] • [Votre Téléphone] • [Votre Ville] • [LinkedIn]
-                </div>
+                <div class="name">${profile.name}</div>
+                <div class="contact">${hasEmojis ? '📧 ' : ''}${profile.email}${hasEmojis ? ' • 📱 ' : ' • '}${profile.phone}${hasEmojis ? ' • 📍 ' : ' • '}${profile.location}</div>
               </div>
-
-              <div class="section">
-                <div class="section-title">CONTACT</div>
-                <p>📧 [votre.email@exemple.com]<br>
-                📱 [+33 X XX XX XX XX]<br>
-                📍 [Votre Ville, Pays]<br>
-                💼 [LinkedIn: linkedin.com/in/votre-profil]</p>
-              </div>
-
+              
               <div class="section">
                 <div class="section-title">PROFIL PROFESSIONNEL</div>
-                <p>[Décrivez votre profil professionnel en 2-3 lignes, en mettant l'accent sur vos compétences clés et votre expérience dans le domaine ${template.category.toLowerCase()}.]</p>
+                <p>${profile.profile}</p>
               </div>
 
               <div class="section">
                 <div class="section-title">EXPÉRIENCE PROFESSIONNELLE</div>
-                <div style="margin-bottom: 20px;">
-                  <div class="job-title">[Titre du Poste]</div>
-                  <div class="company">[Nom de l'Entreprise] • <span class="date">[Dates]</span></div>
-                  <ul>
-                    <li>Réalisation majeure avec impact quantifiable (ex: +25% de performance)</li>
-                    <li>Projet important utilisant les technologies ${skills.slice(0, 3).join(', ')}</li>
-                    <li>Leadership d'équipe ou initiative stratégique</li>
-                  </ul>
-                </div>
-                <div>
-                  <div class="job-title">[Poste Précédent]</div>
-                  <div class="company">[Entreprise Précédente] • <span class="date">[Dates]</span></div>
-                  <ul>
-                    <li>Accomplissement significatif avec métriques précises</li>
-                    <li>Amélioration de processus ou innovation</li>
-                  </ul>
-                </div>
+                ${profile.experiences.map(exp => `
+                  <div style="margin-bottom: 20px;">
+                    <div class="job-title">${exp.title}</div>
+                    <div class="company">${exp.company} • <span class="date">${exp.period}</span></div>
+                    <ul>
+                      ${exp.achievements.map(achievement => `<li>${achievement}</li>`).join('')}
+                    </ul>
+                  </div>
+                `).join('')}
               </div>
 
               <div class="section">
                 <div class="section-title">COMPÉTENCES TECHNIQUES</div>
                 <div class="skills">
-                  ${skills.map(skill => `<span class="skill">${skill}</span>`).join('')}
+                  ${profile.skills.map(skill => `<span class="skill">${skill}</span>`).join(' ')}
                 </div>
               </div>
 
               <div class="section">
                 <div class="section-title">FORMATION</div>
-                <div class="job-title">[Diplôme]</div>
-                <div class="company">[École/Université] • <span class="date">[Année]</span></div>
+                <div class="job-title">${profile.education}</div>
               </div>
 
               <div class="section">
                 <div class="section-title">LANGUES</div>
-                <p>Français (Natif) • Anglais (Courant) • [Autre langue]</p>
+                <p>${profile.languages}</p>
               </div>
             </body>
             </html>
           `;
-          filename = `${templateName}.doc`;
+          filename = `${template.name.replace(/\s+/g, '_').toLowerCase()}.doc`;
           mimeType = 'application/msword';
           break;
 
         case 'pdf':
-          // Pour PDF, on utilise HTML qui peut être converti
           content = `
             <!DOCTYPE html>
             <html>
@@ -356,32 +637,54 @@ export const Templates: React.FC = () => {
               <title>${template.name}</title>
               <style>
                 @page { margin: 2cm; }
-                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                .header { text-align: ${template.name.toLowerCase().includes('minimalist') || template.name.toLowerCase().includes('minimaliste') ? 'left' : 'center'}; border-bottom: 3px solid #6366f1; padding-bottom: 20px; margin-bottom: 30px; }
-                .name { font-size: 24px; font-weight: bold; color: #6366f1; margin-bottom: 10px; }
-                .contact { font-size: 12px; color: #666; }
-                .section { margin-bottom: 20px; page-break-inside: avoid; }
-                .section-title { font-size: 16px; font-weight: bold; color: #6366f1; border-bottom: 1px solid #e5e7eb; padding-bottom: 5px; margin-bottom: 10px; }
-                .job-title { font-weight: bold; color: #374151; }
-                .company { color: #6366f1; font-style: italic; }
-                .date { color: #6b7280; font-size: 12px; }
-                .skills { display: flex; flex-wrap: wrap; gap: 5px; }
-                .skill { background: #f3f4f6; padding: 2px 8px; border-radius: 10px; font-size: 12px; }
-              </style>
-            </head>
-            <body>
-              <div class="header">
-                <div class="name">[VOTRE NOM]</div>
-                <div class="contact">[Email] • [Téléphone] • [Ville] • [LinkedIn]</div>
+                body { font-family: Arial, sans-serif; margin: 0; line-height: 1.6; color: #333; }
+                .header { text-align: ${template.name.toLowerCase().includes('minimalist') || template.name.toLowerCase().includes('minimaliste') ? 'left' : 'center'}; border-bottom: 3px solid ${color}; padding-bottom: 20px; margin-bottom: 30px; }
+                .name { font-size: 24px; font-weight: bold; color: ${color}; margin-bottom: 10px; }
+                .contact { font-size: 14px; color: #666; }
+                .section { margin-bottom: 25px; }
+                .section-title { font-size: 16px; font-weight: bold; color: ${color}; margin-bottom: 15px; text-transform: uppercase; border-bottom: 2px solid ${color}; padding-bottom: 5px; }
+                .job-title { font-size: 14px; font-weight: bold; color: #333; margin-bottom: 5px; }
+                .company { font-size: 13px; color: #666; margin-bottom: 10px; }
+                .date { color: #888; }
+                ul { margin: 10px 0; padding-left: 20px; }
+                li { margin-bottom: 5px; font-size: 13px; }
+                .skills { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+                .skill { background: #f3f4f6; padding: 6px 12px; border-radius: 15px; font-size: 12px; color: #333; margin: 2px; }
               </div>
+
               <div class="section">
-                <div class="section-title">PROFIL PROFESSIONNEL</div>
-                <p>Professionnel expérimenté en ${template.category.toLowerCase()} avec expertise en ${skills.slice(0, 3).join(', ')}.</p>
+                <div class="section-title">EXPÉRIENCE PROFESSIONNELLE</div>
+                ${profile.experiences.map(exp => `
+                  <div style="margin-bottom: 20px;">
+                    <div class="job-title">${exp.title}</div>
+                    <div class="company">${exp.company} • <span class="date">${exp.period}</span></div>
+                    <ul>
+                      ${exp.achievements.map(achievement => `<li>${achievement}</li>`).join('')}
+                    </ul>
+                  </div>
+                `).join('')}
+              </div>
+
+              <div class="section">
+                <div class="section-title">COMPÉTENCES TECHNIQUES</div>
+                <div class="skills">
+                  ${profile.skills.map(skill => `<span class="skill">${skill}</span>`).join(' ')}
+                </div>
+              </div>
+
+              <div class="section">
+                <div class="section-title">FORMATION</div>
+                <div class="job-title">${profile.education}</div>
+              </div>
+
+              <div class="section">
+                <div class="section-title">LANGUES</div>
+                <p>${profile.languages}</p>
               </div>
             </body>
             </html>
           `;
-          filename = `${templateName}.html`;
+          filename = `${template.name.replace(/\s+/g, '_').toLowerCase()}.html`;
           mimeType = 'text/html';
           break;
 
@@ -394,62 +697,69 @@ export const Templates: React.FC = () => {
               <meta name="viewport" content="width=device-width, initial-scale=1.0">
               <title>${template.name}</title>
               <style>
-                body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.6; }
-                .header { text-align: ${template.name.toLowerCase().includes('minimalist') || template.name.toLowerCase().includes('minimaliste') ? 'left' : 'center'}; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
-                .name { font-size: 32px; font-weight: bold; margin-bottom: 10px; }
-                .contact { font-size: 16px; color: #666; }
-                .section { margin-bottom: 30px; }
-                .section-title { font-size: 20px; font-weight: bold; color: #333; border-bottom: 1px solid #ccc; padding-bottom: 5px; margin-bottom: 15px; }
-                .job { margin-bottom: 20px; }
-                .job-title { font-weight: bold; font-size: 18px; }
-                .company { color: #666; font-style: italic; }
-                .skills { display: flex; flex-wrap: wrap; gap: 10px; }
-                .skill { background: #f0f0f0; padding: 5px 15px; border-radius: 20px; }
+                body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; color: #333; }
+                .header { text-align: ${template.name.toLowerCase().includes('minimalist') || template.name.toLowerCase().includes('minimaliste') ? 'left' : 'center'}; margin-bottom: 30px; }
+                .name { font-size: 28px; font-weight: bold; color: ${color}; margin-bottom: 10px; }
+                .contact { font-size: 14px; color: #666; }
+                .section { margin-bottom: 25px; }
+                .section-title { font-size: 16px; font-weight: bold; color: ${color}; margin-bottom: 15px; text-transform: uppercase; }
+                .job-title { font-size: 14px; font-weight: bold; color: #333; margin-bottom: 5px; }
+                .company { font-size: 13px; color: #666; margin-bottom: 10px; }
+                .date { color: #888; }
+                ul { margin: 10px 0; padding-left: 20px; }
+                li { margin-bottom: 5px; font-size: 13px; }
+                .skills { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+                .skill { background: #f3f4f6; padding: 6px 12px; border-radius: 15px; font-size: 12px; color: #333; margin: 2px; }
               </style>
             </head>
             <body>
               <div class="header">
-                <div class="name">[VOTRE NOM]</div>
-                <div class="contact">[Email] • [Téléphone] • [Ville] • [LinkedIn]</div>
-              </div>
-              
-              <div class="section">
-                <div class="section-title">CONTACT</div>
-                <p>📧 [votre.email@exemple.com]<br>
-                📱 [+33 X XX XX XX XX]<br>
-                📍 [Votre Ville, Pays]<br>
-                💼 [LinkedIn: linkedin.com/in/votre-profil]</p>
+                <div class="name">${profile.name}</div>
+                <div class="contact">${hasEmojis ? '📧 ' : ''}${profile.email}${hasEmojis ? ' | 📱 ' : ' • '}${profile.phone}</div>
+                ${hasEmojis ? `<div class="contact">📍 ${profile.location}</div>` : `<div class="contact">${profile.location}</div>`}
               </div>
               
               <div class="section">
                 <div class="section-title">PROFIL PROFESSIONNEL</div>
-                <p>[Décrivez votre profil professionnel en 2-3 lignes]</p>
+                <p>${profile.profile}</p>
               </div>
-              
+
               <div class="section">
                 <div class="section-title">EXPÉRIENCE PROFESSIONNELLE</div>
-                <div class="job">
-                  <div class="job-title">[Titre du Poste]</div>
-                  <div class="company">[Entreprise] • [Dates]</div>
-                  <ul>
-                    <li>Réalisation majeure avec impact quantifiable</li>
-                    <li>Projet utilisant ${skills.slice(0, 2).join(', ')}</li>
-                  </ul>
+                ${profile.experiences.map(exp => `
+                  <div style="margin-bottom: 20px;">
+                    <div class="job-title">${exp.title}</div>
+                    <div class="company">${exp.company} • <span class="date">${exp.period}</span></div>
+                    <ul>
+                      ${exp.achievements.map(achievement => `<li>${achievement}</li>`).join('')}
+                    </ul>
+                  </div>
+                `).join('')}
+              </div>
+
+              <div class="section">
+                <div class="section-title">COMPÉTENCES TECHNIQUES</div>
+                <div class="skills">
+                  ${profile.skills.map(skill => `<span class="skill">${skill}</span>`).join(' ')}
                 </div>
               </div>
-              
+
               <div class="section">
-                <div class="section-title">COMPÉTENCES</div>
-                <div class="skills">
-                  ${skills.map(skill => `<span class="skill">${skill}</span>`).join('')}
-                </div>
+                <div class="section-title">FORMATION</div>
+                <div class="job-title">${profile.education}</div>
+              </div>
+
+              <div class="section">
+                <div class="section-title">LANGUES</div>
+                <p>${profile.languages}</p>
               </div>
             </body>
             </html>
           `;
-          filename = `${templateName}.html`;
+          filename = `${template.name.replace(/\s+/g, '_').toLowerCase()}.html`;
           mimeType = 'text/html';
           break;
+
 
         case 'txt':
           content = `
@@ -472,7 +782,7 @@ EXPÉRIENCE PROFESSIONNELLE
 [Titre du Poste]
 [Nom de l'Entreprise] • [Dates]
 • Réalisation majeure avec impact quantifiable (ex: +25% de performance)
-• Projet important utilisant les technologies ${skills.slice(0, 3).join(', ')}
+• Projet important utilisant les technologies ${template.tags.slice(0, 3).join(', ')}
 • Leadership d'équipe ou initiative stratégique
 
 [Poste Précédent]
@@ -481,7 +791,7 @@ EXPÉRIENCE PROFESSIONNELLE
 • Amélioration de processus ou innovation
 
 COMPÉTENCES TECHNIQUES
-${skills.join(' • ')}
+${template.tags.join(' • ')}
 
 FORMATION
 [Diplôme]
@@ -490,7 +800,7 @@ FORMATION
 LANGUES
 Français (Natif) • Anglais (Courant) • [Autre langue]
           `;
-          filename = `${templateName}.txt`;
+          filename = `${template.name.replace(/\s+/g, '_').toLowerCase()}.txt`;
           mimeType = 'text/plain';
           break;
       }
@@ -512,16 +822,12 @@ Français (Natif) • Anglais (Courant) • [Autre langue]
   };
 
 
-  const handlePreview = (template: Template) => {
-    // In a real app, this would open a preview modal
-    console.log(`Aperçu du template: ${template.name}`);
-  };
-
-  const getScoreColor = (score: number) => {
-    if (score >= 95) return 'text-emerald-600';
-    if (score >= 90) return 'text-blue-600';
-    if (score >= 85) return 'text-amber-600';
-    return 'text-red-600';
+  const handlePreview = (template: Template, seed?: string) => {
+    // Ouvre une modale avec un aperçu HTML A4 intégré
+    const html = buildA4Html(template, seed);
+    setPreviewTitle(template.name);
+    setPreviewHtml(html);
+    setPreviewOpen(true);
   };
 
   const getScoreBadgeColor = (score: number) => {
@@ -533,6 +839,36 @@ Français (Natif) • Anglais (Courant) • [Autre langue]
 
   return (
     <div className="space-y-8">
+      {/* Modale d'aperçu A4 */}
+      {previewOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setPreviewOpen(false)} />
+          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-6xl mx-4 overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b">
+              <h3 className="font-semibold text-gray-900 truncate">Aperçu A4 — {previewTitle}</h3>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setPreviewOpen(false)}
+                  className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 hover:bg-gray-50"
+                >
+                  Fermer
+                </button>
+              </div>
+            </div>
+            <div className="bg-gray-100 p-4 overflow-auto" style={{ maxHeight: '85vh' }}>
+              <div className="flex justify-center">
+                <iframe
+                  title="Aperçu A4"
+                  srcDoc={previewHtml}
+                  className="bg-white shadow"
+                  style={{ width: '210mm', height: '297mm', border: 'none' }}
+                  scrolling="no"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div className="text-center">
         <h2 className="heading-gradient">
@@ -543,130 +879,85 @@ Français (Natif) • Anglais (Courant) • [Autre langue]
         </p>
       </div>
 
-      {/* Featured Banner */}
-      <div className="bg-gradient-to-br from-purple-600 via-violet-600 to-pink-600 rounded-3xl p-12 text-white relative overflow-hidden shadow-2xl">
-        <div className="absolute inset-0 bg-black/10 rounded-3xl" />
-        <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-80 h-80 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2 blur-2xl" />
-        
-        <div className="relative z-10">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <div className="flex items-center space-x-4 mb-6">
-                <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
-                  <FileText className="w-8 h-8" />
-                </div>
-                <div>
-                  <h3 className="text-3xl font-bold mb-2">Templates Word Premium</h3>
-                  <p className="text-white/80 text-lg">Collection professionnelle optimisée ATS</p>
-                </div>
-              </div>
-              
-              <p className="text-white/90 mb-8 max-w-2xl text-lg leading-relaxed">
-                Téléchargez nos templates optimisés au format Word (.docx) et personnalisez-les selon vos besoins. 
-                Conçus par des experts RH et validés par notre IA.
-              </p>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div className="bg-white/15 backdrop-blur-sm rounded-2xl p-6 text-center border border-white/20">
-                  <div className="text-4xl font-bold mb-2">95%</div>
-                  <div className="text-white/90 font-medium">Score ATS moyen</div>
-                  <div className="text-white/70 text-sm mt-1">Taux de passage optimisé</div>
-                </div>
-                <div className="bg-white/15 backdrop-blur-sm rounded-2xl p-6 text-center border border-white/20">
-                  <div className="text-4xl font-bold mb-2">15k+</div>
-                  <div className="text-white/90 font-medium">Téléchargements</div>
-                  <div className="text-white/70 text-sm mt-1">Par des professionnels</div>
-                </div>
-                <div className="bg-white/15 backdrop-blur-sm rounded-2xl p-6 text-center border border-white/20">
-                  <div className="text-4xl font-bold mb-2">8</div>
-                  <div className="text-white/90 font-medium">Secteurs couverts</div>
-                  <div className="text-white/70 text-sm mt-1">Spécialisations métiers</div>
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-6">
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-emerald-400 rounded-full animate-pulse"></div>
-                  <span className="text-white/90 font-medium">Mise à jour continue</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-blue-400 rounded-full animate-pulse"></div>
-                  <span className="text-white/90 font-medium">Support inclus</span>
-                </div>
-              </div>
+      {/* Featured Banner - Version compacte et professionnelle */}
+      <div className="bg-gradient-to-r from-slate-800 to-slate-900 rounded-xl p-6 text-white relative overflow-hidden shadow-lg">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 bg-white/10 rounded-lg flex items-center justify-center">
+              <FileText className="w-6 h-6" />
             </div>
-            
-            <div className="hidden lg:block">
-              <div className="w-40 h-40 bg-white/10 backdrop-blur-sm rounded-3xl flex items-center justify-center border border-white/20 shadow-2xl">
-                <div className="relative">
-                  <FileText className="w-20 h-20 text-white/90" />
-                  <div className="absolute -top-2 -right-2 w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-xs font-bold">✓</span>
-                  </div>
-                </div>
-              </div>
+            <div>
+              <h3 className="text-xl font-semibold">Templates Word Premium</h3>
+              <p className="text-slate-300 text-sm">Collection professionnelle optimisée ATS</p>
+            </div>
+          </div>
+          
+          <div className="hidden md:flex items-center space-x-6">
+            <div className="text-center">
+              <div className="text-2xl font-bold">95%</div>
+              <div className="text-slate-300 text-xs">Score ATS</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold">15k+</div>
+              <div className="text-slate-300 text-xs">Téléchargements</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold">8</div>
+              <div className="text-slate-300 text-xs">Secteurs</div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Professional Features */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 border border-gray-200/30 shadow-lg">
-        <div className="text-center mb-8">
-          <h3 className="text-2xl font-bold text-gray-900 mb-3">Pourquoi choisir nos templates ?</h3>
-          <p className="text-gray-600 max-w-2xl mx-auto">
-            Des templates conçus par des experts RH et optimisés par notre IA pour maximiser vos chances de succès
-          </p>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="text-center group">
-            <div className="w-16 h-16 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-200 shadow-lg">
-              <Award className="w-8 h-8 text-white" />
+      {/* Professional Features - Version compacte */}
+      <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="text-center">
+            <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+              <Award className="w-5 h-5 text-slate-600" />
             </div>
-            <h4 className="font-bold text-gray-900 mb-2">Certifié ATS</h4>
-            <p className="text-sm text-gray-600">Compatibilité garantie avec tous les systèmes de recrutement</p>
+            <h4 className="font-semibold text-sm text-gray-900 mb-1">Certifié ATS</h4>
+            <p className="text-xs text-gray-600">Compatible systèmes RH</p>
           </div>
           
-          <div className="text-center group">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-200 shadow-lg">
-              <Users className="w-8 h-8 text-white" />
+          <div className="text-center">
+            <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+              <Users className="w-5 h-5 text-slate-600" />
             </div>
-            <h4 className="font-bold text-gray-900 mb-2">Validé RH</h4>
-            <p className="text-sm text-gray-600">Approuvé par des professionnels du recrutement</p>
+            <h4 className="font-semibold text-sm text-gray-900 mb-1">Validé RH</h4>
+            <p className="text-xs text-gray-600">Approuvé professionnels</p>
           </div>
           
-          <div className="text-center group">
-            <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-200 shadow-lg">
-              <TrendingUp className="w-8 h-8 text-white" />
+          <div className="text-center">
+            <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+              <TrendingUp className="w-5 h-5 text-slate-600" />
             </div>
-            <h4 className="font-bold text-gray-900 mb-2">Performance</h4>
-            <p className="text-sm text-gray-600">+40% de réponses positives en moyenne</p>
+            <h4 className="font-semibold text-sm text-gray-900 mb-1">Performance</h4>
+            <p className="text-xs text-gray-600">+40% réponses positives</p>
           </div>
           
-          <div className="text-center group">
-            <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-200 shadow-lg">
-              <Sparkles className="w-8 h-8 text-white" />
+          <div className="text-center">
+            <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+              <Sparkles className="w-5 h-5 text-slate-600" />
             </div>
-            <h4 className="font-bold text-gray-900 mb-2">IA Optimisé</h4>
-            <p className="text-sm text-gray-600">Amélioration continue basée sur les données</p>
+            <h4 className="font-semibold text-sm text-gray-900 mb-1">IA Optimisé</h4>
+            <p className="text-xs text-gray-600">Amélioration continue</p>
           </div>
         </div>
       </div>
 
-      {/* Search and Filters */}
-      <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/30">
-        <div className="flex flex-col lg:flex-row gap-4">
+      {/* Search and Filters - Version compacte */}
+      <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+        <div className="flex flex-col sm:flex-row gap-3">
           {/* Search */}
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Rechercher un template..."
+              placeholder="Rechercher..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all duration-200"
+              className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent"
             />
           </div>
 
@@ -674,7 +965,7 @@ Français (Natif) • Anglais (Courant) • [Autre langue]
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all duration-200"
+            className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent"
           >
             {categories.map(category => (
               <option key={category} value={category}>{category}</option>
@@ -685,32 +976,30 @@ Français (Natif) • Anglais (Courant) • [Autre langue]
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all duration-200"
+            className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent"
           >
-            <option value="popular">Plus populaires</option>
-            <option value="rating">Mieux notés</option>
+            <option value="popular">Populaires</option>
+            <option value="rating">Notés</option>
             <option value="ats">Score ATS</option>
-            <option value="downloads">Plus téléchargés</option>
-            <option value="name">Nom A-Z</option>
+            <option value="downloads">Téléchargés</option>
+            <option value="name">A-Z</option>
           </select>
         </div>
       </div>
 
       {/* Templates Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {filteredTemplates.map((template) => (
+        {filteredTemplates.map((template, idx) => (
           <div
             key={template.id}
             className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/30 overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-2 group"
           >
-            {/* Preview */}
-            <div className={"h-48 " + template.preview + " relative overflow-hidden"}>
-              <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent" />
-              
+            {/* Template Preview - Format A4 */}
+            <div className="relative bg-white m-4 rounded-lg shadow-sm overflow-hidden" style={{ aspectRatio: '1 / 1.414' }}>
               {/* Premium Badge */}
               {template.isPremium && (
-                <div className="absolute top-4 left-4">
-                  <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-3 py-1 rounded-full flex items-center space-x-1 text-xs font-bold">
+                <div className="absolute top-2 left-2 z-10">
+                  <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-2 py-1 rounded-full flex items-center space-x-1 text-xs font-bold">
                     <Star className="w-3 h-3" />
                     <span>Premium</span>
                   </div>
@@ -718,43 +1007,98 @@ Français (Natif) • Anglais (Courant) • [Autre langue]
               )}
 
               {/* ATS Score */}
-              <div className="absolute top-4 right-4">
-                <div className="bg-white/90 backdrop-blur-sm rounded-full px-3 py-1 flex items-center space-x-1">
+              <div className="absolute top-2 right-2 z-10">
+                <div className="bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 flex items-center space-x-1">
                   <div className={"w-2 h-2 rounded-full " + getScoreBadgeColor(template.atsScore)} />
                   <span className="text-xs font-bold text-gray-800">{template.atsScore}%</span>
                 </div>
               </div>
-              
-              {/* Mock Document Preview */}
-              <div className="absolute inset-4 bg-white/80 rounded-lg p-4 shadow-lg">
-                <div className="space-y-3">
-                  <div className="h-4 bg-gray-300 rounded w-3/4" />
-                  <div className="h-3 bg-gray-200 rounded w-1/2" />
-                  <div className="h-2 bg-gray-200 rounded w-full mt-4" />
-                  <div className="h-2 bg-gray-200 rounded w-4/5" />
-                  <div className="h-2 bg-gray-200 rounded w-3/5" />
-                  <div className="grid grid-cols-2 gap-3 mt-6">
-                    <div className="space-y-2">
-                      <div className="h-2 bg-gray-200 rounded" />
-                      <div className="h-2 bg-gray-200 rounded w-3/4" />
-                    </div>
-                    <div className="space-y-2">
-                      <div className="h-2 bg-gray-200 rounded" />
-                      <div className="h-2 bg-gray-200 rounded w-2/3" />
-                    </div>
-                  </div>
-                </div>
+              {/* CV Content - Réaliste et conforme ATS */}
+              <div className="p-3 h-full flex flex-col text-xs">
+                {(() => {
+                  // Utiliser les données et helpers centralisés
+                  const profileKey = getProfileKey(template.name);
+                  const profile = pickProfile(profileKey, `${template.id}-${idx}`)!;
+                  const color = getProfileColor(profileKey);
+
+                  return (
+                    <>
+                      {/* Header */}
+                      <div className="text-center mb-2 pb-2 border-b border-gray-200">
+                        <div className="font-bold text-sm mb-1" style={{ color }}>{profile.name}</div>
+                        <div className="text-xs text-gray-600 font-medium">{profile.title}</div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          📧 {profile.email} | 📱 {profile.phone}
+                        </div>
+                        <div className="text-xs text-gray-500">📍 {profile.location}</div>
+                      </div>
+                      
+                      {/* Profile */}
+                      <div className="mb-2">
+                        <div className="font-semibold text-xs mb-1" style={{ color }}>PROFIL PROFESSIONNEL</div>
+                        <div className="text-xs text-gray-700 leading-tight">{profile.profile}</div>
+                      </div>
+                      
+                      {/* Experience */}
+                      <div className="mb-2">
+                        <div className="font-semibold text-xs mb-1" style={{ color }}>EXPÉRIENCE PROFESSIONNELLE</div>
+                        <div className="space-y-1">
+                          {profile.experiences.slice(0, 2).map((exp: any, idx: number) => (
+                            <div key={idx}>
+                              <div className="font-medium text-xs">{exp.title}</div>
+                              <div className="text-xs text-gray-600">{exp.company} • {exp.period}</div>
+                              <div className="text-xs text-gray-700 mt-0.5">
+                                {exp.achievements.slice(0, 2).map((achievement: string, i: number) => (
+                                  <div key={i}>{achievement}</div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      {/* Compétences */}
+                      <div className="mb-2">
+                        <div className="font-semibold text-xs mb-1" style={{ color }}>COMPÉTENCES TECHNIQUES</div>
+                        <div className="flex flex-wrap gap-0.5">
+                          {profile.skills.slice(0, 8).map((skill: string) => (
+                            <span key={skill} className="bg-gray-100 px-1 py-0.5 rounded text-xs">{skill}</span>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Formation */}
+                      <div className="mb-1">
+                        <div className="font-semibold text-xs mb-1" style={{ color }}>FORMATION</div>
+                        <div className="text-xs text-gray-700">{profile.education}</div>
+                      </div>
+
+                      {/* Langues */}
+                      <div>
+                        <div className="font-semibold text-xs mb-1" style={{ color }}>LANGUES</div>
+                        <div className="text-xs text-gray-700">{profile.languages}</div>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
               
               {/* Hover Actions */}
               <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center space-x-4">
                 <button
-                  onClick={() => handlePreview(template)}
+                  onClick={() => handlePreview(template, `${template.id}-${idx}`)}
                   className="p-3 bg-white/20 backdrop-blur-sm text-white rounded-full hover:bg-white/30 transition-colors hover:scale-110"
                 >
                   <Eye className="w-5 h-5" />
                 </button>
                 <div className="flex space-x-2">
+                  <button
+                    onClick={() => handlePreviewHtmlA4(template, `${template.id}-${idx}`)}
+                    className="p-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 transition-colors text-xs font-medium"
+                    title="Aperçu HTML A4"
+                  >
+                    A4
+                  </button>
                   <button
                     onClick={() => handleDownloadFormat(template, 'word')}
                     className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs font-medium"
@@ -777,72 +1121,6 @@ Français (Natif) • Anglais (Courant) • [Autre langue]
                     TXT
                   </button>
                 </div>
-              </div>
-            </div>
-            
-            {/* Template Info */}
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="font-bold text-gray-900 truncate">{template.name}</h4>
-                <div className="flex items-center space-x-1">
-                  <Star className="w-4 h-4 text-amber-400 fill-current" />
-                  <span className="text-sm font-semibold text-gray-700">{template.rating}</span>
-                </div>
-              </div>
-              
-              <p className="text-sm text-gray-600 mb-4 line-clamp-2">{template.description}</p>
-              
-              {/* Tags */}
-              <div className="flex flex-wrap gap-2 mb-4">
-                {template.tags.slice(0, 3).map((tag) => (
-                  <span key={tag} className="text-xs font-medium px-2 py-1 bg-violet-100 text-violet-700 rounded-full">
-                    {tag}
-                  </span>
-                ))}
-                {template.tags.length > 3 && (
-                  <span className="text-xs font-medium px-2 py-1 bg-gray-100 text-gray-600 rounded-full">
-                    +{template.tags.length - 3}
-                  </span>
-                )}
-              </div>
-              
-              {/* Stats */}
-              <div className="flex items-center justify-between mb-4 text-xs text-gray-500">
-                <div className="flex items-center space-x-4">
-                  <span className="flex items-center space-x-1">
-                    <Download className="w-3 h-3" />
-                    <span>{template.downloads}</span>
-                  </span>
-                  <span className={"font-semibold " + getScoreColor(template.atsScore)}>
-                    {template.atsScore}% ATS
-                  </span>
-                </div>
-                <span className="font-medium text-gray-600">{template.category}</span>
-              </div>
-              
-              {/* Download Button */}
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  onClick={() => handleDownloadFormat(template, 'word')}
-                  className="bg-gradient-to-r from-blue-600 to-blue-700 text-white py-2 px-3 rounded-lg text-xs font-medium hover:from-blue-700 hover:to-blue-800 transition-all duration-200 hover:scale-105 flex items-center justify-center space-x-1"
-                >
-                  <Download className="w-3 h-3" />
-                  <span>Word</span>
-                </button>
-                <button
-                  onClick={() => handleDownloadFormat(template, 'html')}
-                  className="bg-gradient-to-r from-green-600 to-green-700 text-white py-2 px-3 rounded-lg text-xs font-medium hover:from-green-700 hover:to-green-800 transition-all duration-200 hover:scale-105 flex items-center justify-center space-x-1"
-                >
-                  <Download className="w-3 h-3" />
-                  <span>HTML</span>
-                </button>
-                <button
-                  onClick={() => handleDownloadFormat(template, 'txt')}
-                  className="bg-gradient-to-r from-gray-600 to-gray-700 text-white py-2 px-3 rounded-lg text-xs font-medium hover:from-gray-700 hover:to-gray-800 transition-all duration-200 hover:scale-105 flex items-center justify-center space-x-1"
-                >
-                  <Download className="w-3 h-3" />
-                  <span>TXT</span>
-                </button>
               </div>
             </div>
           </div>

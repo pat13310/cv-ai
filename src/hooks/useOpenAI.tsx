@@ -637,7 +637,7 @@ const callOpenAIForFieldEditing = async (prompt: string, profile?: { openai_api_
         messages: [
           {
             role: 'system',
-            content: 'Tu es un expert en rédaction de CV professionnel. Tu génères du contenu concis, percutant et optimisé pour les systèmes ATS. Tu réponds toujours directement sans texte supplémentaire.'
+            content: 'Tu es un expert en rédaction de CV professionnel et coach de carrière. Tu aides à générer du contenu concis, percutant et optimisé pour les systèmes ATS. Tu peux également aider à préparer des entretiens d\'embauche en fournissant des conseils, des questions types, et des stratégies de réponse. Tu réponds toujours directement et de manière professionnelle.'
           },
           {
             role: 'user',
