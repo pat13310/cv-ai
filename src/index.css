@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@media (max-width: 1155px) {
+  .center-below-1156px {
+    align-self: center !important;
+  }
+}
+
+.line-clamp-3 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+/* Styles personnalisés pour les combos/select - Approche CSS native renforcée */
+select {
+  @apply border border-gray-300 rounded-md px-3 py-2 bg-white text-gray-900 transition-all duration-200;
+  min-width: 180px;
+  width: auto;
+  /* Forcer l'apparence personnalisée */
+  -webkit-appearance: menulist;
+  -moz-appearance: menulist;
+  appearance: menulist;
+}
+
+select:hover {
+  @apply border-violet-300 bg-white;
+}
+
+select:focus {
+  @apply outline-none border-violet-500 ring-2 ring-violet-200 bg-white;
+}
+
+/* Styles CSS avec variables personnalisées */
+select option {
+  background-color: white;
+  color: #111827;
+  padding: 8px 12px;
+}
+
+/* Utilisation des variables CSS pour le hover */
+select option:hover {
+  background-color: var(--select-hover-bg, #ede9fe) !important;
+  color: #111827 !important;
+}
+
+/* Utilisation des variables CSS pour la sélection */
+select option:checked,
+select option:selected {
+  background-color: var(--select-selected-bg, #7C3AED) !important;
+  color: var(--select-selected-color, white) !important;
+}
+
+/* Styles spécifiques pour WebKit avec variables */
+@supports (-webkit-appearance: none) {
+  select option:hover {
+    background: var(--select-hover-bg, #ede9fe) !important;
+  }
+  
+  select option:checked {
+    background: var(--select-selected-bg, #7C3AED) !important;
+    color: var(--select-selected-color, white) !important;
+  }
+}
+
+/* Styles pour Firefox avec variables */
+@-moz-document url-prefix() {
+  select option:hover {
+    background-color: var(--select-hover-bg, #ede9fe) !important;
+  }
+  
+  select option:checked {
+    background-color: var(--select-selected-bg, #7C3AED) !important;
+    color: var(--select-selected-color, white) !important;
+  }
+}
+
+
+
+/* Style simple pour les champs éditables - comme dans le code de référence */
+.editable-field {
+  position: relative;
+}
